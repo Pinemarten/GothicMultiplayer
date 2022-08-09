@@ -1,5 +1,5 @@
 # Gothic Multiplayer (2011 version)
-The source code of Gothic Multiplayer was first released in January 2011. 
+The source code of Gothic Multiplayer that was first released in January 2011. 
 This version of the code is probably the latest one (late 2011/early 2012), and it may contain changes that were not released at that time to players.
 It's worth noting that this is not the version shown later (codename "red") with scripting capabilities.
 

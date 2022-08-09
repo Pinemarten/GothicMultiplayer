@@ -105,7 +105,7 @@ CGmpClient::~CGmpClient(void)
 	//RakNet::RakPeerInterface::DestroyInstance(this->client);
 }
 
-bool CGmpClient::Connect(){ return Connect(clientHost.c_str(), "w4lpURg15N4cHt", clientPort); }
+bool CGmpClient::Connect(){ return Connect(clientHost.c_str(), "yourpass", clientPort); }
 
 bool CGmpClient::Connect(std::string hostAddress, std::string hostPassword, int hostPort)
 {
