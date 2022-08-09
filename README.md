@@ -17,6 +17,6 @@ The original code was built in Visual Studio 2010, and binaries built with 2022 
 I did not try to run the server or the client (.dll).
 If you want to run this, you need to figure it out yourself.
 
-# Credists
+# Credits
 G2ext headers - Paindevs and Patrick Vogel (see https://github.com/DaDummy/g2ext)
 Gothic Multiplayer Server/Client/Starter - Gothic Multiplayer Team (pampi, skejt23, mecio)
