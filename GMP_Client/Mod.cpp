@@ -324,18 +324,22 @@ void _declspec(naked) FLOORSLIDING_CRASHFIX() // 0x0050D5CF
 	}
 };
 
+const int DROP_ITEM_TIMEOUT = 200;
 
 // DROP & TAKE
 void _stdcall OnDropItem(sRegs & regs, DWORD & item)
 {	   
-		if((DWORD)regs.ECX == (DWORD)oCNpc::GetHero()){
-				oCItem* DroppedItem = (oCItem*)item;
-				short amount = DroppedItem->GetAmount();
-				if(client && global_ingame){
-					if(!client->DropItemsAllowed) return;
-					client->SendDropItem(DroppedItem->GetInstance(), amount);
-				}
-		}
+	if ((DWORD)regs.ECX != (DWORD)oCNpc::GetHero()) {
+		return;
+	}
+	oCItem* DroppedItem = (oCItem*)item;
+	short amount = DroppedItem->GetAmount();
+	static int dropItemTimeout = 0;
+	if(client && global_ingame && dropItemTimeout < GetTickCount()){
+		if(!client->DropItemsAllowed) return;
+		client->SendDropItem(DroppedItem->GetInstance(), amount);
+		dropItemTimeout = GetTickCount() + DROP_ITEM_TIMEOUT;
+	}
 }
 
 void _stdcall OnTakeItem(sRegs & regs, DWORD & item)

@@ -879,15 +879,15 @@ skip_wb:
 										if(instance > 5892 && instance < 7850){
 											for(size_t i=0; i<player.size(); i++){
 												if(!memcmp(&player[i]->id, p->data+1, sizeof(uint64_t))){
-													oCItem* NpcDrop = this->player[i]->npc->GetInventory()->IsIn(instance, amount);
-													if(NpcDrop){
-														this->player[i]->npc->DoDropVob(NpcDrop);
-													}
-													else{
-														oCItem* NpcDrop = oCObjectFactory::GetFactory()->CreateItem(instance);
-														NpcDrop->SetAmount(amount);
-														this->player[i]->npc->DoDropVob(NpcDrop);
-													}
+													oCWorld* world = oCGame::GetGame()->GetGameWorld();
+													oCItem* NpcDrop = oCObjectFactory::GetFactory()->CreateItem(instance);
+													NpcDrop->SetAmount(amount);
+													zVEC3 startPos = this->player[i]->npc->GetTrafoModelNodeToWorld("ZS_RIGHTHAND").GetTranslation();
+													NpcDrop->SetPosition(startPos);
+													world->AddVob(NpcDrop);
+													NpcDrop->SetSleeping(false);
+													NpcDrop->SetStaticVob(false);
+													NpcDrop->SetPhysicsEnabled(true);
 												}
 											}
 										}

@@ -544,6 +544,8 @@ struct zMAT4
 	/** Insert description. 
 	*/
 	bool operator != ( const zMAT4 & _m ) const;
+
+	zVEC3 GetTranslation() const { return zVEC3(m[0][3], m[1][3], m[2][3]); };
 };
 
 /** Insert description. */
