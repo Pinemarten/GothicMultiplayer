@@ -212,6 +212,26 @@ public:
 	void*			m_poCollisionObject;	   // 0x011C zCCollisionObject*
 
 public:
+	void SetStaticVob(int)
+	{
+		XCALL(0x006CFFB0);
+	};
+
+	void SetPhysicsEnabled(int)
+	{
+		XCALL(0x0061D190);
+	};
+
+	void SetPosition(const zVEC3& pos) {
+		SetPosition(pos.x, pos.y, pos.z);
+	}
+
+	void SetPosition(float x, float y, float z)
+	{
+		this->trafoObjToWorld.m[0][3] = x;
+		this->trafoObjToWorld.m[1][3] = y;
+		this->trafoObjToWorld.m[2][3] = z;
+	};
 	static void CheckAutoLink(zCVob*, zCVob*){XCALL(0x0061A840);};
 	static int CanAutoLink(zCVob*, zCVob*){XCALL(0x0061A700);};
 	void RemoveWorldDependencies(int){XCALL(0x00601DA0);};
@@ -245,6 +265,8 @@ public:
 	};
 
 	zMAT4 GetTrafoModelNodeToWorld(zCModelNodeInst*){XCALL(0x00604A50);};
+
+	zMAT4 GetTrafoModelNodeToWorld(const zSTRING&) { XCALL(0x00604960); };
 
 	//.text:0061B890 ; public: void __thiscall zCVob::GetPositionWorld(float pA &, float pA &, float pA &)const
 	/** Insert description. 
