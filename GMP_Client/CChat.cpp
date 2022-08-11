@@ -112,7 +112,8 @@ void CChat::SetWhisperTo(std::string& whisperto)
 
 void CChat::WriteMessage(MsgType type, bool PrintTimed, zCOLOR& rgb, const char * format, ...)
 {
-	char text[128];
+	if(strlen(format) > 512) return;
+	char text[512];
 	va_list args;
 	va_start(args, format);
 	vsprintf(text, format, args);
@@ -156,7 +157,8 @@ void CChat::WriteMessage(MsgType type, bool PrintTimed, zCOLOR& rgb, const char 
 
 void CChat::WriteMessage(MsgType type, bool PrintTimed, const char * format, ...)
 {
-	char text[128];
+	if(strlen(format) > 512) return;
+	char text[512];
 	va_list args;
 	va_start(args, format);
 	vsprintf(text, format, args);

@@ -36,11 +36,11 @@ int SaveWorld::SaveBuilderMap(vector<Info>& Vobs, const char* MapName)
 {
 	if(Vobs.size() < 1) return 0;
 	wb_data.clear();
-	if(!FolderExists(L".\\WorldBuilder\\Maps")){
+	if(!FolderExists(".\\WorldBuilder\\Maps")){
 		LPSECURITY_ATTRIBUTES attr;
 		attr = NULL;
 		//CreateDirectory(L".\\WorldBuilder", attr);
-		CreateDirectory(L".\\WorldBuilder\\Maps", attr);
+		CreateDirectory(".\\WorldBuilder\\Maps", attr);
 	}
 	int size;
 	zSTRING tempz;

@@ -23,51 +23,32 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+//Library: Gothic 2 Wrappers
+//Module: Font
+//Author: Mecio
+// __  __           _       
+//|  \/  |         (_)      
+//| \  / | ___  ___ _  ___  
+//| |\/| |/ _ \/ __| |/ _ \ 
+//| |  | |  __/ (__| | (_) |
+//|_|  |_|\___|\___|_|\___/ 
+//
+//Coded for Gothic Multiplayer
+
 #pragma once
-#include <fstream>
-#include "singleton.h"
-#include "g2Api.h"
-#include "ztypes.hpp"
 
-// KEYBOARD LAYOUTS
-#define LAYOUT_GERMAN 0x00000407
-#define LAYOUT_ENGLISH 0x00000409
-#define LAYOUT_POLISH 0x00000415
-#define LAYOUT_RUSSIAN 0x00000419
+namespace G2W {
 
-class CConfig : public TSingleton<CConfig>
+class Font
 {
-private:
-	BYTE d;
-	zCOption* Opt;
-	void LoadConfigFromFile();
-	zCOptionSection* MultiSection;
 public:
-	BOOL IsDefault(void);
-	zSTRING Nickname;
-	int skintexture;
-	int facetexture;
-	int headmodel;
-	int walkstyle;
-	int lang;
-	bool logchat;
-	bool watch;
-	bool antialiasing;
-	bool joystick;
-	bool potionkeys;
-	bool logovideos;
-	enum KeyboardLayout
-	{
-		KEYBOARD_POLISH,
-		KEYBOARD_GERMAN,
-		KEYBOARD_CYRYLLIC
-	};
-	int keyboardlayout;
-	int WatchPosX;
-	int WatchPosY;
-	int ChatLines;
-	CConfig::CConfig();
-	CConfig::~CConfig();
-	void DefaultSettings();
-	void SaveConfigToFile();
+	Font(unsigned char r, unsigned char g, unsigned char b, const char * tex);
+	~Font(void);
+	unsigned char r,g,b;
+	const char * texture;
+private:
+	
 };
+
+
+}

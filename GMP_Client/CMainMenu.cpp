@@ -48,6 +48,7 @@ SOFTWARE.
 #include "CSyncFuncs.h"
 #include "WorldBuilder\CBuilder.h"
 #include "..\Shared\SharedUtil.h"
+#include "ExtendedServerList.h"
 
 extern CGmpClient *client;
 extern zSTRING GlobalFont;
@@ -114,6 +115,7 @@ char x[2]={0, 0};
 		Options = NULL;
 		Update = new CUpdate();
 		MState = CHOOSE_LANGUAGE;
+		
 		oCSpawnManager::SetRemoveRange(2097152.0f);
 		ServerList=new CServerList();
 		LaunchMenuScene();
@@ -137,6 +139,7 @@ char x[2]={0, 0};
 
 	CMainMenu::~CMainMenu()
 	{
+		delete esl;
 		CleanUpMainMenu();
 	};
 	
@@ -354,15 +357,18 @@ char x[2]={0, 0};
 		oCGame::GetGame()->GetWorldTimer()->SetTime(12, 00);
 		Screen->SetFont(FDefault);
 	};
+	
 
 	void CMainMenu::PrintMenu()
 	{
+		
 			if(!LangSetting) {
 				zSTRING path=LANG_DIR;
 				path+=vec_lang_files[user_config->lang].c_str();
 				LangSetting = new CLanguage(path.ToChar());
 				Lang = LangSetting;
-				LoadRSS(vec_lang_files[user_config->lang].c_str());
+				esl = new ExtendedServerList();
+				//LoadRSS(vec_lang_files[user_config->lang].c_str());
 				path.Clear();
 				vec_lang_files.clear();
 			}
@@ -386,44 +392,15 @@ char x[2]={0, 0};
 					Screen->SetFontColor(FColor);
 					Screen->Print(200, 4800, (*LangSetting)[CLanguage::MMENU_LEAVEGAME]);
 				break;
-				case SERVER_LIST:
-					if(SelectedServer>=0){
-						Screen->SetFont(GlobalFont);
-						if(ServerList->GetListSize()>0){
-							Screen->SetFontColor(Normal);
-							Screen->Print(200, 200, (*LangSetting)[CLanguage::CHOOSE_SERVER]);
-							char szbuff[256];
-							sprintf(szbuff, "%s%s", (*LangSetting)[CLanguage::SRV_NAME].ToChar(), ServerList->At((size_t)SelectedServer)->name.ToChar());
-							zSTRING sztmp=szbuff;
-							Screen->Print(200, 600, sztmp);
-							sztmp.Clear();
-							sprintf(szbuff, "%s%s", (*LangSetting)[CLanguage::SRV_IP].ToChar(), ServerList->At((size_t)SelectedServer)->ip.ToChar());
-							sztmp=szbuff;
-							Screen->Print(200, 1000, sztmp);
-							sztmp.Clear();
-							sprintf(szbuff, "%s%s", (*LangSetting)[CLanguage::SRV_MAP].ToChar(), ServerList->At((size_t)SelectedServer)->map.ToChar());
-							sztmp=szbuff;
-							Screen->Print(200, 1400, sztmp);
-							sztmp.Clear();
-							sprintf(szbuff, "%s%hu/%hu", (*LangSetting)[CLanguage::SRV_PLAYERS].ToChar(), ServerList->At((size_t)SelectedServer)->num_of_players, ServerList->At((size_t)SelectedServer)->max_players);
-							sztmp=szbuff;
-							Screen->Print(200, 1800, sztmp);
-							sztmp.Clear();
-						} else{
-							Screen->SetFontColor(Red);
-							Screen->Print(200, 200, (*LangSetting)[CLanguage::EMPTY_SERVER_LIST]);
-							Screen->SetFontColor(Normal);
-							Screen->Print(200, 600, (*LangSetting)[CLanguage::CHOOSE_SERVER_TIP]);
-						}
-					} else{
-						Screen->SetFont(GlobalFont);
-						Screen->SetFontColor(Normal);
-						Screen->Print(200, 0, (*LangSetting)[CLanguage::WRITE_SERVER_ADDR]);
-						Screen->Print(200, 400, (*LangSetting)[CLanguage::MANUAL_IP_TIP]);
-						Screen->Print(200, 800, ServerIP);
-					}
+				case SERVER_LIST: {
+
+					esl->setLanguage(LangSetting);
+					esl->HandleInput();
+					esl->Draw();
 				break;
+								  }
 				case SETTINGS_MENU:
+				{
 					Screen->SetFont(GlobalFont);
 					FColor = (OptionPos == 0) ? Highlighted : Normal;
 					if(WritingNickname) FColor = Red;
@@ -454,13 +431,27 @@ char x[2]={0, 0};
 					Screen->Print(200, 5600, ChatLinesTMP);
 					FColor = (OptionPos == 7) ? Highlighted : Normal;
 					Screen->SetFontColor(FColor);
-					Screen->Print(200, 6000, (user_config->keyboardlayout) ? (*LangSetting)[CLanguage::KEYBOARD_RUSSIAN] : (*LangSetting)[CLanguage::KEYBOARD_LATIN]);
+					int printx = 200;
+					int printy = 6000;
+					switch (user_config->keyboardlayout)
+					{
+						case CConfig::KEYBOARD_POLISH:
+							Screen->Print(printx, printy, (*LangSetting)[CLanguage::KEYBOARD_POLISH]);
+						break;
+						case CConfig::KEYBOARD_GERMAN:
+							Screen->Print(printx, printy, (*LangSetting)[CLanguage::KEYBOARD_GERMAN]);
+						break;
+						case CConfig::KEYBOARD_CYRYLLIC:
+							Screen->Print(printx, printy, (*LangSetting)[CLanguage::KEYBOARD_RUSSIAN]);
+						break;
+					};
 					FColor = (OptionPos == 8) ? Highlighted : Normal;
 					Screen->SetFontColor(FColor);
 					Screen->Print(200, 6400, (user_config->logovideos) ? (*LangSetting)[CLanguage::INTRO_YES] : (*LangSetting)[CLanguage::INTRO_NO]);
 					FColor = (OptionPos == 9) ? Highlighted : Normal;
 					Screen->SetFontColor(FColor);
 					Screen->Print(200, 6800, (*LangSetting)[CLanguage::MMENU_BACK]);
+				}
 				break;
 				case WORLDBUILDER_MENU:
 					Screen->SetFont(GlobalFont);
@@ -522,14 +513,8 @@ char x[2]={0, 0};
 			ps=SERVER_LIST;
 			MState=CHOOSE_SRV_LOOP;
 			SelectedServer=0;
-			ServerList->ReceiveListHttp();
+			esl->RefreshList();
 			if(!ServerIP.IsEmpty()) ServerIP.Clear();
-			if(ServerList->GetListSize()){
-				char buff[512];
-				sprintf(buff, "%s:%hu\0", ServerList->At(0)->ip.ToChar(), ServerList->At(0)->port);
-				ServerIP=buff;
-				memset(buff, 0, 512);
-			}
 			EraseSpacesInNickname();
 			oCNpc::GetHero()->SetName(user_config->Nickname);
 		break;
@@ -602,8 +587,6 @@ char x[2]={0, 0};
 		break;
 		case 7:
 			// KEYBOARD LAYOUT
-			user_config->keyboardlayout = !user_config->keyboardlayout;
-			user_config->SaveConfigToFile();
 		break;
 		case 8:
 			// INTROS
@@ -667,7 +650,8 @@ char x[2]={0, 0};
 				path+=vec_lang_files[user_config->lang].c_str();
 				LangSetting = new CLanguage(path.ToChar());
 				Lang = LangSetting;
-				LoadRSS(vec_lang_files[user_config->lang].c_str());
+				esl = new ExtendedServerList();
+				//LoadRSS(vec_lang_files[user_config->lang].c_str());
 				path.Clear();
 				vec_lang_files.clear();
 				zCInput::GetInput()->ClearKeyBuffer();
@@ -682,7 +666,7 @@ char x[2]={0, 0};
 			}
 			else{
 				Screen->PrintCXY(UpdateNewer);
-					if(zCInput::GetInput()->AnyKeyPressed()) CGameManager::GetGameManager()->Done();
+				if(zCInput::GetInput()->AnyKeyPressed()) CGameManager::GetGameManager()->Done();
 			}
 		break;
 		case CHOOSE_NICKNAME:
@@ -743,11 +727,16 @@ char x[2]={0, 0};
 				TitleWeaponEnabled = true;
 				oCGame::GetGame()->GetWorld()->AddVob(TitleWeapon);
 			}
-			if(Input->KeyPressed(KEY_RETURN) && ((SelectedServer== -1) || (ServerList->GetListSize()>0))){
+			if(Input->KeyPressed(KEY_RETURN)){
+				if(SelectedServer != -1){
+					ServerIP.Clear();
+					char buforek[256];
+					esl->getSelectedServer(buforek, sizeof(buforek));
+					ServerIP+= buforek;
+				}
 				Input->ClearKeyBuffer();
 				if(client){delete client; client=NULL;}
 				client=new CGmpClient(ServerIP.ToChar(), LangSetting);
-				//printf("Address IP: %s\n", ServerIP.ToChar());
 				if(!client->Connect()) Screen->GetPrintScreen()->PrintTimedCXY(client->GetLastError() , 5000.0f, &Red);
 				if(client->IsConnected()){
 					client->HandleNetwork();
@@ -788,20 +777,38 @@ char x[2]={0, 0};
 					CLog::GetInstance()->Write(LV_ERROR, "ERROR: %s\n", client->GetLastError().ToChar());
 				}
 			}
+			if(Input->KeyPressed(KEY_W)) {SelectedServer= -1; Input->ClearKeyBuffer();}
+			if(SelectedServer == -1){
+				if(Input->KeyToggled(KEY_SLASH)) {
+					SelectedServer=0;
+				}
+				if(Input->KeyToggled(KEY_F1)) {
+					ServerIP = "127.0.0.1";
+				}
+				char x[2]={0,0};
+				x[0]=GInput::GetCharacterFormKeyboard(true);
+				if(x[0]>0x20){
+					ServerIP+=x;
+				}
+				if((x[0]==0x08) && (ServerIP.Length())) ServerIP.DeleteRight(1);
+				Screen->PrintCXY(ServerIP);
+			}
+			else PrintMenu();
 			if(TitleWeapon) TitleWeapon->RotateWorldX(0.6f);
-			if(SelectedServer>=0){
-				if(Input->KeyToggled(KEY_RIGHT) && (ServerList->GetListSize())) {
+			/*if(SelectedServer>=0){
+				if(Input->KeyToggled(KEY_DOWN) && (ServerList->GetListSize())) {
 					if((ServerList->GetListSize()-1)>(size_t)SelectedServer){
 						SelectedServer++;
 						SetServerIP(SelectedServer);
 					}
 				}
-				if(Input->KeyToggled(KEY_LEFT)) {
+				if(Input->KeyToggled(KEY_UP)) {
 					if(SelectedServer>0){
 						SelectedServer--;
 						SetServerIP(SelectedServer);
 					}
 				}
+			
 				if(Input->KeyPressed(KEY_W)) {SelectedServer= -1; Input->ClearKeyBuffer();}
 				if(Input->KeyPressed(KEY_R)) {ServerList->ReceiveListHttp(); SelectedServer=0; Input->ClearKeyBuffer();}
 			} else{
@@ -817,14 +824,13 @@ char x[2]={0, 0};
 					ServerIP+=x;
 				}
 				if((x[0]==0x08) && (ServerIP.Length())) ServerIP.DeleteRight(1);
-			}
+			}*/
 			if(Input->KeyPressed(KEY_ESCAPE)){
 				Input->ClearKeyBuffer();
 				Screen->InsertItem(GMPLogo);
 				ps=MAIN_MENU;
 				MState=MENU_LOOP;
 			}
-			PrintMenu();
 			break;
 		case MENU_APPEARANCE:
 			Screen->SetFont(FDefault);
@@ -991,6 +997,20 @@ char x[2]={0, 0};
 					if(user_config->ChatLines < 30){
 						if(user_config->ChatLines < 5) user_config->ChatLines = 5;
 						else user_config->ChatLines++;
+						user_config->SaveConfigToFile();
+					}
+				}
+			}
+			if(OptionPos == 7){
+				if(Input->KeyToggled(KEY_LEFT)){
+					if(user_config->keyboardlayout > CConfig::KEYBOARD_POLISH){
+						user_config->keyboardlayout--;
+						user_config->SaveConfigToFile();
+					}
+				}
+				if(Input->KeyToggled(KEY_RIGHT)){
+					if(user_config->keyboardlayout < CConfig::KEYBOARD_CYRYLLIC){
+						user_config->keyboardlayout++;
 						user_config->SaveConfigToFile();
 					}
 				}

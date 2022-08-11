@@ -567,6 +567,18 @@
     <ClCompile Include="..\zlib\adler32.c">
       <Filter>zlib</Filter>
     </ClCompile>
+    <ClCompile Include="ExtendedServerList.cpp">
+      <Filter>Interface</Filter>
+    </ClCompile>
+    <ClCompile Include="Font.cpp">
+      <Filter>Interface</Filter>
+    </ClCompile>
+    <ClCompile Include="Table.cpp">
+      <Filter>Interface</Filter>
+    </ClCompile>
+    <ClCompile Include="Button.cpp">
+      <Filter>Interface</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="HooksManager.h">
@@ -1373,6 +1385,24 @@
     </ClInclude>
     <ClInclude Include="..\RakNet\Source\XBox360Includes.h">
       <Filter>RakNet</Filter>
+    </ClInclude>
+    <ClInclude Include="ExtendedServerList.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="Font.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="G2W.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="Table.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="Button.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="StandardFonts.h">
+      <Filter>Interface</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

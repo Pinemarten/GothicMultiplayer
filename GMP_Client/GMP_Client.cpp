@@ -32,7 +32,6 @@ SOFTWARE.
 #include "CLog.h"
 #include "version.h"
 
-
 DWORD IdWatku;
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 {

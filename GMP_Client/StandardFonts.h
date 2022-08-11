@@ -24,50 +24,12 @@ SOFTWARE.
 */
 
 #pragma once
-#include <fstream>
-#include "singleton.h"
-#include "g2Api.h"
-#include "ztypes.hpp"
 
-// KEYBOARD LAYOUTS
-#define LAYOUT_GERMAN 0x00000407
-#define LAYOUT_ENGLISH 0x00000409
-#define LAYOUT_POLISH 0x00000415
-#define LAYOUT_RUSSIAN 0x00000419
+#include "Font.h"
 
-class CConfig : public TSingleton<CConfig>
-{
-private:
-	BYTE d;
-	zCOption* Opt;
-	void LoadConfigFromFile();
-	zCOptionSection* MultiSection;
-public:
-	BOOL IsDefault(void);
-	zSTRING Nickname;
-	int skintexture;
-	int facetexture;
-	int headmodel;
-	int walkstyle;
-	int lang;
-	bool logchat;
-	bool watch;
-	bool antialiasing;
-	bool joystick;
-	bool potionkeys;
-	bool logovideos;
-	enum KeyboardLayout
-	{
-		KEYBOARD_POLISH,
-		KEYBOARD_GERMAN,
-		KEYBOARD_CYRYLLIC
-	};
-	int keyboardlayout;
-	int WatchPosX;
-	int WatchPosY;
-	int ChatLines;
-	CConfig::CConfig();
-	CConfig::~CConfig();
-	void DefaultSettings();
-	void SaveConfigToFile();
-};
+using namespace G2W;
+
+const Font FNT_WHITE_20(255,255,255, "FONT_OLD_20_WHITE.TGA");
+const Font FNT_GREEN_20(0,255,0, "FONT_OLD_20_WHITE.TGA");
+const Font FNT_WHITE_10(255,255,255, "FONT_OLD_10_WHITE.TGA");
+const Font FNT_GREEN_10(0,255,0, "FONT_OLD_10_WHITE.TGA");

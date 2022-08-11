@@ -45,7 +45,7 @@ CUpdate::CUpdate() // Constructor
 	if(DevNoUpdate) return;
 	Screen = zCView::GetScreen();
 	Screen->PrintCXY(CheckingUpdate);
-	if(URLDownloadToFile(NULL, L"yoursite.com", L".\\Update.gmp", 0, NULL)==S_OK){
+	if(URLDownloadToFile(NULL, "yoursite.com", ".\\Update.gmp", 0, NULL)==S_OK){
 		FILE* fH = fopen(".\\Update.gmp", "rb");
 		fseek(fH, 0, SEEK_END);
 		long file_size=ftell(fH);
@@ -101,7 +101,7 @@ CUpdate::~CUpdate() // Destructor
 void CUpdate::DownloadUpdate()
 {
 	zCView::GetScreen()->PrintCXY(DownloadingUpdate);
-	if(URLDownloadToFile(NULL, L"yoursite-invalid------------.com/GMP.dll", L".\\System\\GMPNew.dll", 0, NULL)==S_OK){
+	if(URLDownloadToFile(NULL, "yoursite-invalid------------.com/GMP.dll", ".\\System\\GMPNew.dll", 0, NULL)==S_OK){
 		if(!CreateProc(".\\System\\Update.exe")){
 			remove(".\\System\\GMPNew.dll");
 			zCParser::GetParser()->Error(zSTRING("Autoupdate failed. Couldn't launch Update.exe. Download update at your-site.com"), 0);

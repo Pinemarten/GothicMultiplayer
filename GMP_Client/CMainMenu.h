@@ -24,10 +24,12 @@ SOFTWARE.
 */
 
 #pragma once
+
 #include "g2Api.h"
 #include "CSelectClass.h"
 #include "CServerList.h"
 #include <vector>
+#include "ExtendedServerList.h"
 
 struct Resolution
 {
@@ -104,6 +106,7 @@ public:
 	bool AppCamCreated;
 	unsigned char ChoosingApperance;
 	unsigned char LastApperance;
+	ExtendedServerList * esl;
 public:
 	CMainMenu();
 	~CMainMenu();

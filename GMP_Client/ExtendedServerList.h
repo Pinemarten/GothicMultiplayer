@@ -24,50 +24,55 @@ SOFTWARE.
 */
 
 #pragma once
-#include <fstream>
-#include "singleton.h"
 #include "g2Api.h"
-#include "ztypes.hpp"
+#include "CServerList.h"
+#include "CLanguage.h"
+#include "G2W.h"
 
-// KEYBOARD LAYOUTS
-#define LAYOUT_GERMAN 0x00000407
-#define LAYOUT_ENGLISH 0x00000409
-#define LAYOUT_POLISH 0x00000415
-#define LAYOUT_RUSSIAN 0x00000419
+#define TAB_ALL 0
+#define TAB_FAV 1
 
-class CConfig : public TSingleton<CConfig>
-{
-private:
-	BYTE d;
-	zCOption* Opt;
-	void LoadConfigFromFile();
-	zCOptionSection* MultiSection;
+class ServerInfo{
 public:
-	BOOL IsDefault(void);
-	zSTRING Nickname;
-	int skintexture;
-	int facetexture;
-	int headmodel;
-	int walkstyle;
-	int lang;
-	bool logchat;
-	bool watch;
-	bool antialiasing;
-	bool joystick;
-	bool potionkeys;
-	bool logovideos;
-	enum KeyboardLayout
-	{
-		KEYBOARD_POLISH,
-		KEYBOARD_GERMAN,
-		KEYBOARD_CYRYLLIC
-	};
-	int keyboardlayout;
-	int WatchPosX;
-	int WatchPosY;
-	int ChatLines;
-	CConfig::CConfig();
-	CConfig::~CConfig();
-	void DefaultSettings();
-	void SaveConfigToFile();
+	std::string name, map, ip;
+	int max_players, num_of_players, port, ping;
+	ServerInfo();
+	void updatePing();
+};
+
+
+class ExtendedServerList{
+public:
+	ExtendedServerList();
+	~ExtendedServerList(void);
+	void SelectServer(int index);
+	void Draw();
+	void addServer(ServerInfo & si);
+	void clearList();
+	void setLanguage(CLanguage * lang);
+	void selectTab(int index);
+	void nextTab();
+	void prevTab();
+	void loadFav(const char * file);
+	void saveFav(const char * file);
+	void HandleInput();
+	void addSelectedToFav();
+	bool RefreshList();
+	bool getSelectedServer(void * buffer, int size);
+	void fillTables();
+	void updatePings();
+	
+	HANDLE srvList_access; 
+private:
+	static DWORD WINAPI pingThreadProc(ExtendedServerList * esl);
+	
+	G2W::Button * tab_all, * tab_fav;
+	G2W::Table * list_all, * list_fav;
+	std::vector<unsigned int> favList;
+	std::vector<ServerInfo> srvList;
+	int SelectedTab;
+	int SelectedServer;
+	CLanguage* LangSetting;
+	zCInput * input;
+	
 };

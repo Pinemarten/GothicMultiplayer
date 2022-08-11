@@ -21,7 +21,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <PlatformToolset>v143</PlatformToolset>
-    <CharacterSet>Unicode</CharacterSet>
+    <CharacterSet>MultiByte</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -66,7 +66,7 @@
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>ws2_32.lib;InjectMage.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ws2_32.lib;InjectMage.lib;Iphlpapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)GM.dll</OutputFile>
       <AdditionalLibraryDirectories>$(SolutionDir)BugTrap;$(SolutionDir)RakNet/Lib;$(SolutionDIr)InjectMage;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -91,7 +91,7 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>ws2_32.lib;InjectMage.lib;Wininet.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ws2_32.lib;InjectMage.lib;Wininet.lib;Iphlpapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)GMP.dll</OutputFile>
       <AdditionalLibraryDirectories>$(SolutionDir)BugTrap;$(SolutionDir)RakNet/Lib;$(SolutionDIr)InjectMage;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
@@ -231,6 +231,7 @@
     <ClCompile Include="..\zlib\trees.c" />
     <ClCompile Include="..\zlib\uncompr.c" />
     <ClCompile Include="..\zlib\zutil.c" />
+    <ClCompile Include="Button.cpp" />
     <ClCompile Include="CActiveAniID.cpp" />
     <ClCompile Include="CAnimMenu.cpp" />
     <ClCompile Include="CChat.cpp" />
@@ -260,6 +261,8 @@
     <ClCompile Include="CUpdate.cpp" />
     <ClCompile Include="CWatch.cpp" />
     <ClCompile Include="ExceptionHandler.cpp" />
+    <ClCompile Include="ExtendedServerList.cpp" />
+    <ClCompile Include="Font.cpp" />
     <ClCompile Include="GMPSplash.cpp" />
     <ClCompile Include="GMP_Client.cpp" />
     <ClCompile Include="HooksManager.cpp" />
@@ -267,6 +270,7 @@
     <ClCompile Include="keyboard.cpp" />
     <ClCompile Include="Mod.cpp" />
     <ClCompile Include="patch.cpp" />
+    <ClCompile Include="Table.cpp" />
     <ClCompile Include="WorldBuilder\CBuilder.cpp" />
     <ClCompile Include="WorldBuilder\load.cpp" />
     <ClCompile Include="WorldBuilder\save.cpp" />
@@ -503,6 +507,7 @@
     <ClInclude Include="..\zlib\zconf.h" />
     <ClInclude Include="..\zlib\zutil.h" />
     <ClInclude Include="buildnumber.h" />
+    <ClInclude Include="Button.h" />
     <ClInclude Include="CActiveAniID.h" />
     <ClInclude Include="CAnimMenu.h" />
     <ClInclude Include="CChat.h" />
@@ -532,12 +537,17 @@
     <ClInclude Include="CUpdate.h" />
     <ClInclude Include="CWatch.h" />
     <ClInclude Include="ExceptionHandler.h" />
+    <ClInclude Include="ExtendedServerList.h" />
+    <ClInclude Include="Font.h" />
+    <ClInclude Include="G2W.h" />
     <ClInclude Include="GMPSPlash.h" />
     <ClInclude Include="HooksManager.h" />
     <ClInclude Include="Interface.h" />
     <ClInclude Include="keyboard.h" />
     <ClInclude Include="Mod.h" />
     <ClInclude Include="patch.h" />
+    <ClInclude Include="StandardFonts.h" />
+    <ClInclude Include="Table.h" />
     <ClInclude Include="WorldBuilder\CBuilder.h" />
     <ClInclude Include="WorldBuilder\load.h" />
     <ClInclude Include="WorldBuilder\save.h" />

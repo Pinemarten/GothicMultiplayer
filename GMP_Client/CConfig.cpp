@@ -29,6 +29,7 @@ SOFTWARE.
 zSTRING Multiplayer = "MULTIPLAYER";
 zSTRING Engine = "ENGINE";
 zSTRING Game = "GAME";
+DWORD KEYBOARDLAYOUT;
 
 CConfig::CConfig()
 {
@@ -90,6 +91,7 @@ void CConfig::DefaultSettings()
 	WatchPosX = 7000;
 	WatchPosY = 2500;
 	ChatLines = 6;
+	KEYBOARDLAYOUT = 0x00000409;
 };
 
 void CConfig::SaveConfigToFile()
