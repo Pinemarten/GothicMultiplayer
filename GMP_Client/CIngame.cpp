@@ -466,8 +466,29 @@ void CIngame::CheckForUpdate(){
 void CIngame::CheckForHPDiff(){
 	for(size_t i=0; i<client->player.size(); i++){
 		if(client->player[i]->hp!=static_cast<short>(client->player[i]->npc->GetHealth())){
+			if (!ValidatePlayerForHPDiff(client->player[i])) {
+				if (client->player[i]->npc->GetHealth() <= 0) {
+					client->player[i]->RespawnPlayer();
+				}
+				client->player[i]->npc->SetHealth(static_cast<int>(client->player[i]->hp));
+			}
 			client->SendHPDiff(i, static_cast<short>(static_cast<short>(client->player[i]->npc->GetHealth())-client->player[i]->hp));
 			client->player[i]->hp=static_cast<short>(client->player[i]->npc->GetHealth());
 		}
 	}
+}
+
+bool CIngame::ValidatePlayerForHPDiff(CPlayer* player)
+{
+	oCNpc* hero = oCNpc::GetHero();
+	if (hero == player->npc) {
+		return true;
+	}
+	if (hero->GetFocusNpc() == player->npc && hero->GetWeaponMode() > NPC_WEAPON_NONE && hero->GetWeaponMode() < NPC_WEAPON_MAG) {
+		return true;
+	}
+	if (hero->GetWeaponMode() == NPC_WEAPON_BOW || hero->GetWeaponMode() == NPC_WEAPON_CBOW || hero->GetWeaponMode() == NPC_WEAPON_MAG) {
+		return hero->GetDistanceToVob(player->npc) < 5000.0f;
+	}
+	return false;
 }
