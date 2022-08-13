@@ -55,6 +55,7 @@ public:
 	void HandleInput(void);
 	void CheckForUpdate(void);
 	void CheckForHPDiff(void);
+	bool ValidatePlayerForHPDiff(CPlayer*);
 	void CheckSwampLights();
 	bool IgnoreFirstSync;
 	CURRENT_MAP RecognizedMap;
