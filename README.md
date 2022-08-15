@@ -12,6 +12,7 @@ I'm posting it here more as a curiosity than something usable.
 * git bash - If you're on Windows, git bash is recommended to execute the commands from below.
 * cmake (https://cmake.org/)
 ## Instructions
+Set environment variable VCPKG_ROOT to root directory of vcpkg.
 ```bash
 git clone https://github.com/Pinemarten/GothicMultiplayer2011.git
 cd GothicMultiplayer2011
