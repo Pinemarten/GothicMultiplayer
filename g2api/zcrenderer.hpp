@@ -35,9 +35,9 @@ Full license at http://creativecommons.org/licenses/by-nc/3.0/legalcode
 #pragma once
 #include "ztypes.hpp"
 #include "macros.hpp"
-#include "dx7sdk/inc/d3d.h"
-#include "dx7sdk/inc/ddraw.h"
-#include "dx7sdk/inc/dinput.h"
+#include "d3d.h"
+#include "ddraw.h"
+#include "dinput.h"
 
 
 class zCVob;

@@ -25,7 +25,7 @@ SOFTWARE.
 
 #pragma warning (disable : 4996)
 #include "CConfig.h"
-#include "RakSleep.h"
+#include <slikenet/sleep.h>
 #include <fstream>
 #include <cstring>
 #include <cstdio>

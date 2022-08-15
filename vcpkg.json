@@ -1,0 +1,9 @@
+{
+  "name": "gothicmultiplayer",
+  "version-string": "0.2",
+  "dependencies": [
+    "zlib",
+    "slikenet",
+    "cpp-httplib"
+  ]
+}

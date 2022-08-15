@@ -24,12 +24,12 @@ SOFTWARE.
 */
 
 #pragma warning (disable : 4101)
-#include <windows.h>
-#include <Wininet.h>
+
 #include "CServerList.h"
+#include <httplib.h>
 
 #define HTTP_DOMAIN "www.your-site.com"
-#define HTTP_LIST_FILE "/lista.php"
+#define HTTP_LIST_FILE "lista.php"
 #define UDP_LIST_ADDRESS "??"	//<- nasz VPS
 
 const char *LIST_CONST_PREFIX="gmp_list";
@@ -91,41 +91,10 @@ void CServerList::Parse(){
 }
 
 bool CServerList::ReceiveListHttp(){
-	HINTERNET hInet, hConn, hData;
-	DWORD dwRead;
-	char buffer[2048];
-	hInet=InternetOpenA("InetURL/1.0", INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);
-	if(!hInet){
-		error_code=1;
-		return false;
-	}
-	try{
-		hConn=InternetConnectA(hInet, HTTP_DOMAIN, 80, " ", " ", INTERNET_SERVICE_HTTP, 0 ,0);
-		if(!hConn){
-			InternetCloseHandle(hInet);
-			error_code=2;
-			return false;
-		}
-		hData=HttpOpenRequestA(hConn, "GET", HTTP_LIST_FILE, NULL, NULL, NULL, INTERNET_FLAG_KEEP_CONNECTION|INTERNET_FLAG_RELOAD, 0);
-		if(!hData){
-			InternetCloseHandle(hConn);
-			InternetCloseHandle(hInet);
-			error_code=3;
-			return false;
-		}
-		HttpSendRequest(hData, NULL, 0, NULL, 0);
-		while(InternetReadFile(hData, buffer, 255, &dwRead)){
-			if(dwRead==0) break;
-			buffer[dwRead]=0;
-			data+=buffer;
-		}
-	} catch(void* e){	//zapobiega ewentualnemu wysypaniu siê programu
-		error_code=4;
-		return false;
-	}
-	InternetCloseHandle(hConn);
-	InternetCloseHandle(hInet);
-	InternetCloseHandle(hData);
+	httplib::Client cli(HTTP_DOMAIN);
+	auto res = cli.Get(HTTP_LIST_FILE);
+	data = res.value().body;
+
 	error_code=0;
 	list_type=HTTP_LIST;
 	Parse();

@@ -31,7 +31,7 @@ SOFTWARE.
 #include "Interface.h"
 #include "CSelectClass.h"
 #include "CChat.h"
-#include "../GMP_Serv/CCompression.h"
+#include "CCompression.h"
 #include <vector>
 #include <list>
 #include <string>
@@ -68,7 +68,7 @@ extern zCOLOR AQUA, RED;
 CGmpClient::CGmpClient(const char *ip, CLanguage *ptr)
 {
 	srand(static_cast<unsigned int>(time(NULL)));
-	this->client = RakNet::RakPeerInterface::GetInstance();
+	this->client = SLNet::RakPeerInterface::GetInstance();
 	this->work_layer^=this->work_layer;
 	this->lang=ptr;
 	this->classmgr=NULL;
@@ -102,7 +102,7 @@ CGmpClient::~CGmpClient(void)
 	}
 	this->clientHost.clear();
 	//this->client->Shutdown(300);
-	//RakNet::RakPeerInterface::DestroyInstance(this->client);
+	//SLNet::RakPeerInterface::DestroyInstance(this->client);
 }
 
 bool CGmpClient::Connect(){ return Connect(clientHost.c_str(), "yourpass", clientPort); }
@@ -113,14 +113,14 @@ bool CGmpClient::Connect(std::string hostAddress, std::string hostPassword, int 
 	interrupted=FALSE;
 	game_mode=0;
 	mp_restore=0;
-	client->SetTimeoutTime(1500, RakNet::UNASSIGNED_SYSTEM_ADDRESS);
-	RakNet::SocketDescriptor socketDescriptor(0,0);
+	client->SetTimeoutTime(1500, SLNet::UNASSIGNED_SYSTEM_ADDRESS);
+	SLNet::SocketDescriptor socketDescriptor(0,0);
 	socketDescriptor.socketFamily=AF_INET;
 	client->Startup(1,&socketDescriptor, 1);
 	client->SetOccasionalPing(true);
 
-	RakNet::ConnectionAttemptResult car = client->Connect(hostAddress.c_str(), hostPort, hostPassword.c_str(), hostPassword.length());
-	RakNet::Packet *p=NULL;
+	SLNet::ConnectionAttemptResult car = client->Connect(hostAddress.c_str(), hostPort, hostPassword.c_str(), hostPassword.length());
+	SLNet::Packet *p=NULL;
 	do{
 		p=client->Receive();
 	} while(!p);
@@ -130,18 +130,18 @@ bool CGmpClient::Connect(std::string hostAddress, std::string hostPassword, int 
 		srvAddr=p->systemAddress;
 	}
 	client->DeallocatePacket(p);
-	return (error==0);//(car==RakNet::CONNECTION_ATTEMPT_STARTED);
+	return (error==0);//(car==SLNet::CONNECTION_ATTEMPT_STARTED);
 }
 /* [D]jak bêdzie potrzbne to siê odkomentuje
 bool CGmpClient::Send(std::string message)
 {
-	client->Send(message.c_str(), message.length()+1, HIGH_PRIORITY, RELIABLE_ORDERED, 0, RakNet::UNASSIGNED_SYSTEM_ADDRESS, true);
+	client->Send(message.c_str(), message.length()+1, HIGH_PRIORITY, RELIABLE_ORDERED, 0, SLNet::UNASSIGNED_SYSTEM_ADDRESS, true);
 	return true;
 }*/
 /* [D] to samo tutaj
 bool CGmpClient::Receive(sPacket & packet)
 {
-	RakNet::Packet *p = client->Receive();
+	SLNet::Packet *p = client->Receive();
 	if(p==0)return false;
 	unsigned char packetIdentifier = GetPacketIdentifier(p);
 	switch (packetIdentifier)
@@ -178,7 +178,7 @@ void CGmpClient::HandleNetwork(){
 			case WL_PREPARE_TO_JOIN:
 				//0a - miejsce na crc32
 				{	//0b i 0c - klasy i miejsca odradzania
-					RakNet::Packet *p;
+					SLNet::Packet *p;
 					BYTE buffer[1024];
 					memset(buffer, 0, 1024);
 					buffer[0]=PT_WHOAMI;
@@ -444,7 +444,7 @@ skip_wb:
 							}
 						}
 					}
-					RakNet::Packet *p;
+					SLNet::Packet *p;
 					do{
 						p=this->client->Receive();
 						if(p){
@@ -1061,15 +1061,15 @@ skip_wb:
 	}
 }
 
-unsigned char CGmpClient::GetPacketIdentifier(RakNet::Packet *p)
+unsigned char CGmpClient::GetPacketIdentifier(SLNet::Packet *p)
 {
 	if (p==0)
 		return 255;
 
 	if ((unsigned char)p->data[0] == ID_TIMESTAMP)
 	{
-		RakAssert(p->length > sizeof(RakNet::MessageID) + sizeof(RakNet::Time));
-		return (unsigned char) p->data[sizeof(RakNet::MessageID) + sizeof(RakNet::Time)];
+		RakAssert(p->length > sizeof(SLNet::MessageID) + sizeof(SLNet::Time));
+		return (unsigned char) p->data[sizeof(SLNet::MessageID) + sizeof(SLNet::Time)];
 	}
 	else return (unsigned char) p->data[0];
 }
@@ -1304,7 +1304,7 @@ void CGmpClient::Disconnect(){
 		LocalPlayer->SetNpcType(CPlayer::NPC_HUMAN);
 		client->CloseConnection(this->srvAddr, true, 11, IMMEDIATE_PRIORITY);
 		Sleep(1000);
-		RakNet::RakPeerInterface::DestroyInstance(this->client);
+		SLNet::RakPeerInterface::DestroyInstance(this->client);
 		this->client=NULL;
 		delete LocalPlayer;
 		CPlayer::DeleteAllPlayers();
