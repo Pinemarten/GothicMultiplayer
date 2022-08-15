@@ -7,7 +7,7 @@ The code is ~10 years old and belongs in a museum or on a comedy show (due to it
 I'm posting it here more as a curiosity than something usable.
 
 # How to build
-## Prerequsities
+## Prerequisites
 * vcpkg - Gothic Multiplayer build system uses vcpkg dependency manager, follow the instructions from https://vcpkg.io/en/getting-started.html to install vcpkg.
 * git bash - If you're on Windows, git bash is recommended to execute the commands from below.
 * cmake (https://cmake.org/)
