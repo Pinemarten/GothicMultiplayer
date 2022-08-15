@@ -26,14 +26,14 @@ SOFTWARE.
 
 #pragma once
 
-#include <slikenet/MessageIdentifiers.h>
-#include <slikenet/peerinterface.h>
-#include <slikenet/statistics.h>
-#include <slikenet/types.h>
-#include <slikenet/BitStream.h>
-#include <slikenet/thread.h>
-#include <slikenet/sleep.h>
-#include <slikenet/PacketLogger.h>
+#include <MessageIdentifiers.h>
+#include <RakPeerInterface.h>
+#include <RakNetStatistics.h>
+#include <RakNetTypes.h>
+#include <BitStream.h>
+#include <RakThread.h>
+#include <RakSleep.h>
+#include <PacketLogger.h>
 
 #include <string.h>
 #include <string>
@@ -104,7 +104,7 @@ public:
 		std::string data;
 	};
 	struct sPlayer{
-		SLNet::RakNetGUID id;
+		RakNet::RakNetGUID id;
 		std::string name;
 		unsigned char char_class, flags, head, skin, body, walkstyle, figth_pos, spellhand, headstate, has_admin, admin_passwd, moderator_passwd, is_ingame, passed_crc_test, mute;
 		SModerator *moderator;
@@ -129,25 +129,25 @@ public:
 	void SendSpamMessage(void);
 	void RegenerationHPMP(void);
 private:
-	void DeleteFromPlayerList(SLNet::RakNetGUID guid);
+	void DeleteFromPlayerList(RakNet::RakNetGUID guid);
 	sPlayer* FindPlayer(const char* nickname);
 	void LoadBanList(void);
-	void HandleCastSpell(SLNet::Packet* p, bool Target);
-	void HandleDropItem(SLNet::Packet* p);
-	void HandleTakeItem(SLNet::Packet* p);
-	void HandleFileReq(SLNet::Packet *p);
-	void SomeoneJoinGame(SLNet::Packet *p);
-	void HandlePlayerUpdate(SLNet::Packet *p);
-	void MakeHPDiff(SLNet::Packet *p);
-	void HandleNormalMsg(SLNet::Packet *p);
-	void HandleWhisp(SLNet::Packet *p);
-	void HandleRMConsole(SLNet::Packet *p);
-	void HandleGameInfo(SLNet::Packet *p);
-	void HandleMapNameReq(SLNet::Packet *p);
+	void HandleCastSpell(RakNet::Packet* p, bool Target);
+	void HandleDropItem(RakNet::Packet* p);
+	void HandleTakeItem(RakNet::Packet* p);
+	void HandleFileReq(RakNet::Packet *p);
+	void SomeoneJoinGame(RakNet::Packet *p);
+	void HandlePlayerUpdate(RakNet::Packet *p);
+	void MakeHPDiff(RakNet::Packet *p);
+	void HandleNormalMsg(RakNet::Packet *p);
+	void HandleWhisp(RakNet::Packet *p);
+	void HandleRMConsole(RakNet::Packet *p);
+	void HandleGameInfo(RakNet::Packet *p);
+	void HandleMapNameReq(RakNet::Packet *p);
 	void SendDisconnectionInfo(uint64_t disconnected_id);
 	void SendDeathInfo(uint64_t deadman);
 	void SendRespawnInfo(uint64_t luckyguy);
-	void SendGameInfo(SLNet::RakNetGUID who);
+	void SendGameInfo(RakNet::RakNetGUID who);
 	size_t FindIDOnList(uint64_t guid);
 
 	std::vector<std::string> ban_list;
@@ -158,15 +158,15 @@ private:
 	time_t last_stand_timer;
 	time_t regen_time;
 	
-	unsigned char GetPacketIdentifier(SLNet::Packet *p);
+	unsigned char GetPacketIdentifier(RakNet::Packet *p);
 	int serverPort;
 	int arg_count;
 	char **arg_vec;
 	unsigned short maxConnections;
 	time_t spam_time;
 	std::string serverPassword;
-	SLNet::RakPeerInterface * server;
-	SLNet::RakNetStatistics *rss;
+	RakNet::RakPeerInterface * server;
+	RakNet::RakNetStatistics *rss;
 	std::vector<sPlayer> players;
-	DataStructures::List<SLNet::RakNetSocket2* > sockets;
+	DataStructures::List<RakNet::RakNetSocket2* > sockets;
 };

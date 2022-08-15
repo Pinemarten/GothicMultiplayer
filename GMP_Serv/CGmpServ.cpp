@@ -28,7 +28,7 @@ SOFTWARE.
 #include "CLog.h"
 #include "CPermissions.h"
 #include "CCompression.h"
-#include <slikenet/thread.h>
+#include <RakThread.h>
 #include <fstream>
 #include <string>
 #include <stack>
@@ -71,7 +71,7 @@ CGmpServ::CGmpServ(const char* password, int argc, char **argv){
 	if(this->daemon) System::MakeMeDaemon(false);
 #endif*/
 	this->log = new CLog(this->log_mode, this->logfile.c_str());
-	server = SLNet::RakPeerInterface::GetInstance();
+	server = RakNet::RakPeerInterface::GetInstance();
 	this->serverPassword.append(password);
 	pSrv=this;
 	arg_count=argc;
@@ -84,7 +84,7 @@ CGmpServ::CGmpServ(int port, const char * password, unsigned short maxConnection
 	if(this->daemon) System::MakeMeDaemon(false);
 #endif*/
 	this->log = new CLog(this->log_mode, this->logfile.c_str());
-	server = SLNet::RakPeerInterface::GetInstance();
+	server = RakNet::RakPeerInterface::GetInstance();
 	this->game_port = static_cast<unsigned short>(port);
 	this->serverPassword.append(password);
 	this->slots = (int)maxConnections;
@@ -98,7 +98,7 @@ CGmpServ::~CGmpServ(void)
 	if(wb_mgr) delete wb_mgr;
 	delete this->log;
 	server->Shutdown(300);
-	SLNet::RakPeerInterface::DestroyInstance(server);
+	RakNet::RakPeerInterface::DestroyInstance(server);
 	pSrv=NULL;
 }
 bool CGmpServ::Init()
@@ -114,15 +114,15 @@ bool CGmpServ::Init()
 	this->wb_mgr = new CWBFile();
 	this->classmgr = new CClassManager;
 	server->SetIncomingPassword(this->serverPassword.c_str(), (int)this->serverPassword.length());
-	server->SetTimeoutTime(1000,SLNet::UNASSIGNED_SYSTEM_ADDRESS);  //1s styknie nie?
+	server->SetTimeoutTime(1000,RakNet::UNASSIGNED_SYSTEM_ADDRESS);  //1s styknie nie?
 	server->SetMaximumIncomingConnections(this->slots);
-	SLNet::SocketDescriptor socketDescriptors[2];
+	RakNet::SocketDescriptor socketDescriptors[2];
 
 	socketDescriptors[0].port=game_port;
 	socketDescriptors[0].socketFamily=AF_INET; // Klient
 	if(!this->host_addr.empty()) memcpy(socketDescriptors[0].hostAddress, this->host_addr.c_str(), this->host_addr.length()+1);
 
-	bool b = server->Startup(this->slots, socketDescriptors, 1)==SLNet::RAKNET_STARTED;
+	bool b = server->Startup(this->slots, socketDescriptors, 1)==RakNet::RAKNET_STARTED;
 	if (!b) return false;
 	
 	server->SetOccasionalPing(true);
@@ -130,22 +130,22 @@ bool CGmpServ::Init()
 	server->GetSockets(sockets);
 	log->Write(LOG_NORMAL, "GMP server(Walpurgisnacht) started!");
 	LoadBanList();
-	SLNet::RakThread::Create(STime::RunClock, NULL);
-	SLNet::RakThread::Create(CGmpServ::AddToPublicListHTTP, NULL);
+	RakNet::RakThread::Create(STime::RunClock, NULL);
+	RakNet::RakThread::Create(CGmpServ::AddToPublicListHTTP, NULL);
 	this->last_stand_timer=0;
 	return true;
 }
 
 bool CGmpServ::Send(std::string message)	//ktoś z was ma zamiar tej funkcji używać?
 {
-	server->Send(message.c_str(), (int)message.length()+1, HIGH_PRIORITY, RELIABLE_ORDERED, 0, SLNet::UNASSIGNED_SYSTEM_ADDRESS, true);
+	server->Send(message.c_str(), (int)message.length()+1, HIGH_PRIORITY, RELIABLE_ORDERED, 0, RakNet::UNASSIGNED_SYSTEM_ADDRESS, true);
 	return true;
 }
 bool CGmpServ::Receive(sPacket & packet)
 {
 	std::string szLog;
 	szLog.reserve(256);
-	SLNet::Packet *p = server->Receive();
+	RakNet::Packet *p = server->Receive();
 	if(p==NULL)return false;
 	unsigned char packetIdentifier = GetPacketIdentifier(p);
 	switch (packetIdentifier)
@@ -254,15 +254,15 @@ bool CGmpServ::Receive(sPacket & packet)
 	if(!szLog.empty()) szLog.clear();
 	return true;
 }
-unsigned char CGmpServ::GetPacketIdentifier(SLNet::Packet *p)
+unsigned char CGmpServ::GetPacketIdentifier(RakNet::Packet *p)
 {
 	if (p==0)
 		return 255;
 
 	if ((unsigned char)p->data[0] == ID_TIMESTAMP)
 	{
-		RakAssert(p->length > sizeof(SLNet::MessageID) + sizeof(SLNet::Time));
-		return (unsigned char) p->data[sizeof(SLNet::MessageID) + sizeof(SLNet::Time)];
+		RakAssert(p->length > sizeof(RakNet::MessageID) + sizeof(RakNet::Time));
+		return (unsigned char) p->data[sizeof(RakNet::MessageID) + sizeof(RakNet::Time)];
 	}
 	else
 		return (unsigned char) p->data[0];
@@ -310,7 +310,7 @@ void CGmpServ::SaveBanList(){
 	log->Write(LOG_NORMAL, "Bans written to bans.txt.");
 }
 
-void CGmpServ::DeleteFromPlayerList(SLNet::RakNetGUID guid){
+void CGmpServ::DeleteFromPlayerList(RakNet::RakNetGUID guid){
 	for(size_t i=0; i<players.size(); i++){
 		if(guid.g==players[i].id.g){
 			if(players[i].is_ingame){
@@ -321,7 +321,7 @@ void CGmpServ::DeleteFromPlayerList(SLNet::RakNetGUID guid){
 	}
 }
 
-void CGmpServ::HandleFileReq(SLNet::Packet* p){
+void CGmpServ::HandleFileReq(RakNet::Packet* p){
 	//TO DO
 	if(p){
 		unsigned char val[1024];
@@ -398,7 +398,7 @@ void CGmpServ::HandleFileReq(SLNet::Packet* p){
 	}
 }
 
-void CGmpServ::SomeoneJoinGame(SLNet::Packet* p){
+void CGmpServ::SomeoneJoinGame(RakNet::Packet* p){
 	size_t pos_in_list=FindIDOnList(p->guid.g);
 	if(!allow_modification){
 		if(!players[pos_in_list].passed_crc_test){
@@ -503,7 +503,7 @@ size_t CGmpServ::FindIDOnList(uint64_t guid){
 	return ret;
 }
 
-void CGmpServ::HandlePlayerUpdate(SLNet::Packet* p){
+void CGmpServ::HandlePlayerUpdate(RakNet::Packet* p){
 	double rp, x1, y1;  //<- zmienne do sprawdzenia czy dana osoba mieści się w kole o r=5000.0f
 	size_t pos_in_list=FindIDOnList(p->guid.g);
 	size_t forbidenid=0;
@@ -589,7 +589,7 @@ void CGmpServ::HandlePlayerUpdate(SLNet::Packet* p){
 	}
 }
 
-void CGmpServ::MakeHPDiff(SLNet::Packet* p){
+void CGmpServ::MakeHPDiff(RakNet::Packet* p){
 	size_t forbidenid=0, pwgd;
 	uint64_t player_id;
 	short diffed_hp;
@@ -668,7 +668,7 @@ void CGmpServ::MakeHPDiff(SLNet::Packet* p){
 	}
 }
 
-void CGmpServ::HandleNormalMsg(SLNet::Packet* p){
+void CGmpServ::HandleNormalMsg(RakNet::Packet* p){
 	size_t forbiden_id=0;
 	std::string szMsg;
 	forbiden_id= ~forbiden_id;
@@ -698,7 +698,7 @@ void CGmpServ::HandleNormalMsg(SLNet::Packet* p){
 	szMsg.clear();
 }
 
-void CGmpServ::HandleWhisp(SLNet::Packet* p){
+void CGmpServ::HandleWhisp(RakNet::Packet* p){
 	size_t forbiden_id=0;
 	forbiden_id= ~forbiden_id;
 	if(FindIDOnList(p->guid.g)==forbiden_id) return;
@@ -719,7 +719,7 @@ void CGmpServ::HandleWhisp(SLNet::Packet* p){
 	szMsg.clear();
 }
 
-void CGmpServ::HandleCastSpell(SLNet::Packet* p, bool Target){
+void CGmpServ::HandleCastSpell(RakNet::Packet* p, bool Target){
 	size_t forbiden_id=0;
 	std::string szMsg;
 	forbiden_id= ~forbiden_id;
@@ -753,7 +753,7 @@ void CGmpServ::HandleCastSpell(SLNet::Packet* p, bool Target){
 	szMsg.clear();
 }
 
-void CGmpServ::HandleDropItem(SLNet::Packet* p){
+void CGmpServ::HandleDropItem(RakNet::Packet* p){
 	size_t forbiden_id=0;
 	std::string szMsg;
 	forbiden_id= ~forbiden_id;
@@ -776,7 +776,7 @@ void CGmpServ::HandleDropItem(SLNet::Packet* p){
 	szMsg.clear();
 }
 
-void CGmpServ::HandleTakeItem(SLNet::Packet* p){
+void CGmpServ::HandleTakeItem(RakNet::Packet* p){
 	if(!allow_dropitems) return;
 	size_t forbiden_id=0;
 	std::string szMsg;
@@ -797,7 +797,7 @@ void CGmpServ::HandleTakeItem(SLNet::Packet* p){
 	szMsg.clear();
 }
 
-void CGmpServ::HandleRMConsole(SLNet::Packet* p){
+void CGmpServ::HandleRMConsole(RakNet::Packet* p){
 	std::string szLog;
 	size_t forbiden_id=0;
 	szLog.reserve(512);
@@ -1156,12 +1156,12 @@ RAK_THREAD_DECLARATION(CGmpServ::AddToPublicListHTTP){
 	return 0;
 }
 
-void CGmpServ::HandleGameInfo(SLNet::Packet *p){
+void CGmpServ::HandleGameInfo(RakNet::Packet *p){
 	SendGameInfo(p->guid);
 }
 
-//void CGmpServ::HandleGameInfo(SLNet::Packet *p){
-void CGmpServ::SendGameInfo(SLNet::RakNetGUID who){
+//void CGmpServ::HandleGameInfo(RakNet::Packet *p){
+void CGmpServ::SendGameInfo(RakNet::RakNetGUID who){
 	std::string szData;
 	int len=7;
 	szData.reserve(64);
@@ -1177,7 +1177,7 @@ void CGmpServ::SendGameInfo(SLNet::RakNetGUID who){
 	szData.clear();
 }
 
-void CGmpServ::HandleMapNameReq(SLNet::Packet *p){
+void CGmpServ::HandleMapNameReq(RakNet::Packet *p){
 	std::string szData;
 	szData.reserve(256);
 	*((unsigned char*)szData.data())=PT_MAP_NAME;

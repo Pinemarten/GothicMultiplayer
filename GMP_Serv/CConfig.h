@@ -26,7 +26,7 @@ SOFTWARE.
 #ifndef CCONFIG_H
 #define	CCONFIG_H
 #include <string>
-#include <slikenet/thread.h>
+#include <RakThread.h>
 
 union STime{
 	int time;

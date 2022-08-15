@@ -69,5 +69,5 @@ set (CLIENT_SOURCES
 )
 
 add_library(GMP SHARED ${CLIENT_SOURCES})
-target_link_libraries(GMP PRIVATE common g2api ${InjectMage} SLikeNet ${BugTrap} SharedLib)
+target_link_libraries(GMP PRIVATE common g2api ${InjectMage} RakNet ${BugTrap} SharedLib wsock32 ws2_32 Iphlpapi)
 target_include_directories(GMP PRIVATE ${InjectMage_INCLUDE_DIR} ${BugTrap_INCLUDE_DIR} ${CPP_HTTPLIB_INCLUDE_DIRS})
