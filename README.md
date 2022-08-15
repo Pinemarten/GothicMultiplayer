@@ -7,14 +7,21 @@ The code is ~10 years old and belongs in a museum or on a comedy show (due to it
 I'm posting it here more as a curiosity than something usable.
 
 # How to build
-First, init submodules
+## Prerequsities
+* vcpkg - Gothic Multiplayer build system uses vcpkg dependency manager, follow the instructions from https://vcpkg.io/en/getting-started.html to install vcpkg.
+* git bash - If you're on Windows, git bash is recommended to execute the commands from below.
+* cmake (https://cmake.org/)
+## Instructions
 ```bash
-git submodule update --init --recursive
+git clone https://github.com/Pinemarten/GothicMultiplayer2011.git
+cd GothicMultiplayer2011
+mkdir build
+cd build
+cmake .. -A WIN32
+cmake --build . --config Release
 ```
-Launch GMP.sln in Visual Studio 2022 and build all projects.
 
-The original code was built in Visual Studio 2010, and binaries built with 2022 may probably not work with Gothic out of the box.
-I did not try to run the server or the client (.dll).
+
 If you want to run this, you need to figure it out yourself.
 
 # Credits

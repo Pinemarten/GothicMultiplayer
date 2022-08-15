@@ -34,7 +34,7 @@ SOFTWARE.
 #include "patch.h"
 #include "CMainMenu.h"
 #include <time.h>
-#include "..\Shared\SharedUtil.h"
+#include "SharedUtil.h"
 #include "CLocalPlayer.h"
 
 CIngame *global_ingame=NULL;

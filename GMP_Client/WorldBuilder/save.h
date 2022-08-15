@@ -25,7 +25,7 @@ SOFTWARE.
 
 #pragma once
 #include <vector>
-#include "common.h"
+#include "../common.h"
 #include "g2Api.h"
 #include <string>
 using namespace std;

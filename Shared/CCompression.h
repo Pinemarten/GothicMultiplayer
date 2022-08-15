@@ -33,7 +33,7 @@ SOFTWARE.
 #define UINT32 unsigned int
 #endif
 
-#include "../common/singleton.h"
+#include "singleton.h"
 #include "zlib.h"
 
 class CCompression : public TSingleton<CCompression>{

@@ -32,6 +32,7 @@ SOFTWARE.
 **	Description:	Multiplayer main menu functionallity	 				**
 **																			**
 *****************************************************************************/
+
 #include "CGmpClient.h"
 #include "CLanguage.h"
 #include "keyboard.h"
@@ -47,7 +48,7 @@ SOFTWARE.
 #include "CUpdate.h"
 #include "CSyncFuncs.h"
 #include "WorldBuilder\CBuilder.h"
-#include "..\Shared\SharedUtil.h"
+#include "SharedUtil.h"
 #include "ExtendedServerList.h"
 
 extern CGmpClient *client;

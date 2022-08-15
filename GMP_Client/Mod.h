@@ -24,7 +24,8 @@ SOFTWARE.
 */
 
 #pragma once
-#include <common.h>
+
+#include "common.h"
 
 void Initialize(void);
 DWORD WINAPI CheckForBadApps(PVOID pvParam);

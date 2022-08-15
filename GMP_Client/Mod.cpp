@@ -38,7 +38,7 @@ SOFTWARE.
 #include "CActiveAniID.h"
 #include "CIngame.h"
 #include <ctime>
-#include "../GMP_Serv/CCompression.h"
+#include "CCompression.h"
 
 #pragma warning(disable:4996)
 CGmpClient* client=NULL;
