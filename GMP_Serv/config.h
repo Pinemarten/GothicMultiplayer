@@ -23,60 +23,54 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#ifndef CCONFIG_H
-#define	CCONFIG_H
+#pragma once
+
+#include <atomic>
+#include <cassert>
+#include <cstdint>
 #include <string>
+#include <unordered_map>
+#include <variant>
+
 #include <RakThread.h>
+#include <toml.hpp>
 
-union STime{
-	int time;
-	struct{
-		unsigned short day;
-		unsigned char hour ,min;
-	};
+struct STime
+{
+  std::uint16_t day_ = 1;
+  std::uint8_t hour_ = 8;
+  std::uint8_t min_ = 0;
 
-	static RAK_THREAD_DECLARATION(RunClock);
+  void from_toml(const toml::value& v)
+  {
+    day_ = toml::find<std::uint16_t>(v, "day");
+    hour_ = toml::find<std::uint8_t>(v, "hour");
+    min_ = toml::find<std::uint8_t>(v, "min");
+    return;
+  }
+
+  static RAK_THREAD_DECLARATION(RunClock);
+
+  static STime GetCurrentGothicTime();
+  static void SetCurrentGothicTime(STime new_time);
 };
 
-class CConfig {
+class Config
+{
 public:
-	CConfig(void);
-	~CConfig(void);
-private:
-	void SetDefault(void);
+  Config();
+
+  template <typename T> const T& Get(const std::string& key)
+  {
+    auto it = values_.find(key);
+    assert(it != values_.end());
+    assert(std::holds_alternative<T>(it->second));
+
+    return std::get<T>(it->second);
+  }
+
 protected:
-	void Load(void);
-	void Unload(void);
-	void ParseCmdLine(int argc, char **argv);
-	
-	std::string name;
-	std::string logfile;
-	std::string admin_passwd;
-	std::string map;
-	std::string loop_msg;
-	std::string host_addr;
-	unsigned short game_port;
-	unsigned short quick_pots;
-	int slots;
-	int respawn_time;
-	int loop_time;
-	int is_public;
-	STime game_time;
-	short hp_regeneration;
-	short mp_regeneration;
-	short game_mode;
-	short log_mode;
-	short allow_modification;
-	short allow_dropitems;
-	short be_unconcious_before_dead;	//specjalnie na życzenie ojczulka
-	short real_chat;	//tylko słychać z bliska? RP fanboy related
-	short hide_map;		//wyłącz mape
-	short observation;
-	unsigned char map_md5[16];
-#ifndef WIN32
-	short daemon;
-#endif
+  void Load();
+
+  std::unordered_map<std::string, std::variant<std::string, std::int32_t, bool, STime>> values_;
 };
-
-#endif
-

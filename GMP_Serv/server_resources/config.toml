@@ -1,0 +1,9 @@
+name = "Gothic Multiplayer Server"
+port = 57005
+map = "NEWWORLD\\NEWWORLD.ZEN"
+slots = 23
+game_time.day = 1
+game_time.hour = 13
+game_time.min = 23
+allow_modification = true
+message_of_the_day = "Welcome to my server!"

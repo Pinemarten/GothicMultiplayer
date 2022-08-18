@@ -1,0 +1,10 @@
+---
+BasedOnStyle: LLVM
+---
+Language: Cpp
+ColumnLimit: 100
+BreakBeforeBraces: Allman
+AccessModifierOffset: -2
+AllowShortFunctionsOnASingleLine: None
+AllowShortIfStatementsOnASingleLine: Never
+PointerAlignment: Left

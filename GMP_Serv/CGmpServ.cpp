@@ -66,29 +66,18 @@ const char* INVALIDPARAMETER="Invalid command parameter!";
 #define MAX_KILL_TXT 3
 const char* KILLED[MAX_KILL_TXT]={"K.O.","R.I.P.","FATALITY"};
 
-CGmpServ::CGmpServ(const char* password, int argc, char **argv){
-/*#ifndef WIN32
-	if(this->daemon) System::MakeMeDaemon(false);
-#endif*/
-	this->log = new CLog(this->log_mode, this->logfile.c_str());
-	server = RakNet::RakPeerInterface::GetInstance();
-	this->serverPassword.append(password);
-	pSrv=this;
-	arg_count=argc;
-	arg_vec=argv;
-}
-
-CGmpServ::CGmpServ(int port, const char * password, unsigned short maxConnections)
+CGmpServ::CGmpServ(const char* password, int argc, char** argv)
 {
-/*#ifndef WIN32
-	if(this->daemon) System::MakeMeDaemon(false);
-#endif*/
-	this->log = new CLog(this->log_mode, this->logfile.c_str());
-	server = RakNet::RakPeerInterface::GetInstance();
-	this->game_port = static_cast<unsigned short>(port);
-	this->serverPassword.append(password);
-	this->slots = (int)maxConnections;
-	pSrv=this;
+  /*#ifndef WIN32
+          if(this->daemon) System::MakeMeDaemon(false);
+  #endif*/
+  this->log =
+      new CLog(config_.Get<std::int32_t>("log_mode"), config_.Get<std::string>("log_file").c_str());
+  server = RakNet::RakPeerInterface::GetInstance();
+  this->serverPassword.append(password);
+  pSrv = this;
+  arg_count = argc;
+  arg_vec = argv;
 }
 
 CGmpServ::~CGmpServ(void)
@@ -106,7 +95,6 @@ bool CGmpServ::Init()
 #ifndef WIN32
     if(this->daemon) System::MakeMeDaemon(false);
 #endif
-	if(arg_count>1) ParseCmdLine(arg_count, arg_vec);
 	CPermissions *perms=new CPermissions();
 	perms=NULL;
 	this->spam_time=time(NULL)+10;
@@ -115,14 +103,19 @@ bool CGmpServ::Init()
 	this->classmgr = new CClassManager;
 	server->SetIncomingPassword(this->serverPassword.c_str(), (int)this->serverPassword.length());
 	server->SetTimeoutTime(1000,RakNet::UNASSIGNED_SYSTEM_ADDRESS);  //1s styknie nie?
-	server->SetMaximumIncomingConnections(this->slots);
+
+	auto slots = config_.Get<std::int32_t>("slots");
+	allow_modification = config_.Get<bool>("allow_modification");
+	loop_msg = config_.Get<std::string>("message_of_the_day");
+
+	server->SetMaximumIncomingConnections(slots);
 	RakNet::SocketDescriptor socketDescriptors[2];
 
-	socketDescriptors[0].port=game_port;
+	socketDescriptors[0].port = static_cast<short>(config_.Get<std::int32_t>("port"));
 	socketDescriptors[0].socketFamily=AF_INET; // Klient
-	if(!this->host_addr.empty()) memcpy(socketDescriptors[0].hostAddress, this->host_addr.c_str(), this->host_addr.length()+1);
+	// if(!this->host_addr.empty()) memcpy(socketDescriptors[0].hostAddress, this->host_addr.c_str(), this->host_addr.length()+1);
 
-	bool b = server->Startup(this->slots, socketDescriptors, 1)==RakNet::RAKNET_STARTED;
+	bool b = server->Startup(slots, socketDescriptors, 1)==RakNet::RAKNET_STARTED;
 	if (!b) return false;
 	
 	server->SetOccasionalPing(true);
@@ -201,7 +194,8 @@ bool CGmpServ::Receive(sPacket & packet)
 		break;
 	case PT_CHECKSUM:
 		if(!this->allow_modification){
-			if((!memcmp(p->data+2, map_md5, 16)) && (!p->data[1])){
+			auto map_md5 = config_.Get<std::string>("map_md5");
+			if((!memcmp(p->data+2, map_md5.data(), 16)) && (!p->data[1])){
 				players[FindIDOnList(p->guid.g)].passed_crc_test=1;
 				unsigned char val[2]={PT_CHECKSUM, 0xFF};
 				server->Send((const char*)val, 2, MEDIUM_PRIORITY, RELIABLE_ORDERED, 0, p, false);
@@ -611,7 +605,7 @@ void CGmpServ::MakeHPDiff(RakNet::Packet* p){
 			if(players[pwgd].health>classmgr->class_array[players[pwgd].char_class].abilities[HP]) players[pwgd].health=classmgr->class_array[players[pwgd].char_class].abilities[HP];
 		}
 		else{
-			if(be_unconcious_before_dead){
+			if(config_.Get<bool>("be_unconcious_before_dead")){
 				size_t attacker=FindIDOnList(p->guid.g);
 				switch(players[attacker].figth_pos){
 					case 1:
@@ -680,7 +674,7 @@ void CGmpServ::HandleNormalMsg(RakNet::Packet* p){
 	*((unsigned char*)szMsg.data())=p->data[0];
 	memcpy((char*)szMsg.data()+sizeof(uint64_t)+1, p->data+1, p->length-1);
 	memcpy((char*)szMsg.data()+1,(const char*)(&p->guid.g), sizeof(uint64_t));
-	if(!real_chat) for(size_t i=0; i<players.size(); i++){
+	if(!config_.Get<bool>("real_chat")) for(size_t i=0; i<players.size(); i++){
 		if(players[i].is_ingame) server->Send((const char*)szMsg.data(), p->length+sizeof(uint64_t), LOW_PRIORITY, RELIABLE_ORDERED, 5, players[i].id, false);
 	}
 #define EQ(x) (players[i].pos[x]-players[stranger].pos[x])
@@ -777,7 +771,7 @@ void CGmpServ::HandleDropItem(RakNet::Packet* p){
 }
 
 void CGmpServ::HandleTakeItem(RakNet::Packet* p){
-	if(!allow_dropitems) return;
+	if(!config_.Get<bool>("allow_dropitems")) return;
 	size_t forbiden_id=0;
 	std::string szMsg;
 	forbiden_id= ~forbiden_id;
@@ -805,6 +799,7 @@ void CGmpServ::HandleRMConsole(RakNet::Packet* p){
 	if(forbiden_id==FindIDOnList(p->guid.g)) return;
 	size_t rid=FindIDOnList(p->guid.g);
 	if(!memcmp("passwd ", p->data+1, 7)){
+		auto admin_passwd = config_.Get<std::string>("admin_passwd");
 		if(memcmp(p->data+8, admin_passwd.c_str(), admin_passwd.length()+1)){
 			players[rid].admin_passwd++;
 			if(players[rid].admin_passwd>3){
@@ -994,18 +989,19 @@ void CGmpServ::HandleRMConsole(RakNet::Packet* p){
 			char buffer[16];
 			unsigned short h,m;
 			if(sscanf((char*)p->data+1, "%s%hu%hu", buffer, &h, &m)==3){
-				game_time.hour=static_cast<unsigned char>(h);
-				game_time.min=static_cast<unsigned char>(m);
-				game_time.day++;
-				if(game_time.day>30000) game_time.day=1;
+				STime new_time;
+				new_time.hour_=static_cast<unsigned char>(h);
+				new_time.min_=static_cast<unsigned char>(m);
+				new_time.day_++;
+				if(new_time.day_ > 30000) new_time.day_=1;
 				for(size_t i=0; i<players.size(); i++){
 					if(players[i].is_ingame){
 						*((unsigned char*)szLog.data())=PT_GAME_INFO;
-						memcpy((char*)szLog.data()+1, &this->game_time.time, 4);
-						*((unsigned char*)szLog.data()+5)=(unsigned char)game_mode;
+						memcpy((char*)szLog.data()+1, &new_time.day_, 4);
+						*((unsigned char*)szLog.data()+5)=(unsigned char)config_.Get<std::int32_t>("game_mode");
 						*((unsigned char*)szLog.data()+6)=0;
-						if(quick_pots) *((unsigned char*)szLog.data()+6)|=QUICK_POTS;
-						if(allow_dropitems) *((unsigned char*)szLog.data()+6)|=DROP_ITEMS;
+						if(config_.Get<bool>("quick_pots")) *((unsigned char*)szLog.data()+6)|=QUICK_POTS;
+						if(config_.Get<bool>("allow_dropitems")) *((unsigned char*)szLog.data()+6)|=DROP_ITEMS;
 						server->Send((char*)szLog.data(), 7, IMMEDIATE_PRIORITY, RELIABLE, 9, players[i].id, false);
 					}
 				}
@@ -1101,7 +1097,8 @@ void CGmpServ::HandleRMConsole(RakNet::Packet* p){
 			}
 		} else if(!memcmp(p->data+1, HP_REGEN, strlen(HP_REGEN))){
 			if(!players[rid].has_admin)	if(!CPermissions::GetInstance()->IsPermitted(HP_REGEN)) goto eoh;
-			if(sscanf((const char*)p->data+1+strlen(HP_REGEN), "%hd", &hp_regeneration)!=1){
+			auto hp_regeneration = config_.Get<std::int32_t>("hp_regeneration");
+			if(sscanf((const char*)p->data+1+strlen(HP_REGEN), "%d", &hp_regeneration)!=1){
 				goto eoh;
 			}
 			*((unsigned char*)szLog.data())=PT_RCON;
@@ -1113,7 +1110,8 @@ void CGmpServ::HandleRMConsole(RakNet::Packet* p){
 			//sprintf((char*)szLog.data()+1, "AD
 		}else if(!memcmp(p->data+1, MP_REGEN, strlen(MP_REGEN))){
 			if(!players[rid].has_admin) if(!CPermissions::GetInstance()->IsPermitted(MP_REGEN)) goto eoh;
-			if(sscanf((const char*)p->data+1+strlen(MP_REGEN), "%hd", &mp_regeneration)!=1) goto eoh;
+			auto mp_regeneration = config_.Get<std::int32_t>("mp_regeneration");
+			if(sscanf((const char*)p->data+1+strlen(MP_REGEN), "%d", &mp_regeneration)!=1) goto eoh;
 			*((unsigned char*)szLog.data())=PT_RCON;
 			memcpy((char*)szLog.data()+1, OK, strlen(OK)+1);
 			server->Send(szLog.data(), static_cast<int>(2+strlen(OK)), MEDIUM_PRIORITY, RELIABLE, 13, p->guid, false);
@@ -1140,20 +1138,30 @@ void MakeHTTPReq(char *file)
 	cli.Get(file);
 }
 
-RAK_THREAD_DECLARATION(CGmpServ::AddToPublicListHTTP){
-	char *szBuff=new char[256];
-	memset(szBuff, 0, 256);
-	while(pSrv){
-        if(pSrv->IsPublic()){
-		for(size_t i=0; i<=strlen(pSrv->name.c_str()); i++) if((*((unsigned char*)pSrv->name.c_str()+i)<0x20) && (*((unsigned char*)pSrv->name.c_str()+i)!=0x07)) *((unsigned char*)pSrv->name.data()+i)=0;
-		memset(szBuff, 0, 256);
-		sprintf(szBuff, "%s?sn=%s&port=%hu&crt=%u&mx=%d&map=%s", lobbyFile, pSrv->name.c_str(), pSrv->game_port, static_cast<unsigned int>(pSrv->players.size()), pSrv->slots, pSrv->map.c_str());
-        MakeHTTPReq(szBuff);
-        }
-		RakSleep(5000);
-	}
-	delete [] szBuff;
-	return 0;
+RAK_THREAD_DECLARATION(CGmpServ::AddToPublicListHTTP)
+{
+  char* szBuff = new char[256];
+  memset(szBuff, 0, 256);
+  while (pSrv)
+  {
+    if (pSrv->IsPublic())
+    {
+      auto server_name = pSrv->config_.Get<std::string>("name");
+      for (size_t i = 0; i <= strlen(server_name.c_str()); i++)
+        if ((*((unsigned char*)server_name.c_str() + i) < 0x20) &&
+            (*((unsigned char*)server_name.c_str() + i) != 0x07))
+          *((unsigned char*)server_name.data() + i) = 0;
+      memset(szBuff, 0, 256);
+      sprintf(
+          szBuff, "%s?sn=%s&port=%d&crt=%u&mx=%d&map=%s", lobbyFile, server_name.c_str(),
+          pSrv->config_.Get<std::int32_t>("port"), static_cast<unsigned int>(pSrv->players.size()),
+          pSrv->config_.Get<std::int32_t>("slots"), pSrv->config_.Get<std::string>("map").c_str());
+      MakeHTTPReq(szBuff);
+    }
+    RakSleep(5000);
+  }
+  delete[] szBuff;
+  return 0;
 }
 
 void CGmpServ::HandleGameInfo(RakNet::Packet *p){
@@ -1166,45 +1174,59 @@ void CGmpServ::SendGameInfo(RakNet::RakNetGUID who){
 	int len=7;
 	szData.reserve(64);
 	*((unsigned char*)szData.data())=PT_GAME_INFO;
-	memcpy((char*)szData.data()+1, &this->game_time.time, 4);
-	*((unsigned char*)szData.data()+5)=(unsigned char)game_mode;
+	STime game_time = STime::GetCurrentGothicTime();
+	memcpy((char*)szData.data()+1, &game_time, 4);
+	*((unsigned char*)szData.data()+5)=(unsigned char)config_.Get<std::int32_t>("game_mode");;
 	*((unsigned char*)szData.data()+6)=0;
-	if(quick_pots) *((unsigned char*)szData.data()+6)|=QUICK_POTS;
-	if(allow_dropitems) *((unsigned char*)szData.data()+6)|=DROP_ITEMS;
-	if(hide_map) *((unsigned char*)szData.data()+6)|=HIDE_MAP;
-	if(mp_regeneration){ *((unsigned char*)szData.data()+6)|=MANA_REGENERATION; memcpy((char*)szData.data()+len, &mp_regeneration, 2); len+=2;}
+	if(config_.Get<bool>("quick_pots")) *((unsigned char*)szData.data()+6)|=QUICK_POTS;
+	if(config_.Get<bool>("allow_dropitems")) *((unsigned char*)szData.data()+6)|=DROP_ITEMS;
+	if(config_.Get<bool>("hide_map")) *((unsigned char*)szData.data()+6)|=HIDE_MAP;
+	auto mp_regeneration = (short)config_.Get<std::int32_t>("mp_regeneration");
+	if(config_.Get<bool>("mp_regeneration")){ *((unsigned char*)szData.data()+6)|=MANA_REGENERATION; memcpy((char*)szData.data()+len, &mp_regeneration, 2); len+=2;}
 	server->Send((char*)szData.data(), len, MEDIUM_PRIORITY, RELIABLE, 9, who, false);
 	szData.clear();
 }
 
-void CGmpServ::HandleMapNameReq(RakNet::Packet *p){
-	std::string szData;
-	szData.reserve(256);
-	*((unsigned char*)szData.data())=PT_MAP_NAME;
-	memcpy((char*)szData.data()+1, this->map.c_str(), strlen(this->map.data())+1);
-	server->Send((char*)szData.data(), static_cast<int>(2+strlen(this->map.data())), MEDIUM_PRIORITY, RELIABLE, 9, p->guid, false);
-	szData.clear();
+void CGmpServ::HandleMapNameReq(RakNet::Packet* p)
+{
+  std::string szData;
+  szData.reserve(256);
+  *((unsigned char*)szData.data()) = PT_MAP_NAME;
+  auto map = config_.Get<std::string>("map");
+  memcpy((char*)szData.data() + 1, map.c_str(), strlen(map.data()) + 1);
+  server->Send((char*)szData.data(), static_cast<int>(2 + strlen(map.data())), MEDIUM_PRIORITY,
+               RELIABLE, 9, p->guid, false);
+  szData.clear();
 }
-void CGmpServ::SendDisconnectionInfo(uint64_t disconnected_id){
-	std::string szData;
-	szData.reserve(32);
-	*((unsigned char*)szData.data())=PT_LEFT_GAME;
-	memcpy((char*)szData.data()+1, &disconnected_id, sizeof(uint64_t));
-	for(size_t i=0; i<players.size(); i++){
-		if(players[i].is_ingame)
-			if(players[i].id.g!=disconnected_id){
-				server->Send(szData.data(), 1+sizeof(uint64_t), IMMEDIATE_PRIORITY, RELIABLE, 8, players[i].id, false);
-			}
-	}
-	szData.clear();
+void CGmpServ::SendDisconnectionInfo(uint64_t disconnected_id)
+{
+  std::string szData;
+  szData.reserve(32);
+  *((unsigned char*)szData.data()) = PT_LEFT_GAME;
+  memcpy((char*)szData.data() + 1, &disconnected_id, sizeof(uint64_t));
+  for (size_t i = 0; i < players.size(); i++)
+  {
+    if (players[i].is_ingame)
+      if (players[i].id.g != disconnected_id)
+      {
+        server->Send(szData.data(), 1 + sizeof(uint64_t), IMMEDIATE_PRIORITY, RELIABLE, 8,
+                     players[i].id, false);
+      }
+  }
+  szData.clear();
 }
-bool CGmpServ::IsPublic(){ return (is_public)?true:false;}
+
+bool CGmpServ::IsPublic()
+{
+  return (config_.Get<bool>("public")) ? true : false;
+}
 
 void CGmpServ::DoRespawns(){
-	if(respawn_time){
+	auto respawn_time = config_.Get<std::int32_t>("respawn_time_seconds");
+	if(respawn_time > 0){
 		if(respawn_time&0x80000000){
 			//last stand
-			switch(game_mode){
+			switch(config_.Get<std::int32_t>("game_mode")){
 				case 1:	//TDM
 					if((!last_stand_timer) && (players.size())){
 						const char *living_team=NULL;
@@ -1278,7 +1300,8 @@ void CGmpServ::DoRespawns(){
 }
 
 void CGmpServ::SendSpamMessage(){
-	if(loop_time>0){
+	auto loop_time = config_.Get<std::int32_t>("message_of_the_day_interval_seconds");
+	if(loop_time > 0){
 		if(spam_time<time(NULL)){
 			spam_time=time(NULL)+loop_time;
 			if(players.size()){
@@ -1327,6 +1350,7 @@ CGmpServ::sPlayer* CGmpServ::FindPlayer(const char *nickname){
 }
 
 void CGmpServ::RegenerationHPMP(){	//hp is server side
+	auto hp_regeneration = (short)config_.Get<std::int32_t>("hp_regeneration");
 	if(!(hp_regeneration)) return;
 	if(regen_time==time(NULL)) return;
 	regen_time=time(NULL);

@@ -23,7 +23,7 @@
 
 set (SERVER_SOURCES
   CClasses.cpp
-  CConfig.cpp        
+  config.cpp        
   CGenericFile.cpp   
   CGmpServ.cpp       
   CLog.cpp

@@ -39,7 +39,7 @@ SOFTWARE.
 #include <string>
 #include <vector>
 #include <ctime>
-#include "CConfig.h"
+#include "config.h"
 #include "CSpawnList.h"
 #include "CWBFile.h"
 #include "CClasses.h"   //CClassManager
@@ -57,7 +57,7 @@ enum CONFIG_FLAGS{
 	MANA_REGENERATION	= 0x08,
 };
 
-class CGmpServ:CConfig
+class CGmpServ
 {
 public:
 	enum PL_FLAGS{
@@ -117,7 +117,7 @@ public:
 	};
 public:
 	CGmpServ(const char *password, int argc, char **argv);
-	CGmpServ(int port, const char * password, unsigned short maxConnections);
+
 	~CGmpServ(void);
 	static RAK_THREAD_DECLARATION(AddToPublicListHTTP);
 	bool Send(std::string message);
@@ -169,4 +169,7 @@ private:
 	RakNet::RakNetStatistics *rss;
 	std::vector<sPlayer> players;
 	DataStructures::List<RakNet::RakNetSocket2* > sockets;
+	bool allow_modification = false;
+	std::string loop_msg;
+	Config config_;
 };
