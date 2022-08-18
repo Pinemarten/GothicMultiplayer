@@ -1152,7 +1152,7 @@ RAK_THREAD_DECLARATION(CGmpServ::AddToPublicListHTTP){
         }
 		RakSleep(5000);
 	}
-	delete szBuff;
+	delete [] szBuff;
 	return 0;
 }
 

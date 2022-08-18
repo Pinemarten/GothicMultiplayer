@@ -32,9 +32,9 @@ static const unsigned short crc16_tab[256]={0x0FF4,0xB694,0x18EA,0xB549,0x0EA5,0
 
 //jakiœ twór przypominaj¹cy liczenie crc-16
 unsigned short GetCRC16(unsigned char* data, int length){
-	register unsigned short val=0xFFFF;
-	register unsigned char *ptr=data;
-	register int i=length;
+	unsigned short val=0xFFFF;
+	unsigned char *ptr=data;
+	int i=length;
 	while(0!=i--){
 		val=static_cast<unsigned short>((val<<8) ^ crc16_tab[(val>>8) ^ *ptr++]);
 	}

@@ -1,3 +1,5 @@
+find_package (Threads REQUIRED)
+
 set (RAKNET_SOURCES
   Source/Base64Encoder.cpp
   Source/BitStream.cpp
@@ -80,7 +82,6 @@ set (RAKNET_SOURCES
   Source/ReadyEvent.cpp
   Source/RelayPlugin.cpp
   Source/ReliabilityLayer.cpp
-  Source/ReplicaManager3.cpp
   Source/Router2.cpp
   Source/RPC4Plugin.cpp
   Source/SecureHandshake.cpp
@@ -112,4 +113,5 @@ set (RAKNET_SOURCES
 )
 
 add_library(RakNet STATIC ${RAKNET_SOURCES})
+target_link_libraries(RakNet PRIVATE Threads::Threads)
 target_include_directories(RakNet PUBLIC Source)
