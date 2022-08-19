@@ -83,9 +83,6 @@ CGmpServ::CGmpServ(const char* password, int argc, char** argv)
 {
 	InitializeLogger(config_);
 	config_.LogConfigValues();
-  /*#ifndef WIN32
-          if(this->daemon) System::MakeMeDaemon(false);
-  #endif*/
   this->log =
       new CLog(config_.Get<std::int32_t>("log_mode"), config_.Get<std::string>("log_file").c_str());
   server = RakNet::RakPeerInterface::GetInstance();
@@ -108,7 +105,10 @@ CGmpServ::~CGmpServ(void)
 bool CGmpServ::Init()
 {
 #ifndef WIN32
-    if(this->daemon) System::MakeMeDaemon(false);
+    if(config_.Get<bool>("daemon"))
+		{ 
+			System::MakeMeDaemon(false);
+		}
 #endif
 	CPermissions *perms=new CPermissions();
 	perms=NULL;
@@ -1126,7 +1126,7 @@ void CGmpServ::HandleRMConsole(RakNet::Packet* p){
 			*((unsigned char*)szLog.data())=PT_RCON;
 			memcpy((char*)szLog.data()+1, OK, strlen(OK)+1);
 			server->Send(szLog.data(), static_cast<int>(2+strlen(OK)), MEDIUM_PRIORITY, RELIABLE, 13, p->guid, false);
-			sprintf((char*)szLog.data(), "%s@%s changed hp regeneration: %hd", (const char*)((players[rid].has_admin)?"ADMIN":players[rid].moderator->nickname), p->systemAddress.ToString(false),hp_regeneration);
+			sprintf((char*)szLog.data(), "%s@%s changed hp regeneration: %d", (const char*)((players[rid].has_admin)?"ADMIN":players[rid].moderator->nickname), p->systemAddress.ToString(false),hp_regeneration);
 			log->Write(LOG_WARNING, szLog.data());
 			goto eoh;
 			//sprintf((char*)szLog.data()+1, "AD
@@ -1137,7 +1137,7 @@ void CGmpServ::HandleRMConsole(RakNet::Packet* p){
 			*((unsigned char*)szLog.data())=PT_RCON;
 			memcpy((char*)szLog.data()+1, OK, strlen(OK)+1);
 			server->Send(szLog.data(), static_cast<int>(2+strlen(OK)), MEDIUM_PRIORITY, RELIABLE, 13, p->guid, false);
-			sprintf((char*)szLog.data(), "%s@%s changed mp regeneration: %hd", (const char*)((players[rid].has_admin)?"ADMIN":players[rid].moderator->nickname), p->systemAddress.ToString(false),mp_regeneration);
+			sprintf((char*)szLog.data(), "%s@%s changed mp regeneration: %d", (const char*)((players[rid].has_admin)?"ADMIN":players[rid].moderator->nickname), p->systemAddress.ToString(false),mp_regeneration);
 			log->Write(LOG_WARNING, szLog.data());
 			for(size_t i=0; i<players.size(); i++) if(players[i].is_ingame) SendGameInfo(players[i].id);
 			goto eoh;
