@@ -25,9 +25,10 @@ SOFTWARE.
 
 #pragma once
 
-#include <atomic>
 #include <cassert>
 #include <cstdint>
+#include <fmt/ostream.h>
+#include <ostream>
 #include <string>
 #include <unordered_map>
 #include <variant>
@@ -53,6 +54,15 @@ struct STime
 
   static STime GetCurrentGothicTime();
   static void SetCurrentGothicTime(STime new_time);
+
+  friend std::ostream& operator<<(std::ostream& os, const STime& d)
+  {
+    return os << d.day_ << '-' << d.hour_ << ':' << d.min_;
+  }
+};
+
+template <> struct fmt::formatter<STime> : ostream_formatter
+{
 };
 
 class Config
@@ -60,7 +70,7 @@ class Config
 public:
   Config();
 
-  template <typename T> const T& Get(const std::string& key)
+  template <typename T> const T& Get(const std::string& key) const
   {
     auto it = values_.find(key);
     assert(it != values_.end());
@@ -68,6 +78,8 @@ public:
 
     return std::get<T>(it->second);
   }
+
+  void LogConfigValues() const;
 
 protected:
   void Load();

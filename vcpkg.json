@@ -4,6 +4,8 @@
   "dependencies": [
     "zlib",
     "cpp-httplib",
-    "toml11"
+    "toml11",
+    "spdlog",
+    "fmt"
   ]
 }

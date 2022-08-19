@@ -7,3 +7,4 @@ game_time.hour = 13
 game_time.min = 23
 allow_modification = true
 message_of_the_day = "Welcome to my server!"
+log_to_stdout = true

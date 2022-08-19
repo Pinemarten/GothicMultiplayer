@@ -37,5 +37,5 @@ set (SERVER_SOURCES
 )
 
 add_executable(GMP_Serv ${SERVER_SOURCES})
-target_link_libraries(GMP_Serv PRIVATE RakNet SharedLib)
+target_link_libraries(GMP_Serv PRIVATE RakNet SharedLib spdlog::spdlog fmt::fmt)
 target_include_directories(GMP_Serv PRIVATE ${CPP_HTTPLIB_INCLUDE_DIRS})

@@ -39,6 +39,8 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_path(CPP_HTTPLIB_INCLUDE_DIRS "httplib.h")
+find_package(fmt CONFIG REQUIRED)
+find_package(spdlog CONFIG REQUIRED)
 find_package(ZLIB REQUIRED)
 
 add_subdirectory(common)

@@ -34,6 +34,7 @@ SOFTWARE.
 #include <stack>
 #include <cstdlib>
 #include <httplib.h>
+#include <spdlog/spdlog.h>
 
 CGmpServ *pSrv=NULL;
 const char *lobbyAddress="lobby.your-site.com";
@@ -66,8 +67,21 @@ const char* INVALIDPARAMETER="Invalid command parameter!";
 #define MAX_KILL_TXT 3
 const char* KILLED[MAX_KILL_TXT]={"K.O.","R.I.P.","FATALITY"};
 
+namespace
+{
+void InitializeLogger(const Config& config)
+{
+	if (!config.Get<bool>("log_to_stdout"))
+	{
+		spdlog::default_logger()->sinks().clear();
+	}
+}
+} // namespace
+
 CGmpServ::CGmpServ(const char* password, int argc, char** argv)
 {
+	InitializeLogger(config_);
+	config_.LogConfigValues();
   /*#ifndef WIN32
           if(this->daemon) System::MakeMeDaemon(false);
   #endif*/

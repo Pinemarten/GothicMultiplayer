@@ -27,8 +27,11 @@ SOFTWARE.
 #include "TomlWrapper.h"
 
 #include <RakSleep.h>
+#include <spdlog/fmt/ostr.h>
+#include <spdlog/spdlog.h>
 
 #include <cstdint>
+#include <set>
 #include <string>
 
 namespace
@@ -57,7 +60,8 @@ std::unordered_map<std::string, std::variant<std::string, std::int32_t, bool, ST
                               {"mp_regeneration", 0},
                               {"observation", false},
                               {"quick_pots", false},
-                              {"map_md5", ""},
+                              {"map_md5", std::string("")},
+                              {"log_to_stdout", true},
                               {"game_time", STime{1u, 8u, 0u}}, // 8:00
 #ifndef WIN32
                               {"daemon", true}
@@ -128,6 +132,32 @@ void Config::Load()
           if (value_opt)
           {
             value.second = *value_opt;
+          }
+        },
+        value.second);
+  }
+}
+
+void Config::LogConfigValues() const
+{
+  const std::set<std::string> keys_to_ignore = {"admin_passwd"};
+
+  for (auto& value : values_)
+  {
+    std::visit(
+        [&value, &keys_to_ignore](auto&& arg)
+        {
+          using T = std::decay_t<decltype(arg)>;
+          if (keys_to_ignore.find(value.first) == keys_to_ignore.end())
+          {
+            if constexpr (std::is_same_v<T, std::string>)
+            {
+              if (arg.empty())
+              {
+                return;
+              }
+            }
+            SPDLOG_INFO("{}: {}", value.first, arg);
           }
         },
         value.second);
