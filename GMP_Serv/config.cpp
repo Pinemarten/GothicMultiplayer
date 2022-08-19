@@ -26,7 +26,6 @@ SOFTWARE.
 #include "Config.h"
 #include "TomlWrapper.h"
 
-#include <RakSleep.h>
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
 
@@ -38,7 +37,7 @@ namespace
 {
 constexpr std::uint32_t kMaxNameLength = 100;
 
-std::unordered_map<std::string, std::variant<std::string, std::int32_t, bool, STime>>
+std::unordered_map<std::string, std::variant<std::string, std::int32_t, bool, GothicClock::Time>>
     kDefault_Config_Values = {{"name", std::string("Gothic Multiplayer Server")},
                               {"port", 57005},
                               {"admin_passwd", std::string("")},
@@ -62,7 +61,7 @@ std::unordered_map<std::string, std::variant<std::string, std::int32_t, bool, ST
                               {"quick_pots", false},
                               {"map_md5", std::string("")},
                               {"log_to_stdout", true},
-                              {"game_time", STime{1u, 8u, 0u}}, // 8:00
+                              {"game_time", GothicClock::Time{1u, 8u, 0u}}, // 8:00
 #ifndef WIN32
                               {"daemon", true}
 #else
@@ -72,40 +71,9 @@ std::unordered_map<std::string, std::variant<std::string, std::int32_t, bool, ST
 
 } // namespace
 
-STime gTime;
-
-STime STime::GetCurrentGothicTime()
-{
-  return gTime;
-}
-
-void STime::SetCurrentGothicTime(STime new_time)
-{
-  gTime = new_time;
-}
-
-RAK_THREAD_DECLARATION(STime::RunClock)
-{
-  while (1)
-  {
-    RakSleep(4000);
-    if (++gTime.min_ > 59)
-    {
-      gTime.min_ = 0;
-      if (++gTime.hour_ > 23)
-      {
-        gTime.hour_ = 0;
-        gTime.day_++;
-      }
-    }
-  }
-  return 0;
-}
-
 Config::Config()
 {
   Load();
-  gTime = Get<STime>("game_time");
 }
 
 void Config::Load()

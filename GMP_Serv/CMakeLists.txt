@@ -23,7 +23,8 @@
 
 set (SERVER_SOURCES
   CClasses.cpp
-  config.cpp        
+  config.cpp
+  gothic_clock.cpp
   CGenericFile.cpp   
   CGmpServ.cpp       
   CLog.cpp

@@ -2,7 +2,7 @@
 /*
 MIT License
 
-Copyright (c) 2022 Gothic Multiplayer Team (pampi, skejt23, mecio)
+Copyright (c) 2022 Gothic Multiplayer Team.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -25,36 +25,43 @@ SOFTWARE.
 
 #pragma once
 
-#include <cassert>
+#include <atomic>
 #include <cstdint>
-#include <ostream>
-#include <string>
-#include <unordered_map>
-#include <variant>
-
+#include <fmt/ostream.h>
+#include <memory>
+#include <mutex>
+#include <thread>
 #include <toml.hpp>
 
-#include "gothic_clock.h"
-
-class Config
+// Class responsible for counting Gothic time on the server side.
+class GothicClock
 {
 public:
-  Config();
-
-  template <typename T> const T& Get(const std::string& key) const
+  struct Time
   {
-    auto it = values_.find(key);
-    assert(it != values_.end());
-    assert(std::holds_alternative<T>(it->second));
+    std::uint16_t day_ = 1;
+    std::uint8_t hour_ = 8;
+    std::uint8_t min_ = 0;
 
-    return std::get<T>(it->second);
-  }
+    void from_toml(const toml::value& v);
+  };
 
-  void LogConfigValues() const;
+  GothicClock(Time initial_time);
+  ~GothicClock();
 
-protected:
-  void Load();
+  void UpdateTime(Time new_time);
+  Time GetTime() const;
 
-  std::unordered_map<std::string, std::variant<std::string, std::int32_t, bool, GothicClock::Time>>
-      values_;
+private:
+  void RunClockLoop();
+
+  Time time_;
+  mutable std::mutex time_mutex_;
+  std::atomic_bool run_clock_thread_{true};
+  std::thread thread_;
+};
+
+std::ostream& operator<<(std::ostream& os, const GothicClock::Time& d);
+template <> struct fmt::formatter<GothicClock::Time> : ostream_formatter
+{
 };

@@ -28,6 +28,7 @@ SOFTWARE.
 #include "CLog.h"
 #include "CPermissions.h"
 #include "CCompression.h"
+#include "gothic_clock.h"
 #include <RakThread.h>
 #include <fstream>
 #include <string>
@@ -137,7 +138,7 @@ bool CGmpServ::Init()
 	server->GetSockets(sockets);
 	log->Write(LOG_NORMAL, "GMP server(Walpurgisnacht) started!");
 	LoadBanList();
-	RakNet::RakThread::Create(STime::RunClock, NULL);
+	clock_ = std::make_unique<GothicClock>(config_.Get<GothicClock::Time>("game_time"));
 	RakNet::RakThread::Create(CGmpServ::AddToPublicListHTTP, NULL);
 	this->last_stand_timer=0;
 	return true;
@@ -1003,7 +1004,7 @@ void CGmpServ::HandleRMConsole(RakNet::Packet* p){
 			char buffer[16];
 			unsigned short h,m;
 			if(sscanf((char*)p->data+1, "%s%hu%hu", buffer, &h, &m)==3){
-				STime new_time;
+				GothicClock::Time new_time;
 				new_time.hour_=static_cast<unsigned char>(h);
 				new_time.min_=static_cast<unsigned char>(m);
 				new_time.day_++;
@@ -1019,6 +1020,7 @@ void CGmpServ::HandleRMConsole(RakNet::Packet* p){
 						server->Send((char*)szLog.data(), 7, IMMEDIATE_PRIORITY, RELIABLE, 9, players[i].id, false);
 					}
 				}
+				clock_->UpdateTime(new_time);
 				*((unsigned char*)szLog.data())=PT_RCON;
 				memcpy((char*)szLog.data()+1, OK, strlen(OK)+1);
 				server->Send(szLog.data(), static_cast<int>(2+strlen(OK)), MEDIUM_PRIORITY, RELIABLE, 9, p->guid, false);
@@ -1188,7 +1190,7 @@ void CGmpServ::SendGameInfo(RakNet::RakNetGUID who){
 	int len=7;
 	szData.reserve(64);
 	*((unsigned char*)szData.data())=PT_GAME_INFO;
-	STime game_time = STime::GetCurrentGothicTime();
+	GothicClock::Time game_time = clock_->GetTime();
 	memcpy((char*)szData.data()+1, &game_time, 4);
 	*((unsigned char*)szData.data()+5)=(unsigned char)config_.Get<std::int32_t>("game_mode");;
 	*((unsigned char*)szData.data()+6)=0;

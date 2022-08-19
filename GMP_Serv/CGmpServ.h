@@ -36,6 +36,7 @@ SOFTWARE.
 #include <PacketLogger.h>
 
 #include <string.h>
+#include <memory>
 #include <string>
 #include <vector>
 #include <ctime>
@@ -49,6 +50,7 @@ SOFTWARE.
 #define DEFAULT_ADMIN_PORT 0x404
 
 class CLog;
+class GothicClock;
 
 enum CONFIG_FLAGS{
 	QUICK_POTS		= 0x01,
@@ -172,4 +174,5 @@ private:
 	bool allow_modification = false;
 	std::string loop_msg;
 	Config config_;
+	std::unique_ptr<GothicClock> clock_;
 };
