@@ -35,21 +35,13 @@ constexpr std::chrono::seconds kClockUpdateInterval(4);
 
 GothicClock::GothicClock(Time initial_time) : time_(initial_time)
 {
-  thread_ = std::thread(&GothicClock::RunClockLoop, this);
 }
 
-GothicClock::~GothicClock()
+void GothicClock::RunClock()
 {
-  run_clock_thread_ = false;
-  thread_.join();
-}
-
-void GothicClock::RunClockLoop()
-{
-  while (run_clock_thread_)
+  auto now = std::chrono::steady_clock::now();
+  if ((now - last_update_time_) > kClockUpdateInterval)
   {
-    std::this_thread::sleep_for(kClockUpdateInterval);
-    std::lock_guard<std::mutex> lock(time_mutex_);
     if (++time_.min_ > 59)
     {
       time_.min_ = 0;
@@ -59,13 +51,13 @@ void GothicClock::RunClockLoop()
         time_.day_++;
       }
     }
+    last_update_time_ = now;
     SPDLOG_TRACE("Gothic clock interval update: {}", time_);
   }
 }
 
 void GothicClock::UpdateTime(GothicClock::Time new_time)
 {
-  std::lock_guard<std::mutex> lock(time_mutex_);
   time_ = new_time;
   SPDLOG_DEBUG("Gothic clock updated to {}", time_);
 }
@@ -73,7 +65,6 @@ void GothicClock::UpdateTime(GothicClock::Time new_time)
 GothicClock::Time GothicClock::GetTime() const
 {
   Time current_time;
-  std::lock_guard<std::mutex> lock(time_mutex_);
   current_time = time_;
   return current_time;
 }

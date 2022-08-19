@@ -149,6 +149,12 @@ bool CGmpServ::Send(std::string message)	//ktoś z was ma zamiar tej funkcji uż
 	server->Send(message.c_str(), (int)message.length()+1, HIGH_PRIORITY, RELIABLE_ORDERED, 0, RakNet::UNASSIGNED_SYSTEM_ADDRESS, true);
 	return true;
 }
+
+void CGmpServ::Run()
+{
+	clock_->RunClock();
+}
+
 bool CGmpServ::Receive(sPacket & packet)
 {
 	std::string szLog;

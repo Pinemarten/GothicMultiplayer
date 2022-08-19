@@ -124,6 +124,7 @@ public:
 	static RAK_THREAD_DECLARATION(AddToPublicListHTTP);
 	bool Send(std::string message);
 	bool Receive(sPacket & packet);
+	void Run();
 	bool Init();
 	void SaveBanList(void);
 	bool IsPublic(void);

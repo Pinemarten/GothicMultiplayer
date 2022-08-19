@@ -25,12 +25,10 @@ SOFTWARE.
 
 #pragma once
 
-#include <atomic>
 #include <cstdint>
 #include <fmt/ostream.h>
 #include <memory>
-#include <mutex>
-#include <thread>
+
 #include <toml.hpp>
 
 // Class responsible for counting Gothic time on the server side.
@@ -47,18 +45,15 @@ public:
   };
 
   GothicClock(Time initial_time);
-  ~GothicClock();
 
   void UpdateTime(Time new_time);
   Time GetTime() const;
 
+  // Should be called from the main loop.
+  void RunClock();
 private:
-  void RunClockLoop();
-
   Time time_;
-  mutable std::mutex time_mutex_;
-  std::atomic_bool run_clock_thread_{true};
-  std::thread thread_;
+  std::chrono::time_point<std::chrono::steady_clock> last_update_time_;
 };
 
 std::ostream& operator<<(std::ostream& os, const GothicClock::Time& d);

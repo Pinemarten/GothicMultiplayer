@@ -52,6 +52,7 @@ int main(int argc, char **argv)
 		serv.DoRespawns();
 		serv.SendSpamMessage();
 		serv.RegenerationHPMP();
+		serv.Run();
 		/*if(serv.Receive(p) && p.type == CGmpServ::PT_MSG)
 		{
 			serv.Send(p.data);
