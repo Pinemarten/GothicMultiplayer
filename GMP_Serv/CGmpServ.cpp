@@ -32,6 +32,8 @@ SOFTWARE.
 #include <RakThread.h>
 #include <fstream>
 #include <string>
+#include <future>
+
 #include <stack>
 #include <cstdlib>
 #include <httplib.h>
@@ -126,7 +128,8 @@ bool CGmpServ::Init()
 	server->SetMaximumIncomingConnections(slots);
 	RakNet::SocketDescriptor socketDescriptors[2];
 
-	socketDescriptors[0].port = static_cast<short>(config_.Get<std::int32_t>("port"));
+	auto port = config_.Get<std::int32_t>("port");
+	socketDescriptors[0].port = static_cast<short>(port);
 	socketDescriptors[0].socketFamily=AF_INET; // Klient
 	// if(!this->host_addr.empty()) memcpy(socketDescriptors[0].hostAddress, this->host_addr.c_str(), this->host_addr.length()+1);
 
@@ -138,21 +141,18 @@ bool CGmpServ::Init()
 	server->GetSockets(sockets);
 	log->Write(LOG_NORMAL, "GMP server(Walpurgisnacht) started!");
 	LoadBanList();
-	char* port = new char[100];
-	sprintf(port, "%d", static_cast<int>(this->game_port)+1);
+
 	clock_ = std::make_unique<GothicClock>(config_.Get<GothicClock::Time>("game_time"));
 	RakNet::RakThread::Create(CGmpServ::AddToPublicListHTTP, NULL);
-	RakNet::RakThread::Create(CGmpServ::HTTPServerThread, port);
+	http_thread_future_ = std::async(&CGmpServ::HTTPServerThread, this, port + 1);
 	this->last_stand_timer=0;
 	return true;
 }
 
-RAK_THREAD_DECLARATION(CGmpServ::HTTPServerThread) {
-	auto httpServer = new HTTPServer();
-	httpServer->Start(atoi(static_cast<const char*>(arguments)));
-	delete[] arguments;
-	delete httpServer;
-	return 0;
+void CGmpServ::HTTPServerThread(std::int32_t port)
+{
+  auto httpServer = std::make_unique<HTTPServer>();
+  httpServer->Start(port);
 }
 
 bool CGmpServ::Send(std::string message)	//ktoś z was ma zamiar tej funkcji używać?

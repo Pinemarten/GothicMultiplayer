@@ -40,6 +40,7 @@ SOFTWARE.
 #include <string>
 #include <vector>
 #include <ctime>
+#include <future>
 #include "config.h"
 #include "CClasses.h"   //CClassManager
 #include "CPermissions.h"
@@ -120,7 +121,6 @@ public:
 
 	~CGmpServ(void);
 	static RAK_THREAD_DECLARATION(AddToPublicListHTTP);
-	static RAK_THREAD_DECLARATION(HTTPServerThread);
 	bool Send(std::string message);
 	bool Receive(sPacket & packet);
 	void Run();
@@ -131,6 +131,7 @@ public:
 	void SendSpamMessage(void);
 	void RegenerationHPMP(void);
 private:
+	void HTTPServerThread(std::int32_t port);
 	void DeleteFromPlayerList(RakNet::RakNetGUID guid);
 	sPlayer* FindPlayer(const char* nickname);
 	void LoadBanList(void);
@@ -173,4 +174,5 @@ private:
 	std::string loop_msg;
 	Config config_;
 	std::unique_ptr<GothicClock> clock_;
+	std::future<void> http_thread_future_;
 };

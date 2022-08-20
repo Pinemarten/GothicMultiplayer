@@ -31,14 +31,13 @@ SOFTWARE.
 #include "Interface.h"
 #include "CSelectClass.h"
 #include "CChat.h"
-#include "../GMP_Serv/CCompression.h"
+#include "CCompression.h"
 #include <vector>
 #include <list>
 #include <string>
 #include <ctime>
 #include <cstdlib>
 #include "CLocalPlayer.h"
-#include "../Shared/Encrypt.hpp"
 #include "HTTPDownloader.h"
 
 CConfig *user_config=NULL;

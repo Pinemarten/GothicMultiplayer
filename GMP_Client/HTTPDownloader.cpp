@@ -1,5 +1,6 @@
 #include "HTTPDownloader.h"
-#include "../cpp-httplib/httplib.h"
+
+#include <httplib.h>
 
 using namespace std;
 using namespace httplib;
