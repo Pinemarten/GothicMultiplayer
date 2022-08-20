@@ -1,5 +1,4 @@
 #include "Network.h"
-#include "../Shared/Encrypt.hpp"
 #include <exception>
 #include "PacketHandlers/Connection.hpp"
 #include "PacketHandlers/Game.hpp"
@@ -7,7 +6,7 @@
 using namespace std;
 using namespace RakNet;
 
-#define RAKNET_PASSWORD "OCFQ22ZS4D"
+#define RAKNET_PASSWORD "YOUR_PASS"
 
 Network::Network(CGmpClient* client)
 {
@@ -62,7 +61,7 @@ void Network::AddPacketHandlers()
 bool Network::Connect(string hostAddress, int hostPort)
 {
 	Init();
-	string hostPassword = Encrypt::xorString(RAKNET_PASSWORD);
+	string hostPassword = RAKNET_PASSWORD;
 	ConnectionAttemptResult connectionAttemptResult = peer->Connect(hostAddress.c_str(), hostPort, hostPassword.c_str(), hostPassword.length());
 	if (connectionAttemptResult != CONNECTION_ATTEMPT_STARTED) { return false; }
 	RakNet::Packet* packet = nullptr;
