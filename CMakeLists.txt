@@ -65,7 +65,7 @@ if (WIN32)
         REQUIRED
     )
 
-    find_library(BugTrap BugTrapU.lib PATHS ./BugTrap)
+    find_library(BugTrap BugTrap.lib PATHS ./BugTrap)
     find_path(
         BugTrap_INCLUDE_DIR
         NAMES "BugTrap.h"

@@ -320,6 +320,7 @@ char x[2]={0, 0};
 		string_tmp = "ItMw_1H_Blessed_03";
 		TitleWeapon = oCObjectFactory::GetFactory()->CreateItem(zCParser::GetParser()->GetIndex(string_tmp));
 		TitleWeapon->SetPositionWorld(zVEC3((float)13346.502930, 2006.0, (float)-1240.678467));
+
 	};
 
 	void CMainMenu::LoadConfig()
@@ -362,7 +363,6 @@ char x[2]={0, 0};
 
 	void CMainMenu::PrintMenu()
 	{
-		
 			if(!LangSetting) {
 				zSTRING path=LANG_DIR;
 				path+=vec_lang_files[user_config->lang].c_str();
