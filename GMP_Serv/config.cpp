@@ -24,20 +24,23 @@ SOFTWARE.
 */
 
 #include "config.h"
-#include "TomlWrapper.h"
 
+#include <spdlog/common.h>
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
 
 #include <cstdint>
 #include <set>
 #include <string>
+#include <string_view>
+
+#include "TomlWrapper.h"
 
 namespace
 {
 constexpr std::uint32_t kMaxNameLength = 100;
 
-std::unordered_map<std::string, std::variant<std::string, std::int32_t, bool, GothicClock::Time>>
+const std::unordered_map<std::string, std::variant<std::string, std::int32_t, bool, GothicClock::Time>>
     kDefault_Config_Values = {{"name", std::string("Gothic Multiplayer Server")},
                               {"port", 57005},
                               {"admin_passwd", std::string("")},
@@ -61,7 +64,8 @@ std::unordered_map<std::string, std::variant<std::string, std::int32_t, bool, Go
                               {"quick_pots", false},
                               {"map_md5", std::string("")},
                               {"log_to_stdout", true},
-                              {"game_time", GothicClock::Time{1u, 8u, 0u}}, // 8:00
+                              {"log_level", std::string("info")},
+                              {"game_time", GothicClock::Time{1u, 8u, 0u}},  // 8:00
 #ifndef WIN32
                               {"daemon", true}
 #else
@@ -69,7 +73,7 @@ std::unordered_map<std::string, std::variant<std::string, std::int32_t, bool, Go
 #endif
 };
 
-} // namespace
+}  // namespace
 
 Config::Config()
 {
@@ -103,6 +107,28 @@ void Config::Load()
           }
         },
         value.second);
+  }
+  ValidateAndFixValues();
+}
+
+void Config::ValidateAndFixValues()
+{
+  auto& name = std::get<std::string>(values_.at("name"));
+  if (name.size() > kMaxNameLength)
+  {
+    name.resize(kMaxNameLength);
+    SPDLOG_WARN("Truncated server name to {} since it exceeded the maximum length limit({})", name, kMaxNameLength);
+  }
+
+  auto& log_level = std::get<std::string>(values_.at("log_level"));
+  const std::set<spdlog::string_view_t> valid_log_levels = SPDLOG_LEVEL_NAMES;
+  auto it_level = valid_log_levels.find(spdlog::string_view_t(log_level));
+
+  if (it_level == valid_log_levels.end())
+  {
+    auto& default_log_level = std::get<std::string>(kDefault_Config_Values.at("log_level"));
+    SPDLOG_WARN("Invalid log level in config: {}. Setting to default \"{}\"", log_level, default_log_level);
+    values_["log_level"] = default_log_level;
   }
 }
 

@@ -29,10 +29,9 @@ SOFTWARE.
 #include <cstdint>
 #include <ostream>
 #include <string>
+#include <toml.hpp>
 #include <unordered_map>
 #include <variant>
-
-#include <toml.hpp>
 
 #include "gothic_clock.h"
 
@@ -41,18 +40,19 @@ class Config
 public:
   Config();
 
-  template <typename T> const T& Get(const std::string& key) const
+  template <typename T>
+  const T& Get(const std::string& key) const
   {
-    auto it = values_.find(key);
-    assert(it != values_.end());
-    assert(std::holds_alternative<T>(it->second));
+    const auto& value = values_.at(key);
+    assert(std::holds_alternative<T>(value));
 
-    return std::get<T>(it->second);
+    return std::get<T>(value);
   }
 
   void LogConfigValues() const;
 
 protected:
+  void ValidateAndFixValues();
   void Load();
 
   std::unordered_map<std::string, std::variant<std::string, std::int32_t, bool, GothicClock::Time>>

@@ -76,6 +76,9 @@ void InitializeLogger(const Config& config)
 	{
 		spdlog::default_logger()->sinks().clear();
 	}
+
+	auto log_level = config.Get<std::string>("log_level");
+	spdlog::set_level(spdlog::level::from_str(log_level));
 }
 } // namespace
 
