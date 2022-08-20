@@ -36,6 +36,7 @@ SOFTWARE.
 #include <cstdlib>
 #include <httplib.h>
 #include <spdlog/spdlog.h>
+#include "HTTPServer.h"
 
 CGmpServ *pSrv=NULL;
 const char *lobbyAddress="lobby.your-site.com";
@@ -97,9 +98,7 @@ CGmpServ::CGmpServ(const char* password, int argc, char** argv)
 
 CGmpServ::~CGmpServ(void)
 {
-	delete spawnlist;
 	delete classmgr;
-	if(wb_mgr) delete wb_mgr;
 	delete this->log;
 	server->Shutdown(300);
 	RakNet::RakPeerInterface::DestroyInstance(server);
@@ -116,8 +115,6 @@ bool CGmpServ::Init()
 	CPermissions *perms=new CPermissions();
 	perms=NULL;
 	this->spam_time=time(NULL)+10;
-	this->spawnlist = new CSpawnList();
-	this->wb_mgr = new CWBFile();
 	this->classmgr = new CClassManager;
 	server->SetIncomingPassword(this->serverPassword.c_str(), (int)this->serverPassword.length());
 	server->SetTimeoutTime(1000,RakNet::UNASSIGNED_SYSTEM_ADDRESS);  //1s styknie nie?
@@ -141,10 +138,21 @@ bool CGmpServ::Init()
 	server->GetSockets(sockets);
 	log->Write(LOG_NORMAL, "GMP server(Walpurgisnacht) started!");
 	LoadBanList();
+	char* port = new char[100];
+	sprintf(port, "%d", static_cast<int>(this->game_port)+1);
 	clock_ = std::make_unique<GothicClock>(config_.Get<GothicClock::Time>("game_time"));
 	RakNet::RakThread::Create(CGmpServ::AddToPublicListHTTP, NULL);
+	RakNet::RakThread::Create(CGmpServ::HTTPServerThread, port);
 	this->last_stand_timer=0;
 	return true;
+}
+
+RAK_THREAD_DECLARATION(CGmpServ::HTTPServerThread) {
+	auto httpServer = new HTTPServer();
+	httpServer->Start(atoi(static_cast<const char*>(arguments)));
+	delete[] arguments;
+	delete httpServer;
+	return 0;
 }
 
 bool CGmpServ::Send(std::string message)	//ktoś z was ma zamiar tej funkcji używać?
@@ -200,7 +208,6 @@ bool CGmpServ::Receive(sPacket & packet)
 		break;
 	case PT_REQUEST_FILE_LENGTH:
 	case PT_REQUEST_FILE_PART:
-		HandleFileReq(p);
 		break;
 	case PT_WHOAMI: //zwraca id gracza(czyli jego guid)
 		{
@@ -335,83 +342,6 @@ void CGmpServ::DeleteFromPlayerList(RakNet::RakNetGUID guid){
 			}
 			players.erase(players.begin()+i);
 			break;
-		}
-	}
-}
-
-void CGmpServ::HandleFileReq(RakNet::Packet* p){
-	//TO DO
-	if(p){
-		unsigned char val[1024];
-		switch(p->data[0]){
-			case PT_REQUEST_FILE_LENGTH:
-				val[0]=PT_REQUEST_FILE_LENGTH;
-				switch(p->data[1]){
-					case CLASS_FILE:
-						val[1]=CLASS_FILE;
-						val[2]=static_cast<unsigned char>(classmgr->GetBufferSize()/1000);
-						server->Send((const char*)val, 3, HIGH_PRIORITY, RELIABLE, 1, p, false);
-						break;
-					case SPAWN_FILE:
-						val[1]=SPAWN_FILE;
-						val[2]=static_cast<unsigned char>(spawnlist->GetBufferSize()/1000);
-						server->Send((const char*)val, 3, HIGH_PRIORITY, RELIABLE, 1, p, false);
-						break;
-					case WB_FILE:
-						if(!wb_mgr->GetBufferSize()){
-							val[1]=NULL_SIZE;
-							server->Send((const char*)val, 2, HIGH_PRIORITY, RELIABLE, 1, p, false);
-						}else{
-							val[1]=WB_FILE;
-							unsigned short s=static_cast<unsigned short>(wb_mgr->GetBufferSize()/1000);
-							memcpy(val+2, &s, 2);
-							server->Send((const char*)val, 4, HIGH_PRIORITY, RELIABLE, 1, p, false);
-						}
-						break;
-					default: //nie powinno się wykonać
-						break;
-				}
-				break;
-			case PT_REQUEST_FILE_PART:
-				val[0]=PT_REQUEST_FILE_PART;
-				switch(p->data[1]){
-					case CLASS_FILE:	//deflate
-						if(p->data[2]<static_cast<unsigned char>(classmgr->GetBufferSize()/1000)){
-							unsigned int out_len=0;
-							val[1]=CLASS_FILE;
-							val[2]=p->data[2];
-							CCompression::GetInstance()->Compress((unsigned char*)classmgr->GetFilePart((unsigned long)p->data[2]), val+3, (((classmgr->GetBufferSize()/1000)-1)==p->data[2])?classmgr->GetFileLength()%1000:1000, out_len);
-							server->Send((const char*)val, 3+out_len, HIGH_PRIORITY, RELIABLE, 1, p, false);
-						}
-						break;
-					case SPAWN_FILE:	//uncompressed
-						if(p->data[2]<static_cast<unsigned char>(spawnlist->GetBufferSize()/1000)){
-							val[1]=SPAWN_FILE;
-							val[2]=p->data[2];
-							memcpy(val+3, spawnlist->GetFilePart((unsigned long)p->data[2]), (int)((((spawnlist->GetBufferSize()/1000)-1)==p->data[2])?spawnlist->GetFileLength()%1000:1000));
-							server->Send((const char*)val, 3+(int)((((spawnlist->GetBufferSize()/1000)-1)==p->data[2])?spawnlist->GetFileLength()%1000:1000), HIGH_PRIORITY, RELIABLE, 1, p, false);
-						}
-						break;
-					case WB_FILE:	//deflate
-						{
-							unsigned short part;
-							memcpy(&part, p->data+2, 2);
-							if(part<static_cast<unsigned short>(wb_mgr->GetBufferSize()/1000)){
-								unsigned int out_len=0;
-								memcpy(val+2, p->data+2, 2);
-								CCompression::GetInstance()->Compress(wb_mgr->GetFilePart(part), val+4, (((wb_mgr->GetBufferSize()/1000)-1)==part)?wb_mgr->GetFileLength()%1000:1000, out_len);
-								server->Send((const char*)val, 4+out_len, HIGH_PRIORITY, RELIABLE, 1, p, false);
-								//memcpy(val+4, wb_mgr->GetFilePart((unsigned long)p->data[2]), (int)((((wb_mgr->GetBufferSize()/1000)-1)==p->data[2])?wb_mgr->GetFileLength()%1000:1000));
-								//server->Send((const char*)val, 4+(int)((((wb_mgr->GetBufferSize()/1000)-1)==p->data[2])?wb_mgr->GetFileLength()%1000:1000), HIGH_PRIORITY, RELIABLE, 1, p, false);
-							}
-						}
-						break;
-					default: //nie powinno się wykonać
-						break;
-				}
-				break;
-			default://jak ktoś próbuje kombinować to default powinien się wykonać
-				break;
 		}
 	}
 }

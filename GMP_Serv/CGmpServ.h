@@ -41,8 +41,6 @@ SOFTWARE.
 #include <vector>
 #include <ctime>
 #include "config.h"
-#include "CSpawnList.h"
-#include "CWBFile.h"
 #include "CClasses.h"   //CClassManager
 #include "CPermissions.h"
 
@@ -122,6 +120,7 @@ public:
 
 	~CGmpServ(void);
 	static RAK_THREAD_DECLARATION(AddToPublicListHTTP);
+	static RAK_THREAD_DECLARATION(HTTPServerThread);
 	bool Send(std::string message);
 	bool Receive(sPacket & packet);
 	void Run();
@@ -155,9 +154,7 @@ private:
 
 	std::vector<std::string> ban_list;
 	CLog *log;
-	CSpawnList *spawnlist;
 	CClassManager *classmgr;
-	CWBFile *wb_mgr;
 	time_t last_stand_timer;
 	time_t regen_time;
 	

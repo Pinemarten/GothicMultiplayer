@@ -131,14 +131,15 @@ void CIngame::CheckSwampLights()
 
 void CIngame::Loop(){
 	if(global_ingame){
-		if(!client->IsDisconnected()){
+		if(client->network->IsConnected){
 			if(global_ingame->NextTimeSync==time(NULL)){
 				if(!global_ingame->IgnoreFirstSync) client->SyncGameTime();
 				else global_ingame->IgnoreFirstSync = false;
 				global_ingame->NextTimeSync+=1200;
 			}
 			client->HandleNetwork();
-			if(!client->IsDisconnected()){
+			if(client->network->IsConnected){
+				client->RestoreHealth();
 				global_ingame->CheckForUpdate();
 				global_ingame->CheckForHPDiff();
 			}
@@ -275,7 +276,7 @@ oCNpc* Test;
 void CIngame::HandleInput(){
 	zCInput* input = zCInput::GetInput();
 	if((input->KeyPressed(KEY_LCONTROL) || input->KeyPressed(KEY_RCONTROL)) && (input->KeyPressed(KEY_LALT) || input->KeyPressed(KEY_RALT)) && input->KeyPressed(KEY_F8)){
-		if(!client->IsDisconnected()){
+		if(client->network->IsConnected){
 			client->Disconnect();
 			CChat::GetInstance()->WriteMessage(NORMAL, false, zCOLOR(255,0,0,255), "%s", "Disconnected!");
 		}
