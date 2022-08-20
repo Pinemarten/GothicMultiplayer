@@ -1207,7 +1207,7 @@ void CGmpServ::SendGameInfo(RakNet::RakNetGUID who){
 	if(config_.Get<bool>("allow_dropitems")) *((unsigned char*)szData.data()+6)|=DROP_ITEMS;
 	if(config_.Get<bool>("hide_map")) *((unsigned char*)szData.data()+6)|=HIDE_MAP;
 	auto mp_regeneration = (short)config_.Get<std::int32_t>("mp_regeneration");
-	if(config_.Get<bool>("mp_regeneration")){ *((unsigned char*)szData.data()+6)|=MANA_REGENERATION; memcpy((char*)szData.data()+len, &mp_regeneration, 2); len+=2;}
+	if(mp_regeneration > 0){ *((unsigned char*)szData.data()+6)|=MANA_REGENERATION; memcpy((char*)szData.data()+len, &mp_regeneration, 2); len+=2;}
 	server->Send((char*)szData.data(), len, MEDIUM_PRIORITY, RELIABLE, 9, who, false);
 	szData.clear();
 }
