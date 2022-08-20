@@ -29,7 +29,7 @@ SOFTWARE.
 #include <cstdlib>
 #include <ctime>
 
-const char * pass = "yourpass";
+const char * pass = "YOUR_PASS";
 unsigned char b[1024], c[1024];
 const char *lolo="Chcialbym zjesc dobry obiad o 15.\0";
 

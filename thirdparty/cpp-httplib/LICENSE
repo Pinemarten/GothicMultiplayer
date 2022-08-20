@@ -1,8 +1,6 @@
+The MIT License (MIT)
 
-/*
-MIT License
-
-Copyright (c) 2022 Gothic Multiplayer Team (pampi, skejt23, mecio)
+Copyright (c) 2017 yhirose
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -21,21 +19,4 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-*/
 
-#ifndef _CGENERICFILE
-#define _CGENERICFILE
-
-class CGenericFile{
-public:
-	void Load(const char* file);
-	~CGenericFile(void);
-	unsigned char *GetFilePart(unsigned long part);
-	long GetFileLength(void);
-	long GetBufferSize(void);
-private:
-	unsigned char *file_buffer;
-	long file_buffer_size;
-	long file_size;
-};
-#endif

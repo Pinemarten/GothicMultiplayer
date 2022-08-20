@@ -25,18 +25,16 @@ set (SERVER_SOURCES
   CClasses.cpp
   config.cpp
   gothic_clock.cpp
-  CGenericFile.cpp   
   CGmpServ.cpp       
   CLog.cpp
   CPermissions.cpp   
-  crypt.cpp
-  CSpawnList.cpp     
-  CWBFile.cpp        
+  crypt.cpp   
   GMP_Serv.cpp       
   platform_depend.cpp
   zBitStream.cpp
+  HTTPServer.cpp
 )
 
 add_executable(GMP_Serv ${SERVER_SOURCES})
-target_link_libraries(GMP_Serv PRIVATE RakNet SharedLib spdlog::spdlog fmt::fmt)
+target_link_libraries(GMP_Serv PRIVATE RakNet SharedLib spdlog::spdlog fmt::fmt httplib)
 target_include_directories(GMP_Serv PRIVATE ${CPP_HTTPLIB_INCLUDE_DIRS})

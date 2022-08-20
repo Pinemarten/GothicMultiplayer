@@ -40,9 +40,8 @@ SOFTWARE.
 #include <string>
 #include <vector>
 #include <ctime>
+#include <future>
 #include "config.h"
-#include "CSpawnList.h"
-#include "CWBFile.h"
 #include "CClasses.h"   //CClassManager
 #include "CPermissions.h"
 
@@ -132,6 +131,7 @@ public:
 	void SendSpamMessage(void);
 	void RegenerationHPMP(void);
 private:
+	void HTTPServerThread(std::int32_t port);
 	void DeleteFromPlayerList(RakNet::RakNetGUID guid);
 	sPlayer* FindPlayer(const char* nickname);
 	void LoadBanList(void);
@@ -155,9 +155,7 @@ private:
 
 	std::vector<std::string> ban_list;
 	CLog *log;
-	CSpawnList *spawnlist;
 	CClassManager *classmgr;
-	CWBFile *wb_mgr;
 	time_t last_stand_timer;
 	time_t regen_time;
 	
@@ -176,4 +174,5 @@ private:
 	std::string loop_msg;
 	Config config_;
 	std::unique_ptr<GothicClock> clock_;
+	std::future<void> http_thread_future_;
 };
