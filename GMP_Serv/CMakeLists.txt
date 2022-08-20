@@ -25,8 +25,7 @@ set (SERVER_SOURCES
   CClasses.cpp
   config.cpp
   gothic_clock.cpp
-  CGmpServ.cpp       
-  CLog.cpp
+  CGmpServ.cpp
   CPermissions.cpp   
   crypt.cpp   
   GMP_Serv.cpp       

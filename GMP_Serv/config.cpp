@@ -47,7 +47,6 @@ const std::unordered_map<std::string, std::variant<std::string, std::int32_t, bo
                               {"slots", 12},
                               {"public", false},
                               {"log_file", std::string("log.txt")},
-                              {"log_mode", 0},
                               {"map", std::string("NEWWORLD\\NEWWORLD.ZEN")},
                               {"respawn_time_seconds", 5},
                               {"message_of_the_day", std::string("Welcome to the server.")},

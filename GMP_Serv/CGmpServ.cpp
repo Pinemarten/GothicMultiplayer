@@ -25,7 +25,6 @@ SOFTWARE.
 
 #include "CGmpServ.h"
 #include "platform_depend.h"
-#include "CLog.h"
 #include "CPermissions.h"
 #include "CCompression.h"
 #include "gothic_clock.h"
@@ -38,6 +37,7 @@ SOFTWARE.
 #include <cstdlib>
 #include <httplib.h>
 #include <spdlog/spdlog.h>
+#include <spdlog/sinks/basic_file_sink.h>
 #include "HTTPServer.h"
 
 CGmpServ *pSrv=NULL;
@@ -75,13 +75,18 @@ namespace
 {
 void InitializeLogger(const Config& config)
 {
-	if (!config.Get<bool>("log_to_stdout"))
-	{
-		spdlog::default_logger()->sinks().clear();
-	}
+  if (!config.Get<bool>("log_to_stdout"))
+  {
+    spdlog::default_logger()->sinks().clear();
+  }
 
-	auto log_level = config.Get<std::string>("log_level");
-	spdlog::set_level(spdlog::level::from_str(log_level));
+  auto log_file = config.Get<std::string>("log_file");
+  spdlog::default_logger()->sinks().push_back(
+      std::make_shared<spdlog::sinks::basic_file_sink_mt>(std::move(log_file), false));
+
+  auto log_level = config.Get<std::string>("log_level");
+  spdlog::set_level(spdlog::level::from_str(log_level));
+	spdlog::flush_on(spdlog::level::debug);
 }
 } // namespace
 
@@ -89,8 +94,6 @@ CGmpServ::CGmpServ(const char* password, int argc, char** argv)
 {
 	InitializeLogger(config_);
 	config_.LogConfigValues();
-  this->log =
-      new CLog(config_.Get<std::int32_t>("log_mode"), config_.Get<std::string>("log_file").c_str());
   server = RakNet::RakPeerInterface::GetInstance();
   this->serverPassword.append(password);
   pSrv = this;
@@ -98,10 +101,9 @@ CGmpServ::CGmpServ(const char* password, int argc, char** argv)
   arg_vec = argv;
 }
 
-CGmpServ::~CGmpServ(void)
+CGmpServ::~CGmpServ()
 {
 	delete classmgr;
-	delete this->log;
 	server->Shutdown(300);
 	RakNet::RakPeerInterface::DestroyInstance(server);
 	pSrv=NULL;
@@ -139,7 +141,7 @@ bool CGmpServ::Init()
 	server->SetOccasionalPing(true);
 	server->SetUnreliableTimeout(1000);
 	server->GetSockets(sockets);
-	log->Write(LOG_NORMAL, "GMP server(Walpurgisnacht) started!");
+	SPDLOG_INFO("GMP server started!");
 	LoadBanList();
 
 	clock_ = std::make_unique<GothicClock>(config_.Get<GothicClock::Time>("game_time"));
@@ -178,8 +180,7 @@ bool CGmpServ::Receive(sPacket & packet)
 	case ID_DISCONNECTION_NOTIFICATION:
 		SendDisconnectionInfo(p->guid.g);
 		DeleteFromPlayerList(p->guid);
-		sprintf((char*)szLog.data(), "%s disconnected. Still connected %u users.", p->systemAddress.ToString(true), static_cast<unsigned int>(players.size()));
-		log->Write(LOG_NORMAL, szLog.c_str());
+		SPDLOG_INFO("{} disconnected. Still connected {} users.", p->systemAddress.ToString(true), players.size());
 		break;
 	case ID_NEW_INCOMING_CONNECTION:	//nadchodzące połączenie zaakceptowane | można dodać guid gracza do listy graczy;
 		{
@@ -194,17 +195,15 @@ bool CGmpServ::Receive(sPacket & packet)
 			pl.mute=0;
 			players.push_back(pl);
 		}
-		sprintf((char*)szLog.data(), "ID_NEW_INCOMING_CONNECTION from %s with GUID %s. Now we have %u connected users.", p->systemAddress.ToString(true), p->guid.ToString(), static_cast<unsigned int>(players.size()));
-		log->Write(LOG_NORMAL, szLog.c_str());
+		SPDLOG_INFO("ID_NEW_INCOMING_CONNECTION from {} with GUID {}. Now we have {} connected users.", p->systemAddress.ToString(true), p->guid.ToString(), players.size());
 		break;
 	case ID_INCOMPATIBLE_PROTOCOL_VERSION:
-		log->Write(LOG_WARNING, "ID_INCOMPATIBLE_PROTOCOL_VERSION");
+		SPDLOG_WARN("ID_INCOMPATIBLE_PROTOCOL_VERSION");
 		break;
 	case ID_CONNECTION_LOST:
 		SendDisconnectionInfo(p->guid.g);
 		DeleteFromPlayerList(p->guid);
-		sprintf((char*)szLog.data() ,"Connection lost from %s. Still connected %u users.", p->systemAddress.ToString(true), static_cast<unsigned int>(players.size()));
-		log->Write(LOG_WARNING, szLog.c_str());
+		SPDLOG_WARN("Connection lost from {}. Still connected {} users.", p->systemAddress.ToString(true), players.size());
 		break;
 	case PT_REQUEST_FILE_LENGTH:
 	case PT_REQUEST_FILE_PART:
@@ -271,8 +270,7 @@ bool CGmpServ::Receive(sPacket & packet)
 		/*packet.type = CGmpServ::PT_MSG;
 		packet.data.clear();
 		packet.data.append((char *)p->data);*/
-		sprintf((char*)szLog.data(),"(S)He or it try to do something strange. It's packet ID: %i\n", packetIdentifier);
-		log->Write(LOG_WARNING, szLog.c_str());
+		SPDLOG_WARN("(S)He or it try to do something strange. It's packet ID: {}", packetIdentifier);
 		break;
 	}
 	server->DeallocatePacket(p);
@@ -309,7 +307,7 @@ void CGmpServ::LoadBanList(){
 		ifs.close();
 	}
 	else{
-		log->Write(LOG_WARNING, "bans.txt which contains active IP bans not exist");
+		SPDLOG_WARN("bans.txt which contains active IP bans not exist");
 		return;
 	}
 	if(!this->ban_list.empty()){
@@ -317,14 +315,14 @@ void CGmpServ::LoadBanList(){
 			this->server->AddToBanList(this->ban_list[i].c_str(), 0);
 		}
 	}
-	log->Write(LOG_NORMAL, "Active bans loaded.");
+	SPDLOG_INFO("Active bans loaded.");
 }
 
 void CGmpServ::SaveBanList(){
 	if(!this->ban_list.empty()){
 		std::ofstream ofs("bans.txt");
 		if(!ofs.is_open()){
-			log->Write(LOG_ERROR, "Could not save active bans to file bans.txt!");
+			SPDLOG_ERROR("Could not save active bans to file bans.txt!");
 			return;
 		}
 		for(size_t i=0; i<this->ban_list.size(); i++){
@@ -332,7 +330,7 @@ void CGmpServ::SaveBanList(){
 		}
 		ofs.clear();
 	}
-	log->Write(LOG_NORMAL, "Bans written to bans.txt.");
+	SPDLOG_INFO("Bans written to bans.txt.");
 }
 
 void CGmpServ::DeleteFromPlayerList(RakNet::RakNetGUID guid){
@@ -640,31 +638,34 @@ void CGmpServ::HandleNormalMsg(RakNet::Packet* p){
 		}
 	}
 #undef EQ
-	memset((char*)szMsg.data(), 0, 1024);
-	sprintf((char*)szMsg.data(), "%s:%s", players[FindIDOnList(p->guid.g)].name.c_str(), (const char*)(p->data+1));
-	log->Write(LOG_NORMAL, szMsg.c_str());
+	SPDLOG_INFO("{}:{}", players[FindIDOnList(p->guid.g)].name.c_str(), (const char*)(p->data+1));
 	szMsg.clear();
 }
 
-void CGmpServ::HandleWhisp(RakNet::Packet* p){
-	size_t forbiden_id=0;
-	forbiden_id= ~forbiden_id;
-	if(FindIDOnList(p->guid.g)==forbiden_id) return;
-	else if(!players[FindIDOnList(p->guid.g)].is_ingame) return;
-	uint64_t say_to;
-	memcpy(&say_to, p->data+1, sizeof(uint64_t));
-	if(FindIDOnList(say_to)==forbiden_id) return;
-	std::string szMsg;
-	szMsg.reserve(1024);
-	*((char*)szMsg.data())=p->data[0];
-	memcpy((char*)szMsg.data()+1+sizeof(uint64_t), p->data+1, p->length-1);
-	memcpy((char*)(szMsg.data()+1), &p->guid.g, sizeof(uint64_t));
-	server->Send((const char*)szMsg.data(), p->length+1+sizeof(uint64_t), LOW_PRIORITY, RELIABLE_ORDERED, 6, p, false);
-	server->Send((const char*)szMsg.data(), p->length+1+sizeof(uint64_t), LOW_PRIORITY, RELIABLE_ORDERED, 6, players[FindIDOnList(say_to)].id, false);
-	memset((char*)szMsg.data(), 0, 1024);
-	sprintf((char*)szMsg.data(), "(%s WHISPER TO %s) %s",players[FindIDOnList(p->guid.g)].name.c_str(),players[FindIDOnList(say_to)].name.c_str(), (const char*)(p->data+1+sizeof(uint64_t)));
-	log->Write(LOG_NORMAL, szMsg.c_str());
-	szMsg.clear();
+void CGmpServ::HandleWhisp(RakNet::Packet* p)
+{
+  size_t forbiden_id = 0;
+  forbiden_id = ~forbiden_id;
+  if (FindIDOnList(p->guid.g) == forbiden_id)
+    return;
+  else if (!players[FindIDOnList(p->guid.g)].is_ingame)
+    return;
+  uint64_t say_to;
+  memcpy(&say_to, p->data + 1, sizeof(uint64_t));
+  if (FindIDOnList(say_to) == forbiden_id)
+    return;
+  std::string szMsg;
+  szMsg.reserve(1024);
+  *((char*)szMsg.data()) = p->data[0];
+  memcpy((char*)szMsg.data() + 1 + sizeof(uint64_t), p->data + 1, p->length - 1);
+  memcpy((char*)(szMsg.data() + 1), &p->guid.g, sizeof(uint64_t));
+  server->Send((const char*)szMsg.data(), p->length + 1 + sizeof(uint64_t), LOW_PRIORITY, RELIABLE_ORDERED, 6, p,
+               false);
+  server->Send((const char*)szMsg.data(), p->length + 1 + sizeof(uint64_t), LOW_PRIORITY, RELIABLE_ORDERED, 6,
+               players[FindIDOnList(say_to)].id, false);
+  SPDLOG_INFO("({} WHISPER TO {}) {}", players[FindIDOnList(p->guid.g)].name.c_str(),
+              players[FindIDOnList(say_to)].name.c_str(), (const char*)(p->data + 1 + sizeof(uint64_t)));
+  szMsg.clear();
 }
 
 void CGmpServ::HandleCastSpell(RakNet::Packet* p, bool Target){
@@ -716,11 +717,9 @@ void CGmpServ::HandleDropItem(RakNet::Packet* p){
 		if(!memcmp(&players[i].id, &p->guid.g, sizeof(uint64_t))) continue;
 		if(players[i].is_ingame) server->Send((const char*)szMsg.data(), p->length+sizeof(uint64_t), HIGH_PRIORITY, RELIABLE, 0, players[i].id, false);
 	}
-	memset((char*)szMsg.data(), 0, 1024);
 	short amount;
 	memcpy(&amount, p->data+3, 2);
-	sprintf((char*)szMsg.data(), "%s DROPPED ITEM. AMOUNT : %d", players[FindIDOnList(p->guid.g)].name.c_str(), amount);
-	log->Write(LOG_NORMAL, szMsg.c_str());
+	SPDLOG_INFO("{} DROPPED ITEM. AMOUNT: {}", players[FindIDOnList(p->guid.g)].name, amount);
 	szMsg.clear();
 }
 
@@ -739,9 +738,7 @@ void CGmpServ::HandleTakeItem(RakNet::Packet* p){
 		if(!memcmp(&players[i].id, &p->guid.g, sizeof(uint64_t))) continue;
 		if(players[i].is_ingame) server->Send((const char*)szMsg.data(), p->length+sizeof(uint64_t), HIGH_PRIORITY, RELIABLE, 0, players[i].id, false);
 	}
-	memset((char*)szMsg.data(), 0, 1024);
-	sprintf((char*)szMsg.data(), "%s TOOK ITEM.", players[FindIDOnList(p->guid.g)].name.c_str());
-	log->Write(LOG_NORMAL, szMsg.c_str());
+	SPDLOG_INFO("{} TOOK ITEM.", players[FindIDOnList(p->guid.g)].name);
 	szMsg.clear();
 }
 
@@ -759,8 +756,7 @@ void CGmpServ::HandleRMConsole(RakNet::Packet* p){
 			if(players[rid].admin_passwd>3){
 				SendDisconnectionInfo(players[rid].id.g);
 				server->AddToBanList(server->GetSystemAddressFromGuid(players[rid].id).ToString(false), 1800000);
-				sprintf((char*)szLog.data(), "[#] Too much failed authorizations(admin permissions). Banned %s@%s.", players[rid].name.c_str(), server->GetSystemAddressFromGuid(players[rid].id).ToString());
-				log->Write(LOG_WARNING, szLog.data());
+				SPDLOG_WARN("[#] Too much failed authorizations(admin permissions). Banned {}@{}.", players[rid].name, server->GetSystemAddressFromGuid(players[rid].id).ToString());
 				DeleteFromPlayerList(players[rid].id);
 			}
 			goto eoh;
@@ -794,8 +790,7 @@ void CGmpServ::HandleRMConsole(RakNet::Packet* p){
 						if(players[rid].moderator_passwd>3){
 							SendDisconnectionInfo(players[rid].id.g);
 							server->AddToBanList(server->GetSystemAddressFromGuid(players[rid].id).ToString(false), 1800000);
-							sprintf((char*)szLog.data(), "[#] Too much failed authoraztions(moderator permissions). Banned %s@%s.", players[rid].name.c_str(), server->GetSystemAddressFromGuid(players[rid].id).ToString());
-							log->Write(LOG_WARNING, szLog.data());
+							SPDLOG_WARN("[#] Too much failed authoraztions(moderator permissions). Banned {}@{}.", players[rid].name, server->GetSystemAddressFromGuid(players[rid].id).ToString());
 							DeleteFromPlayerList(players[rid].id);
 						}
 						break;
@@ -808,8 +803,7 @@ void CGmpServ::HandleRMConsole(RakNet::Packet* p){
 		//TO DO
 		if(!memcmp(p->data+1, SAY, strlen(SAY))){
 			if(!players[rid].has_admin)	if(!CPermissions::GetInstance()->IsPermitted(SAY)) goto eoh;
-			sprintf((char*)szLog.data(), "%s@%s say %s", (const char*)((players[rid].has_admin)?"ADMIN":players[rid].moderator->nickname), p->systemAddress.ToString(false), (const char*)p->data+5);
-			log->Write(LOG_NORMAL, szLog.data());
+			SPDLOG_INFO("{}@{} say {}", (const char*)((players[rid].has_admin)?"ADMIN":players[rid].moderator->nickname), p->systemAddress.ToString(false), (const char*)p->data+5);
 			*((unsigned char*)szLog.data())=PT_SRVMSG;
 			memcpy((char*)szLog.data()+1, p->data+5, p->length-5);
 			for(size_t i=0; i<players.size();i++){
@@ -836,8 +830,7 @@ void CGmpServ::HandleRMConsole(RakNet::Packet* p){
 				goto eoh;
 			}
 			SendDisconnectionInfo(players[kid].id.g);
-			sprintf((char*)szLog.data(), "%s@%s kick %s", (const char*)((players[rid].has_admin)?"ADMIN":players[rid].moderator->nickname), p->systemAddress.ToString(false), players[kid].name.c_str());
-			log->Write(LOG_NORMAL, szLog.data());
+			SPDLOG_INFO("{}@{} kick {}", (const char*)((players[rid].has_admin)?"ADMIN":players[rid].moderator->nickname), p->systemAddress.ToString(false), players[kid].name.c_str());
 			server->AddToBanList(server->GetSystemAddressFromGuid(players[kid].id).ToString(false), 5000);
 			DeleteFromPlayerList(players[kid].id);
 			*((unsigned char*)szLog.data())=PT_RCON;
@@ -861,8 +854,8 @@ void CGmpServ::HandleRMConsole(RakNet::Packet* p){
 				goto eoh;
 			}
 			SendDisconnectionInfo(players[bid].id.g);
-			sprintf((char*)szLog.data(), "%s@%s ban %s@%s", (const char*)((players[rid].has_admin)?"ADMIN":players[rid].moderator->nickname), p->systemAddress.ToString(false), players[bid].name.c_str(), server->GetSystemAddressFromGuid(players[bid].id).ToString());
-			log->Write(LOG_WARNING, szLog.data());
+			SPDLOG_WARN("{}@{} ban {}@{}", (const char*)((players[rid].has_admin)?"ADMIN":players[rid].moderator->nickname), 
+									p->systemAddress.ToString(false), players[bid].name.c_str(), server->GetSystemAddressFromGuid(players[bid].id).ToString());
 			server->AddToBanList(server->GetSystemAddressFromGuid(players[bid].id).ToString(false));
 			ban_list.push_back(server->GetSystemAddressFromGuid(players[bid].id).ToString(false));
 			DeleteFromPlayerList(players[bid].id);
@@ -886,24 +879,21 @@ void CGmpServ::HandleRMConsole(RakNet::Packet* p){
 			if(!ip_players.empty()){
 				do{
 					SendDisconnectionInfo(ip_players.top()->id.g);
-					sprintf((char*)szLog.data(), "%s@%s banned because of IP by %s@%s", ip_players.top()->name.c_str(), (char*)p->data+7, (const char*)((players[rid].has_admin)?"ADMIN":players[rid].moderator->nickname), p->systemAddress.ToString(false));
-					log->Write(LOG_WARNING, szLog.data());
+					SPDLOG_WARN("{}@{} banned because of IP by {}@{}", ip_players.top()->name, (char*)p->data+7, (const char*)((players[rid].has_admin)?"ADMIN":players[rid].moderator->nickname), p->systemAddress.ToString(false));
 					DeleteFromPlayerList(ip_players.top()->id);
 					ip_players.pop();
 				} while(!ip_players.empty());
 			}
 			server->AddToBanList((char*)p->data+7);
 			ban_list.push_back((char*)p->data+7);
-			sprintf((char*)szLog.data(), "%s@%s ban ip: %s", (const char*)((players[rid].has_admin)?"ADMIN":players[rid].moderator->nickname), p->systemAddress.ToString(false), (char*)p->data+7);
-			log->Write(LOG_WARNING, szLog.data());
+			SPDLOG_WARN("{}@{} ban ip: {}", (const char*)((players[rid].has_admin)?"ADMIN":players[rid].moderator->nickname), p->systemAddress.ToString(false), (char*)p->data+7);
 			*((unsigned char*)szLog.data())=PT_RCON;
 			memcpy((char*)szLog.data()+1, OK, strlen(OK)+1);
 			server->Send(szLog.data(), static_cast<int>(2+strlen(OK)), MEDIUM_PRIORITY, RELIABLE, 9, p->systemAddress, false);
 		} else if(!memcmp(p->data+1, UNBAN,strlen(UNBAN))){
 			if(!players[rid].has_admin)	if(!CPermissions::GetInstance()->IsPermitted(UNBAN)) goto eoh;
 			if(server->IsBanned((char*)p->data+7)){
-				sprintf((char*)szLog.data(), "%s@%s unbanned following IP: %s", (const char*)((players[rid].has_admin)?"ADMIN":players[rid].moderator->nickname), p->systemAddress.ToString(false), (char*)p->data+7);
-				log->Write(LOG_WARNING, szLog.data());
+				SPDLOG_WARN("{}@{} unbanned following IP: {}", (const char*)((players[rid].has_admin)?"ADMIN":players[rid].moderator->nickname), p->systemAddress.ToString(false), (char*)p->data+7);
 				server->RemoveFromBanList((char*)p->data+7);
 			} else{
 				*((unsigned char*)szLog.data())=PT_RCON;
@@ -979,8 +969,7 @@ void CGmpServ::HandleRMConsole(RakNet::Packet* p){
 				memcpy((char*)szLog.data()+1, KILLED[r], strlen(KILLED[r])+1);
 				server->Send(szLog.data(), static_cast<int>(2+strlen(KILLED[r])+1), MEDIUM_PRIORITY, RELIABLE, 13, p->guid, false);
 				SendDeathInfo(n00b->id.g);
-				sprintf((char*)szLog.data(), "%s@%s killed %s@%s", (const char*)((players[rid].has_admin)?"ADMIN":players[rid].moderator->nickname), p->systemAddress.ToString(false), n00b->name.c_str(), server->GetSystemAddressFromGuid(n00b->id).ToString(false));
-				log->Write(LOG_WARNING, szLog.data());
+				SPDLOG_WARN("{}@{} killed {}@{}", (const char*)((players[rid].has_admin)?"ADMIN":players[rid].moderator->nickname), p->systemAddress.ToString(false), n00b->name, server->GetSystemAddressFromGuid(n00b->id).ToString(false));
 			} else{
 				*((unsigned char*)szLog.data())=PT_RCON;
 				memcpy((char*)szLog.data()+1, PDE, strlen(PDE)+1);
@@ -993,8 +982,7 @@ void CGmpServ::HandleRMConsole(RakNet::Packet* p){
 			*((unsigned char*)szLog.data())=PT_RCON;
 			memcpy((char*)szLog.data()+1, OK, strlen(OK)+1);
 			server->Send(szLog.data(), static_cast<int>(2+strlen(OK)), MEDIUM_PRIORITY, RELIABLE, 13, p->guid, false);
-			sprintf((char*)szLog.data(), "%s@%s changed loop message to: %s", (const char*)((players[rid].has_admin)?"ADMIN":players[rid].moderator->nickname), p->systemAddress.ToString(false),loop_msg.c_str());
-			log->Write(LOG_WARNING, szLog.data());
+			SPDLOG_WARN("{}@{} changed loop message to: {}", (const char*)((players[rid].has_admin)?"ADMIN":players[rid].moderator->nickname), p->systemAddress.ToString(false),loop_msg);
 		} else if(!memcmp(p->data+1, MOD_ADD, strlen(MOD_ADD))){
 			if(!players[rid].has_admin) goto eoh;
 			char b[16];
@@ -1009,8 +997,7 @@ void CGmpServ::HandleRMConsole(RakNet::Packet* p){
 			*((unsigned char*)szLog.data())=PT_RCON;
 			memcpy((char*)szLog.data()+1, OK, strlen(OK)+1);
 			server->Send(szLog.data(), static_cast<int>(2+strlen(OK)), MEDIUM_PRIORITY, RELIABLE, 13, p->guid, false);
-			sprintf((char*)szLog.data(), "ADMIN@%s added moderator: %s", p->systemAddress.ToString(false), n);
-			log->Write(LOG_WARNING, szLog.data());
+			SPDLOG_WARN("ADMIN@{} added moderator: {}", p->systemAddress.ToString(false), n);
 		} else if(!memcmp(p->data+1, MOD_DEL, strlen(MOD_DEL))){
 			if(!players[rid].has_admin) goto eoh;
 			char b[16];
@@ -1025,8 +1012,7 @@ void CGmpServ::HandleRMConsole(RakNet::Packet* p){
 			*((unsigned char*)szLog.data())=PT_RCON;
 			memcpy((char*)szLog.data()+1, OK, strlen(OK)+1);
 			server->Send(szLog.data(), static_cast<int>(2+strlen(OK)), MEDIUM_PRIORITY, RELIABLE, 13, p->guid, false);
-			sprintf((char*)szLog.data(), "ADMIN@%s deleted moderator: %s", p->systemAddress.ToString(false), n);
-			log->Write(LOG_WARNING, szLog.data());
+			SPDLOG_WARN("ADMIN@{} deleted moderator: {}", p->systemAddress.ToString(false), n);
 		} else if(!memcmp(p->data+1, MOD_SET, strlen(MOD_SET))){
 			if(!players[rid].has_admin) goto eoh;
 			char b[16];
@@ -1042,8 +1028,7 @@ void CGmpServ::HandleRMConsole(RakNet::Packet* p){
 				*((unsigned char*)szLog.data())=PT_RCON;
 				memcpy((char*)szLog.data()+1, OK, strlen(OK)+1);
 				server->Send(szLog.data(), static_cast<int>(2+strlen(OK)), MEDIUM_PRIORITY, RELIABLE, 13, p->guid, false);
-				sprintf((char*)szLog.data(), "ADMIN@%s changed moderator %s password to %s", p->systemAddress.ToString(false), n, pass);
-				log->Write(LOG_WARNING, szLog.data());
+				SPDLOG_WARN("ADMIN@{} changed moderator {} password to {}", p->systemAddress.ToString(false), n, pass);
 			} else{
 				*((unsigned char*)szLog.data())=PT_RCON;
 				memcpy((char*)szLog.data()+1, PDE, strlen(PDE)+1);
@@ -1059,8 +1044,7 @@ void CGmpServ::HandleRMConsole(RakNet::Packet* p){
 			*((unsigned char*)szLog.data())=PT_RCON;
 			memcpy((char*)szLog.data()+1, OK, strlen(OK)+1);
 			server->Send(szLog.data(), static_cast<int>(2+strlen(OK)), MEDIUM_PRIORITY, RELIABLE, 13, p->guid, false);
-			sprintf((char*)szLog.data(), "%s@%s changed hp regeneration: %d", (const char*)((players[rid].has_admin)?"ADMIN":players[rid].moderator->nickname), p->systemAddress.ToString(false),hp_regeneration);
-			log->Write(LOG_WARNING, szLog.data());
+			SPDLOG_WARN("{}@{} changed hp regeneration: {}", (const char*)((players[rid].has_admin)?"ADMIN":players[rid].moderator->nickname), p->systemAddress.ToString(false),hp_regeneration);
 			goto eoh;
 			//sprintf((char*)szLog.data()+1, "AD
 		}else if(!memcmp(p->data+1, MP_REGEN, strlen(MP_REGEN))){
@@ -1070,8 +1054,7 @@ void CGmpServ::HandleRMConsole(RakNet::Packet* p){
 			*((unsigned char*)szLog.data())=PT_RCON;
 			memcpy((char*)szLog.data()+1, OK, strlen(OK)+1);
 			server->Send(szLog.data(), static_cast<int>(2+strlen(OK)), MEDIUM_PRIORITY, RELIABLE, 13, p->guid, false);
-			sprintf((char*)szLog.data(), "%s@%s changed mp regeneration: %d", (const char*)((players[rid].has_admin)?"ADMIN":players[rid].moderator->nickname), p->systemAddress.ToString(false),mp_regeneration);
-			log->Write(LOG_WARNING, szLog.data());
+			SPDLOG_WARN("{}@{} changed mp regeneration: {}", (const char*)((players[rid].has_admin)?"ADMIN":players[rid].moderator->nickname), p->systemAddress.ToString(false),mp_regeneration);
 			for(size_t i=0; i<players.size(); i++) if(players[i].is_ingame) SendGameInfo(players[i].id);
 			goto eoh;
 		}else{

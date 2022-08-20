@@ -119,7 +119,7 @@ public:
 public:
 	CGmpServ(const char *password, int argc, char **argv);
 
-	~CGmpServ(void);
+	~CGmpServ();
 	static RAK_THREAD_DECLARATION(AddToPublicListHTTP);
 	bool Send(std::string message);
 	bool Receive(sPacket & packet);
@@ -154,7 +154,6 @@ private:
 	size_t FindIDOnList(uint64_t guid);
 
 	std::vector<std::string> ban_list;
-	CLog *log;
 	CClassManager *classmgr;
 	time_t last_stand_timer;
 	time_t regen_time;
