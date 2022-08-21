@@ -43,8 +43,8 @@ SOFTWARE.
 #include "CWatch.h"
 #include "version.h"
 #include "interface.h"
-#include "buildnumber.h"
 #include <urlmon.h>
+#include "git.h"
 #include "CUpdate.h"
 #include "CSyncFuncs.h"
 #include "WorldBuilder\CBuilder.h"
@@ -697,10 +697,10 @@ char x[2]={0, 0};
 			if(!Christmas) SpeedUpTime();
 			Screen->SetFont(FDefault);
 			Screen->SetFontColor(Normal);
-			sprintf(versionbuff, "v%s Build %s", GMP_VERSION, BUILDNUMBER_STR);
+			sprintf(versionbuff, "%s", (git_IsPopulated()) ? git_Describe() : "Unknown build");;
 			VersionString = versionbuff;
-			Screen->Print(6800, 8000, VersionString);
-			Screen->Print(100, 8000, HOWTOWB);
+			Screen->Print(6800, 7900, VersionString);
+			Screen->Print(100, 7900, HOWTOWB);
 			if(TitleWeapon) TitleWeapon->RotateWorldX(0.6f);
 			if(Input->KeyToggled(KEY_F1)){
 				g2names.open(".\\WorldBuilder\\g2mobs.wb");
