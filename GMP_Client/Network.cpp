@@ -17,11 +17,6 @@ Network::Network(CGmpClient* client)
 	peer = RakPeerInterface::GetInstance();
 }
 
-Network::~Network()
-{
-
-}
-
 void Network::Init()
 {
 	peer->SetTimeoutTime(1500, UNASSIGNED_SYSTEM_ADDRESS);
@@ -84,7 +79,7 @@ void Network::Disconnect()
 	peer->CloseConnection(serverAddress, true, 11, IMMEDIATE_PRIORITY);
 	Sleep(1000);
 	RakNet::RakPeerInterface::DestroyInstance(peer);
-	peer = NULL;
+	peer = nullptr;
 }
 
 void Network::Receive()

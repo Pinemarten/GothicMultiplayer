@@ -157,56 +157,6 @@ void _declspec(naked) CheckCallStateFunc()
 	}
 }
 
-// Coloured nickanmes in TDM
-DWORD TempString;
-DWORD RETURN_TOPRINT = 0x006C3B72;
-zSTRING Nazwa;
-void CheckName(DWORD Name){
-	if(!client) return;
-	Nazwa = *(zSTRING*)(Name);
-	const char* PlayerName = Nazwa.ToChar();
-	if(client->player.size() > 1){
-		for (int i = 1; i < (int)client->player.size(); i++){
-			if(client->player[i]->npc){
-				if(!memcmp(client->player[i]->npc->GetName().ToChar(), PlayerName, strlen(PlayerName)-2)){
-					if(client->player[i]->npc->HasFlag(2)) {
-						zCView::GetScreen()->SetFontColor(Green);
-					}
-					else zCView::GetScreen()->SetFontColor(Red);
-				}
-			}
-		}
-	}
-}
-bool IsTeamDeathMatch()
-{
-	if(!client) return false;
-	if(client->game_mode == 1) return true;
-	else return false;
-}
-void _declspec(naked) CheckNicknameForColour()
-{
-	__asm mov TempString, eax
-	if(IsTeamDeathMatch()){
-		CheckName(TempString);
-		__asm
-		{
-			mov ecx, DWORD PTR DS:[0x00AB6468]
-			mov eax, TempString
-			jmp RETURN_TOPRINT
-		}
-	}
-	else {
-		zCView::GetScreen()->SetFontColor(Normal);
-		__asm
-		{
-			mov ecx, DWORD PTR DS:[0x00AB6468]
-			mov eax, TempString
-			jmp RETURN_TOPRINT
-		}
-	}
-}
-
 // Patch for arrows damage
 void _stdcall CheckDamageForArrows(oCNpc* Npc, int howmuch, oSDamageDescriptor& Des)
 {
@@ -531,9 +481,6 @@ void Initialize(void)
 		// Patch for CallStateFunc
 		EraseMemory(0x00720870, 0x90, 2);
 		JmpPatch(0x00720872, (DWORD)CheckCallStateFunc);
-		// Patch for coloured nicknames in TDM
-		EraseMemory(0x006C3B71, 0x90, 1);
-		JmpPatch(0x006C3B6C, (DWORD)CheckNicknameForColour);
 		// Patch for arrwos damage
 		EraseMemory(0x0066CAC7, 0x90, 7);
 		JmpPatch(0x0066CACE, (DWORD)CheckDamage);

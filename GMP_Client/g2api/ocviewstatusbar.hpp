@@ -50,5 +50,6 @@ public:
 	void SetSize(int x, int y){XCALL(0x007A77A0);};
 	void GetPos(int & x, int & y){XCALL(0x007A7660);};
 	void GetSize(int & x, int & y){XCALL(0x007A7810);};
+	void SetPreview(float pA){XCALL(0x0043DD80);};
 };
 #endif  //__OCVIEWSTATUSBAR_H_INCLUDED__

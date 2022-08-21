@@ -209,6 +209,7 @@ public:
 	zCSkyControler* GetActiveSkyController(void){return this->activeSkyControler;};
 	zCSkyControler* GetSkyControler(void){XCALL(0x006203A0);};
 	zCBspTree* GetBspTree(void){XCALL(0x006D0020)};
+	zCCSPlayer* GetCutscenePlayer() {return csPlayer;};
 	static void DeleteAllNpcs(){
 		zCListSort<oCNpc>* NpcList= oCGame::GetGame()->GetWorld()->GetNpcList();
 		int size=NpcList->GetSize();

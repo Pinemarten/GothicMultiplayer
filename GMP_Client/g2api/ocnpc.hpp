@@ -622,6 +622,6 @@ public:
 	int GetTalentSkill(int) { XCALL(0x007317F0); };
 	void SetTalentValue(int, int) { XCALL(0x00730BE0); };
 	int GetTalentValue(int) { XCALL(0x00730DC0); };
-	void GetSwimDiveTime(float *, float *, float *) {XCALL(0x00741FA0);}
+	void GetSwimDiveTime(float &, float &, float &) {XCALL(0x00741FA0);}
 	void SetSwimDiveTime(float, float) {XCALL(0x00741F70);}
 };

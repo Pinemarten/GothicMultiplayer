@@ -94,20 +94,18 @@ CGmpClient::~CGmpClient(void)
 }
 
 bool CGmpClient::Connect()
-{ 
-	return network->Connect(clientHost.c_str(), clientPort);
+{
+  return network->Connect(clientHost, clientPort);
 }
 
 void CGmpClient::PrepareToJoin()
 {
-	BYTE buffer[1024];
-	ZeroMemory(buffer, 1024);
-	buffer[0] = Network::PT_WHOAMI;
-	network->Send((const char*)buffer, 1, IMMEDIATE_PRIORITY, RELIABLE);
-	ZeroMemory(buffer, 1024);
-	buffer[0] = Network::PT_MAP_NAME;
-	network->Send((const char*)buffer, 1, IMMEDIATE_PRIORITY, RELIABLE);
-	IsReadyToJoin = true;
+  std::uint8_t val[2] = {};
+  val[0] = Network::PT_WHOAMI;
+  network->Send((const char *)val, 1, IMMEDIATE_PRIORITY, RELIABLE);
+  val[0] = Network::PT_MAP_NAME;
+  network->Send((const char *)val, 1, IMMEDIATE_PRIORITY, RELIABLE);
+  IsReadyToJoin = true;
 }
 
 string CGmpClient::GetServerAddresForHTTPDownloader()

@@ -60,7 +60,7 @@ public:
     };
 
     Network(CGmpClient*);
-    ~Network();
+    ~Network() = default;
 
     bool Connect(std::string hostAddress, int hostPort);
     void Disconnect();
@@ -70,7 +70,7 @@ public:
 
     inline uint64_t GetMyId() { return playerID; }
     void UpdateMyId(uint64_t);
-    inline RakNet::SystemAddress GetServerAddress() const { return serverAddress; }
+    inline const RakNet::SystemAddress& GetServerAddress() const { return serverAddress; }
 private:
     void Init();
     void AddPacketHandlers();

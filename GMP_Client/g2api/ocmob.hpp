@@ -74,6 +74,7 @@ public:
 		this->trafoObjToWorld.m[1][2] = Pos.y;
 		this->trafoObjToWorld.m[2][2] = Pos.z;
 	};
+	zSTRING GetMobName(void){XCALL(0x0071BC30)};
 	void SetTriggerName(const zSTRING& TriggerName){*(zSTRING*)((DWORD)this+0x190) = TriggerName;};
 	zSTRING& GetTriggerName(){ return *(zSTRING*)((DWORD)this+0x190);};
 	zSTRING& GetStateFuncName(){ return *(zSTRING*)((DWORD)this+0x1E0);};

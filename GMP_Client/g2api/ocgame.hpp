@@ -218,6 +218,9 @@ public:
 	void ChangeLevel(const zSTRING & pA, const zSTRING & pB){XCALL(0x006C7290);};
 	void CallScriptInit(void){XCALL(0x006C1F60);};
 	void EnterWorld(class oCNpc *, int, zSTRING const& pA) { XCALL(0x006C96F0); };
+	static zVEC3 VectorMulti(const zMAT4 &, const zVEC3 &){XCALL(0x00474370);};
+	void UpdatePlayerStatus();
+	static void InstallPatches();
 };
 
 #endif // __API_G2_OCGAME_H__

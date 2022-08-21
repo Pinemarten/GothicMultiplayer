@@ -21,6 +21,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+set (G2API_SOURCES
+  ocgame.cpp
+)
 
-add_library(g2api INTERFACE)
-target_include_directories(g2api INTERFACE . ${InjectMage_INCLUDE_DIR} ${DX7SDK_INCLUDE_DIR})
+add_library(g2api STATIC ${G2API_SOURCES})
+target_include_directories(g2api PUBLIC . ${InjectMage_INCLUDE_DIR} ${DX7SDK_INCLUDE_DIR} )

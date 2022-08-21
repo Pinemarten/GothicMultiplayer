@@ -41,6 +41,13 @@ Full license at http://creativecommons.org/licenses/by-nc/3.0/legalcode
 class zCCamera
 {	
 public:
+	char data_chunk_1[164];
+	zMAT4 cameraMatrix;
+	char data_chunk_2[2108];
+	zCVob* camVob;
+	char data_chunk_3[16];
+public:
+	void Activate(void){XCALL(0x0054A700);};
 	void AddTremor(const zVEC3& pos, float radius, float time, const zVEC3& amplitude) 
 	{
 		XCALL(0x0054B660);

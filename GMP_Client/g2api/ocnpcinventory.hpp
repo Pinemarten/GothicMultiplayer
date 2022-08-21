@@ -56,6 +56,7 @@ public:
 	int				maxSlots;
 
 public:
+	zINT IsOpen(void){XCALL(0x00709200);};
 	int HandleEvent(int pA) { XCALL(0x0070E040) };
 	int IsEmpty(int pA, int pB) { XCALL(0x0070D1A0) };
 	oCItem* GetItem(int pA) { XCALL(0x0070C450) };
