@@ -28,6 +28,7 @@ SOFTWARE.
 #include <list>
 #include "patch.h"
 #include "CLocalPlayer.h"
+#include "Interface.h"
 
 extern float fWRatio;
 CSelectClass *selectmgr=NULL;
@@ -119,7 +120,12 @@ void CSelectClass::HandleInput(){
 		CameraPrepared = true;
 	}
 	zCInput *input=zCInput::GetInput();
-	if(input->KeyToggled(KEY_ESCAPE)) CGameManager::GetGameManager()->Done(); // <- póŸniej siê wymieni
+	if(input->KeyToggled(KEY_ESCAPE)) {
+        client->JoinGame(selected);
+        ExitToBigMainMenu();
+		delete this;
+        return;
+	}
 	if((this->selected>0) && (input->KeyToggled(KEY_A))){
 		CleanUpBeforeNext();
 		client->classmgr->EquipNPC(--this->selected, LocalPlayer, true);
