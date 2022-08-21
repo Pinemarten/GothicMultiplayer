@@ -46,7 +46,6 @@ add_compile_definitions(SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE)
 
 add_subdirectory(common)
 add_subdirectory(Shared)
-add_subdirectory(RakNet)
 add_subdirectory(GMP_Serv)
 add_subdirectory(thirdparty)
 
@@ -65,13 +64,12 @@ if (WIN32)
         REQUIRED
     )
 
-    find_library(BugTrap BugTrap.lib PATHS ./BugTrap)
+    find_library(BugTrap BugTrap.lib PATHS ./thirdparty/BugTrap)
     find_path(
         BugTrap_INCLUDE_DIR
         NAMES "BugTrap.h"
-        PATHS "./BugTrap"
+        PATHS "./thirdparty/BugTrap"
     )
 
-    add_subdirectory(g2api)
     add_subdirectory(GMP_Client)
 endif()
