@@ -151,49 +151,62 @@ void ExtendedServerList::HandleInput(){
 		addSelectedToFav();
 	}
 }
-bool ExtendedServerList::RefreshList(){ //Potem bedzie tutaj polaczenie z master serwerem
-	std::string data;
-	const char *HTTP_DOMAIN = "www.your-site.com";
-	const char *HTTP_LIST_FILE = "/ls2.php";
-	const char *LIST_CONST_PREFIX = "gmp_list";
+
+bool ExtendedServerList::RefreshList()
+{  // Potem bedzie tutaj polaczenie z master serwerem
+  std::string data;
+  const char* HTTP_DOMAIN = "127.0.0.1";
+  const char* HTTP_LIST_FILE = "/ls2.php";
+  const char* LIST_CONST_PREFIX = "gmp_list";
 #define PREFIX_SIZE 8
-	httplib::Client cli(HTTP_DOMAIN);
-	auto res = cli.Get(HTTP_LIST_FILE);
-	data = res.value().body;
+  httplib::Client cli(HTTP_DOMAIN);
+  auto res = cli.Get(HTTP_LIST_FILE);
+  if (!res)
+  {
+    return false;
+  }
+  data = res.value().body;
 
-	char work_buff[256];
-	int count=0;
-	size_t pos=0;
+  char work_buff[256];
+  int count = 0;
+  size_t pos = 0;
 
-	sscanf(data.c_str(), "%s%d", work_buff, &count);
-	if(memcmp(work_buff, LIST_CONST_PREFIX, strlen(LIST_CONST_PREFIX)) || (count==0)){
-		data.clear();
-		return false;
-	}
-	pos=data.find_first_of(' ', PREFIX_SIZE+1)+1;
-	ServerInfo si;
-	srvList.clear();
-	char chBuffer[3][128];
-	do{
-		memset(chBuffer[0], 0, 3*128);
+  sscanf(data.c_str(), "%s%d", work_buff, &count);
+  if (memcmp(work_buff, LIST_CONST_PREFIX, strlen(LIST_CONST_PREFIX)) || (count == 0))
+  {
+    data.clear();
+    return false;
+  }
+  pos = data.find_first_of(' ', PREFIX_SIZE + 1) + 1;
+  ServerInfo si;
+  srvList.clear();
+  char chBuffer[3][128];
+  do
+  {
+    memset(chBuffer[0], 0, 3 * 128);
 
-		sscanf(data.c_str()+pos, "%s%s%hu%hu%s%hu", chBuffer[0], chBuffer[1], &si.num_of_players, &si.max_players, chBuffer[2], &si.port);
-		for(int i=0; i<128; i++){
-			if(chBuffer[0][i]==7) chBuffer[0][i]=0x20;
-			if(chBuffer[1][i]==7) chBuffer[1][i]=0x20;
-			if(chBuffer[2][i]==7) chBuffer[2][i]=0x20;
-		}
-		si.ip=chBuffer[0];
-		si.name=chBuffer[1];
-		si.map=chBuffer[2];
-		addServer(si);
-		for(int i=0; i<6; i++)pos=data.find_first_of(' ', pos)+1;
-	}while(--count);
+    sscanf(data.c_str() + pos, "%s%s%hu%hu%s%hu", chBuffer[0], chBuffer[1], &si.num_of_players, &si.max_players,
+           chBuffer[2], &si.port);
+    for (int i = 0; i < 128; i++)
+    {
+      if (chBuffer[0][i] == 7)
+        chBuffer[0][i] = 0x20;
+      if (chBuffer[1][i] == 7)
+        chBuffer[1][i] = 0x20;
+      if (chBuffer[2][i] == 7)
+        chBuffer[2][i] = 0x20;
+    }
+    si.ip = chBuffer[0];
+    si.name = chBuffer[1];
+    si.map = chBuffer[2];
+    addServer(si);
+    for (int i = 0; i < 6; i++) pos = data.find_first_of(' ', pos) + 1;
+  } while (--count);
 
-	fillTables();
-	return true;
-
+  fillTables();
+  return true;
 }
+
 ExtendedServerList::~ExtendedServerList(void)
 {
 	delete tab_all;
