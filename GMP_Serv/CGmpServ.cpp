@@ -632,7 +632,9 @@ void CGmpServ::HandleNormalMsg(RakNet::Packet* p){
 #define EQ(x) (players[i].pos[x]-players[stranger].pos[x])
 	else for(size_t i=0;i<players.size(); i++){
 		if(players[i].is_ingame){
-			if((EQ(0)*EQ(0)+EQ(1)*EQ(1)<=25000.0f) && (EQ(0)*EQ(0)+EQ(2)*EQ(2)<=25000.0f) && (EQ(1)*EQ(1)+EQ(2)*EQ(2)<=25000.0f)){
+                  if ((EQ(0) * EQ(0) + EQ(1) * EQ(1) <= 2000000.0f) && (EQ(0) * EQ(0) + EQ(2) * EQ(2) <= 2000000.0f) &&
+                      (EQ(1) * EQ(1) + EQ(2) * EQ(2) <= 2000000.0f))
+                  {
 				server->Send((const char*)szMsg.data(), p->length+sizeof(uint64_t), LOW_PRIORITY, RELIABLE_ORDERED, 5, players[i].id, false);
 			}
 		}

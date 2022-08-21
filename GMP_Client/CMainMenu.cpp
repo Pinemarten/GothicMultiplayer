@@ -715,8 +715,12 @@ char x[2]={0, 0};
 				g2names.clear();
 				g2particles.clear();
 			}
-			if(Input->KeyToggled(KEY_UP) && MenuPos > 0) MenuPos--;
-			if(Input->KeyToggled(KEY_DOWN) && MenuPos < MenuItems) MenuPos++;
+			if(Input->KeyToggled(KEY_UP)) {
+				MenuPos == 0 ? MenuPos = MenuItems : MenuPos--;
+			}
+			if(Input->KeyToggled(KEY_DOWN)) {
+				MenuPos == MenuItems ? MenuPos = 0 : MenuPos++;
+			}
 			if(Input->KeyPressed(KEY_RETURN)){
 				Input->ClearKeyBuffer();
 				RunMenuItem();
@@ -978,8 +982,12 @@ char x[2]={0, 0};
 			}
 			// Wybór opcji przez enter
 			if(!WritingNickname){
-			if(Input->KeyToggled(KEY_UP) && OptionPos > 0) OptionPos--;
-			if(Input->KeyToggled(KEY_DOWN) && OptionPos < 9) OptionPos++;
+			if(Input->KeyToggled(KEY_UP)) {
+				OptionPos == 0 ? OptionPos = 9 : OptionPos--;
+            }
+			if(Input->KeyToggled(KEY_DOWN)) {
+				OptionPos == 9 ? OptionPos = 0 : OptionPos++;
+			}
 			if(Input->KeyPressed(KEY_RETURN)){
 				Input->ClearKeyBuffer();
 				RunOptionsItem();
@@ -1021,8 +1029,12 @@ char x[2]={0, 0};
 		case MENU_WORLDBUILDER:
 			if(TitleWeapon) TitleWeapon->RotateWorldX(0.6f);
 			// Wybór opcji przez enter
-			if(Input->KeyToggled(KEY_UP) && WBMenuPos > 0) WBMenuPos--;
-			if(Input->KeyToggled(KEY_DOWN) && WBMenuPos < 2) WBMenuPos++;
+			if(Input->KeyToggled(KEY_UP)) { 
+				WBMenuPos == 0 ? WBMenuPos = 2 : WBMenuPos--;
+			}
+			if(Input->KeyToggled(KEY_DOWN)) {
+				WBMenuPos == 2 ? WBMenuPos = 0 : WBMenuPos++;
+			}
 			if(Input->KeyPressed(KEY_RETURN)){
 				Input->ClearKeyBuffer();
 				RunWbMenuItem();

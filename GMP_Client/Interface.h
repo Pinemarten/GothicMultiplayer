@@ -37,3 +37,4 @@ SOFTWARE.
 void InterfaceLoop(void);
 void WorldBuilderInterface(void);
 void CreateMainMenu(bool InWorldBuilder);
+void ExitToBigMainMenu(void);
