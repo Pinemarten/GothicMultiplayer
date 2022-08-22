@@ -688,6 +688,7 @@ char x[2]={0, 0};
 			}
 		break;
 		case MENU_LOOP:
+		{
 			if(oCNpc::GetHero()->GetModel()->IsAnimationActive(WalkAnim)) oCNpc::GetHero()->GetModel()->StopAnimation(WalkAnim);
 			if(!TitleWeaponEnabled && TitleWeapon) {
 				TitleWeaponEnabled = true;
@@ -697,10 +698,9 @@ char x[2]={0, 0};
 			if(!Christmas) SpeedUpTime();
 			Screen->SetFont(FDefault);
 			Screen->SetFontColor(Normal);
-			sprintf(versionbuff, "%s", (git_IsPopulated()) ? git_Describe() : "Unknown build");;
-			VersionString = versionbuff;
-			Screen->Print(6800, 7900, VersionString);
-			Screen->Print(100, 7900, HOWTOWB);
+			VersionString = (git_IsPopulated()) ? git_Describe() : "Unknown build";
+			Screen->Print(8192 - Screen->FontSize(VersionString), 8192 - Screen->FontY(), VersionString);
+			Screen->Print(100, 8192 - Screen->FontY(), HOWTOWB);
 			if(TitleWeapon) TitleWeapon->RotateWorldX(0.6f);
 			if(Input->KeyToggled(KEY_F1)){
 				g2names.open(".\\WorldBuilder\\g2mobs.wb");
@@ -726,6 +726,7 @@ char x[2]={0, 0};
 				RunMenuItem();
 			}
 			PrintMenu();
+		}
 		break;
 		case CHOOSE_SRV_LOOP:
 			if(!TitleWeaponEnabled && TitleWeapon) {

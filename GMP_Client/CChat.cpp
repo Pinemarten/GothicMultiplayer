@@ -62,14 +62,18 @@ CChat::~CChat()
 
 void CChat::StartChatAnimation(int anim)
 {
-	if(oCNpc::GetHero()->IsDead() || oCNpc::GetHero()->GetAnictrl()->IsRunning() || oCNpc::GetHero()->GetAnictrl()->IsInWater() || oCNpc::GetHero()->GetAnictrl()->IsFallen()) return;
-        if (!oCNpc::GetHero()->GetModel()->IsAnimationActive(anibuffer))
-        {
-			sprintf(anibuffer, "%s%02d", "T_DIALOGGESTURE_", anim);
-            tmpanimname = anibuffer;
-			oCNpc::GetHero()->GetModel()->StartAnimation(anibuffer);
-		}
-};
+  if (oCNpc::GetHero()->IsDead() || oCNpc::GetHero()->GetAnictrl()->IsRunning() ||
+      oCNpc::GetHero()->GetAnictrl()->IsInWater() || oCNpc::GetHero()->GetAnictrl()->IsFallen())
+  {
+    return;
+  }
+  if (!oCNpc::GetHero()->GetModel()->IsAnimationActive(anibuffer))
+  {
+    sprintf(anibuffer, "%s%02d", "T_DIALOGGESTURE_", anim);
+    tmpanimname = anibuffer;
+    oCNpc::GetHero()->GetModel()->StartAnimation(anibuffer);
+  }
+}
 
 void CChat::SetWhisperTo(std::string& whisperto)
 {
