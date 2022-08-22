@@ -63,44 +63,11 @@ CChat::~CChat()
 void CChat::StartChatAnimation(int anim)
 {
 	if(oCNpc::GetHero()->IsDead() || oCNpc::GetHero()->GetAnictrl()->IsRunning() || oCNpc::GetHero()->GetAnictrl()->IsInWater() || oCNpc::GetHero()->GetAnictrl()->IsFallen()) return;
-	if(!oCNpc::GetHero()->GetModel()->IsAnimationActive(tmpanimname)){
-		switch(anim)
-		{
-			case 1:
-				tmpanimname = "T_DIALOGGESTURE_01";
-			break;
-			case 2:
-				tmpanimname = "T_DIALOGGESTURE_02";
-			break;
-			case 3:
-				tmpanimname = "T_DIALOGGESTURE_03";
-			break;
-			case 4:
-				tmpanimname = "T_DIALOGGESTURE_04";
-			break;
-			case 5:
-				tmpanimname = "T_DIALOGGESTURE_05";
-			break;
-			case 6:
-				tmpanimname = "T_DIALOGGESTURE_06";
-			break;
-			case 7:
-				tmpanimname = "T_DIALOGGESTURE_07";
-			break;
-			case 8:
-				tmpanimname = "T_DIALOGGESTURE_08";
-			break;
-			case 9:
-				tmpanimname = "T_DIALOGGESTURE_09";
-			break;
-			case 10:
-				tmpanimname = "T_DIALOGGESTURE_10";
-			break;
-			default:
-				tmpanimname = "T_DIALOGGESTURE_02";
-			break;
-			}
-			oCNpc::GetHero()->GetModel()->StartAnimation(tmpanimname);
+        if (!oCNpc::GetHero()->GetModel()->IsAnimationActive(anibuffer))
+        {
+			sprintf(anibuffer, "%s%02d", "T_DIALOGGESTURE_", anim);
+            tmpanimname = anibuffer;
+			oCNpc::GetHero()->GetModel()->StartAnimation(anibuffer);
 		}
 };
 
