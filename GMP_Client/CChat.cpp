@@ -69,11 +69,10 @@ void CChat::StartChatAnimation(int anim)
   {
     return;
   }
-  if (!oCNpc::GetHero()->GetModel()->IsAnimationActive(anibuffer))
+  if (!oCNpc::GetHero()->GetModel()->IsAnimationActive(tmpanimname))
   {
-    sprintf(anibuffer, "%s%02d", "T_DIALOGGESTURE_", anim);
-    tmpanimname = anibuffer;
-    oCNpc::GetHero()->GetModel()->StartAnimation(anibuffer);
+    tmpanimname = fmt::format("T_DIALOGGESTURE_{:02}", anim).c_str();
+    oCNpc::GetHero()->GetModel()->StartAnimation(tmpanimname);
   }
 }
 
