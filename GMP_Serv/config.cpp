@@ -88,8 +88,9 @@ void Config::Load()
   {
     config = TomlWrapper::CreateFromFile("config.toml");
   }
-  catch (const std::exception&)
+  catch (const std::exception& ex)
   {
+    SPDLOG_ERROR("Couldn't load config file: {}", ex.what());
     return;
   }
 

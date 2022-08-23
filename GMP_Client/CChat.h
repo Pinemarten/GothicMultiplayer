@@ -63,7 +63,6 @@ public:
 	zSTRING tmpnickname;
 	zSTRING tmpanimname;
 	char buffer[32];
-    char anibuffer[18];
 	bool ShowHow;
 public:
 	CChat();
