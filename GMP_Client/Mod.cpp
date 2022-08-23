@@ -31,7 +31,6 @@ SOFTWARE.
 #include "HooksManager.h"
 #include "Interface.h"
 #include "InjectMage.h"
-#include "Clog.h"
 #include "CConfig.h"
 #include "CServerList.h"
 #include "CMainMenu.h"

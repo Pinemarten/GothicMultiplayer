@@ -34,8 +34,10 @@ SOFTWARE.
 *****************************************************************************/
 
 #pragma warning (disable : 4018)
+
 #include "CChat.h"
 #include "CLanguage.h"
+#include <spdlog/spdlog.h>
 
 extern zSTRING FDefault;
 extern zCOLOR Normal;
@@ -123,7 +125,10 @@ void CChat::WriteMessage(MsgType type, bool PrintTimed, zCOLOR& rgb, const char 
 			AdminMessages.push_back(msg);
 		break;
 	};
-	if(CConfig::GetInstance()->logchat) CLog::GetInstance()->Write(LV_CHAT, text);
+	if (CConfig::GetInstance()->logchat)
+	{
+		SPDLOG_INFO("{}", text);
+	}
 };
 
 void CChat::WriteMessage(MsgType type, bool PrintTimed, const char * format, ...)
@@ -169,7 +174,10 @@ void CChat::WriteMessage(MsgType type, bool PrintTimed, const char * format, ...
 			AdminMessages.push_back(msg);
 		break;
 	};
-	if(CConfig::GetInstance()->logchat) CLog::GetInstance()->Write(LV_CHAT, text);
+	if(CConfig::GetInstance()->logchat)
+	{
+		SPDLOG_INFO("{}", text);
+	}
 };
 
 void CChat::ClearChat()

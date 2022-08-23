@@ -43,7 +43,6 @@ set (CLIENT_SOURCES
   CInventory.cpp     
   CLanguage.cpp      
   CLocalPlayer.cpp   
-  CLog.cpp
   CMainMenu.cpp      
   CMap.cpp
   CMenu.cpp

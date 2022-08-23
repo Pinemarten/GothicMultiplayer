@@ -37,7 +37,6 @@ SOFTWARE.
 #include <vector>
 #include "g2Api.h"
 #include "CConfig.h"
-#include "CLog.h"
 
 struct MsgStruct
 {

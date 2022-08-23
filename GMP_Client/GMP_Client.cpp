@@ -29,7 +29,6 @@ SOFTWARE.
 
 #include <iostream>
 
-#include "CLog.h"
 #include "HooksManager.h"
 #include "Mod.h"
 #include "common.h"
@@ -43,11 +42,10 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
   DisableThreadLibraryCalls(hinstDLL);
   if (fdwReason == DLL_PROCESS_ATTACH)
   {
+    AllocConsole();
     spdlog::default_logger()->sinks().push_back(
         std::make_shared<spdlog::sinks::basic_file_sink_mt>("GMP_Log.txt", false));
 		spdlog::flush_on(spdlog::level::debug);
-    AllocConsole();
-    CLog::GetInstance()->Write(LV_INFORMATION, "Initialize GMP.");
     Patch::SetWndName("Gothic Multiplayer");
     Patch::SetVersion(GMP_VERSION);
     Patch::InitNewSplash();

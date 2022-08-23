@@ -34,7 +34,6 @@ SOFTWARE.
 *****************************************************************************/
 
 #include "CPlayer.h"
-#include "CLog.h"
 #include "CHeroClass.h"
 #include <list>
 #include "CGmpClient.h"
@@ -42,6 +41,8 @@ SOFTWARE.
 #include "CInterpolatePos.h"
 #include "CLocalPlayer.h"
 #include "CConfig.h"
+
+#include <spdlog/spdlog.h>
 
 
 // NEEDED FOR SETTING NPC TYPES
@@ -272,7 +273,10 @@ void CPlayer::LeaveGame()
 	if(global_ingame->Shrinker->IsShrinked(npc)) global_ingame->Shrinker->UnShrinkNpc(npc);
 	this->npc->GetSpellBook()->Close(1);
 	if(this->npc) oCGame::GetGame()->GetSpawnManager()->DeleteNpc(npc);
-	else CLog::GetInstance()->Write(LV_ERROR, "Error Code: 0x00");
+	else
+	{ 
+		SPDLOG_ERROR("Error Code: 0x00");
+	}
 	this->npc = NULL;
 };
 

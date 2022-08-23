@@ -36,7 +36,6 @@ SOFTWARE.
 #include "CGmpClient.h"
 #include "CLanguage.h"
 #include "keyboard.h"
-#include "CLog.h"
 #include "CMainMenu.h"
 #include "patch.h"
 #include "mod.h"
@@ -50,6 +49,7 @@ SOFTWARE.
 #include "WorldBuilder\CBuilder.h"
 #include "SharedUtil.h"
 #include "ExtendedServerList.h"
+#include <spdlog/spdlog.h>
 
 extern CGmpClient *client;
 extern zSTRING GlobalFont;
@@ -780,7 +780,7 @@ char x[2]={0, 0};
 						}
 					}
 				} else{
-					CLog::GetInstance()->Write(LV_ERROR, "ERROR: %s\n", client->GetLastError().ToChar());
+					SPDLOG_ERROR("ERROR: {}", client->GetLastError().ToChar());
 				}
 			}
 			if(Input->KeyPressed(KEY_W)) {SelectedServer= -1; Input->ClearKeyBuffer();}

@@ -27,7 +27,6 @@ SOFTWARE.
 #pragma warning (disable : 4101)
 #include <windows.h>
 #include <httplib.h>
-#include "CLog.h"
 #include <Iphlpapi.h>
 #include <Icmpapi.h>
 #include <winsock2.h>
