@@ -78,6 +78,8 @@ public:
 
 class zCOption
 {
+private:
+	char data[664];
 public:
 	zCOption(void){XCALL(0x00460350);};
 	int ChangeDir(enum zTOptionPaths){XCALL(0x00465160);};

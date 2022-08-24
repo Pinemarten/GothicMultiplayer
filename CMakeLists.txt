@@ -50,6 +50,7 @@ add_subdirectory(GMP_Serv)
 add_subdirectory(thirdparty)
 
 if (WIN32)
+    find_package(SDL2 CONFIG REQUIRED)
     find_library(InjectMage InjectMage.lib PATHS ./InjectMage)
     find_path(
         InjectMage_INCLUDE_DIR
