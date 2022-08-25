@@ -53,10 +53,10 @@ public:
 		XCALL(0x00402AF0);
 	};
 
-	void* DeleteClassAndFreeMemory()
+	~zSTRING()
 	{
-		XCALL(0x00401140);
-	};
+		XCALL(0x401160);
+	}
 
 	//.text:004010C0 ; public: __thiscall zSTRING::zSTRING(char const *)
 	/** Constructor
