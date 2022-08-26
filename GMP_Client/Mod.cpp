@@ -504,7 +504,6 @@ void Initialize(void)
 		MainMenu = CMainMenu::GetInstance();
 		Patch::FixSetTime();
 		Patch::DisableCheat();
-		Patch::DisablePlayBink();
 		Patch::DisablePause();
 		Patch::FixLights();
 		Patch::FixApplyOverlay();

@@ -108,6 +108,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
     Patch::SetWndName("Gothic Multiplayer");
     Patch::SetVersion(GMP_VERSION);
     Patch::InitNewSplash();
+    Patch::DisablePlayBink();
     Patch::DisableStartupScript();
     Patch::DisableAbnormalExit();
     Patch::AlwaysNoMenu();
