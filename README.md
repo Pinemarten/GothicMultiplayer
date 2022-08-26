@@ -19,7 +19,7 @@ cd GothicMultiplayer2011
 mkdir build
 cd build
 cmake .. -A WIN32
-cmake --build . --config Release
+cmake --build . --config RelWithDebInfo
 ```
 
 
