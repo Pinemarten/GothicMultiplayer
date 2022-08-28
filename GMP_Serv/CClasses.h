@@ -52,25 +52,15 @@ struct SClass{
 		char *prim_wep;
 		char *sec_wep;
 		short abilities[13];
-		void Print(void);
 };
 
 class CClassManager{
 	private:
-		char *file_buffer;
-		long file_length;
-		long file_buffer_size;
 		unsigned char num_of_classes;
-
-		void EraseComment(void);
 	public:
 		SClass *class_array;
 		CClassManager(void);
 		~CClassManager(void);
-		void PrintAll(void);
-		char *GetFilePart(unsigned long part);
-		long GetFileLength(void);
-		long GetBufferSize(void);
 };
 
 #endif // CCLASSES_HPP_INCLUDED
