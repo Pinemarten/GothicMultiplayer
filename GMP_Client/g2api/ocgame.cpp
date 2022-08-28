@@ -50,8 +50,7 @@ SOFTWARE.
 
 void oCGame::InstallPatches()
 {
-	void* ptr = DisMember(sizeof(void (oCGame::*)()),  &oCGame::UpdatePlayerStatus);
-	CallPatch(0x006C89D8, (DWORD)ptr, 0);
+	CallPatch(0x006C89D8, (DWORD)DisMember(sizeof(void (oCGame::*)()),  &oCGame::UpdatePlayerStatus), 0);
 };
 
 void oCGame::UpdatePlayerStatus()
@@ -71,7 +70,7 @@ void oCGame::UpdatePlayerStatus()
 	int cha = 0;
 	if(npc->GetInventory()->IsOpen())
 	{
-		oCItem* SelectedItem = oCNpc::GetHero()->GetInventory()->inv->GetSelectedItem();
+		oCItem* SelectedItem = oCNpc::GetHero()->GetInventory()->GetSelectedItem();
 		if(SelectedItem){
 			int nut = SelectedItem->nutrition;
 			if(!nut){

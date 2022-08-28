@@ -91,5 +91,6 @@ public:
 	void Open(int pA, int pB, int pC) { XCALL(0x0070BF10) };
 	void Remove(oCItem* pA) { XCALL(0x0070CBE0) };
 	oCItemContainer* GetItemContainer() { return this->inv;};
+	oCItem* GetSelectedItem(void){XCALL(0x007092C0);};
 	static bool IsHeroInventoryOpened() { return *(bool*)0x009A43F0;};
 };
