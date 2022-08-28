@@ -76,9 +76,9 @@ CHeroClass::CHeroClass(const char *szData, BYTE size)
     tmp->class_description = "No description";
     for (short z = 0; z < SHeroClass::AB_MAX; z++) tmp->skill[z] = 0;
 
-    tmp->class_name = classNode.child("name").text().get();
-    tmp->team_name = classNode.child("team").text().get();
-    tmp->class_description = classNode.child("description").text().get();
+    tmp->class_name = classNode.child("name").text().as_string("");
+    tmp->team_name = classNode.child("team").text().as_string("");
+    tmp->class_description = classNode.child("description").text().as_string("");
     tmp->Type = (CPlayer::NpcType)classNode.child("npctype").text().as_int();
     tmp->strength = classNode.child("strength").text().as_int();
     tmp->dexterity = classNode.child("dexterity").text().as_int();
@@ -95,24 +95,15 @@ CHeroClass::CHeroClass(const char *szData, BYTE size)
     tmp->skill[SHeroClass::AB_ACROBATICS] = classNode.child("acrobatics").text().as_int();
     tmp->skill[SHeroClass::AB_PICKPOCKETS] = classNode.child("pickpocket").text().as_int();
 
-    if (!classNode.child("armor").text().empty())
-    {
-      tmp->armor.index = zCParser::GetParser()->GetIndex(classNode.child("armor").text().as_string(""));
-      tmp->armor.count = 1;
-    }
+    tmp->armor.index = zCParser::GetParser()->GetIndex(classNode.child("armor").text().as_string(""));
+    tmp->armor.count = 1;
 
-    if (!classNode.child("prim_wep").text().empty())
-    {
-      tmp->prim_wep.index = zCParser::GetParser()->GetIndex(classNode.child("prim_wep").text().as_string(""));
-      tmp->prim_wep.count = 1;
-    }
+    tmp->prim_wep.index = zCParser::GetParser()->GetIndex(classNode.child("prim_wep").text().as_string(""));
+    tmp->prim_wep.count = 1;
 
-    if (!classNode.child("sec_wep").text().empty())
-    {
-      tmp->sec_wep.index = zCParser::GetParser()->GetIndex(classNode.child("sec_wep").text().as_string(""));
-      tmp->sec_wep.count = 1;
-    }
-    
+    tmp->sec_wep.index = zCParser::GetParser()->GetIndex(classNode.child("sec_wep").text().as_string(""));
+    tmp->sec_wep.count = 1;
+
     for (auto itemNode : classNode.child("items").children())
     {
       SItem *tmp_it = new SItem;
@@ -207,21 +198,21 @@ void CHeroClass::EquipNPC(size_t offset, CPlayer *Player, bool clear_inventory)
   oCObjectFactory *objectfactory = oCObjectFactory::GetFactory();
   if (npc == oCNpc::GetHero())
   {
-    if (data[offset]->armor.count)
+    if (data[offset]->armor.index > 0)
       npc->Equip(npc->GetInventory()->Insert(objectfactory->CreateItem(data[offset]->armor.index)));
   }
   if (npc == oCNpc::GetHero())
   {
-    if (data[offset]->sec_wep.count)
+    if (data[offset]->sec_wep.index > 0)
       npc->EquipWeapon(npc->GetInventory()->Insert(objectfactory->CreateItem(data[offset]->sec_wep.index)));
-    if (data[offset]->prim_wep.count)
+    if (data[offset]->prim_wep.index > 0)
       npc->EquipWeapon(npc->GetInventory()->Insert(objectfactory->CreateItem(data[offset]->prim_wep.index)));
   }
   else
   {
-    if (data[offset]->sec_wep.count)
+    if (data[offset]->sec_wep.index > 0)
       npc->GetInventory()->Insert(objectfactory->CreateItem(data[offset]->sec_wep.index));
-    if (data[offset]->prim_wep.count)
+    if (data[offset]->prim_wep.index > 0)
       npc->GetInventory()->Insert(objectfactory->CreateItem(data[offset]->prim_wep.index));
   }
   printf("Number of items: %u\n", data[offset]->items.size());
