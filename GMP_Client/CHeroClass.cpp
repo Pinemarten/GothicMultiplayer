@@ -85,8 +85,8 @@ CHeroClass::CHeroClass(const char *szData, BYTE size)
       tmp->dexterity = classNode.child("dexterity").text().as_int();
       tmp->mp = classNode.child("mana").text().as_int();
       tmp->hp = classNode.child("health").text().as_int();
-      tmp->skill[SHeroClass::AB_1HWEP] = classNode.child("onehandedweapon").text().as_int();
-      tmp->skill[SHeroClass::AB_2HWEP] = classNode.child("twohandedweapon").text().as_int();
+      tmp->skill[SHeroClass::AB_1HWEP] = classNode.child("onehweapon").text().as_int();
+      tmp->skill[SHeroClass::AB_2HWEP] = classNode.child("twohweapon").text().as_int();
       tmp->skill[SHeroClass::AB_BOW] = classNode.child("bow").text().as_int();
       tmp->skill[SHeroClass::AB_XBOW] = classNode.child("crossbow").text().as_int();
       tmp->skill[SHeroClass::AB_MAGIC_LVL] = classNode.child("magic_lvl").text().as_int();
