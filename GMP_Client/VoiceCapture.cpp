@@ -1,6 +1,7 @@
 #include "VoiceCapture.h"
 #include <mutex>
 #include <spdlog/spdlog.h>
+#include <zlib.h>
 
 const int AUDIO_CHANNELS = 2;
 std::mutex voiceCaptureBufferMutex;
@@ -86,7 +87,13 @@ bool VoiceCapture::GetAndFlushVoiceBuffer(char* buffer, int& size)
   if (voiceBufferSize == 0) {
     return false;
   }
-  memcpy(buffer, voiceBuffer, voiceBufferSize);
+  uLongf dstSize = 480 * sizeof(float) * AUDIO_CHANNELS * 4096;
+  //TODO:
+  //I don't really believe in zlib compression efficiency (especially for voice data)
+  //This should be switched to opus, but there are some problems:
+  //Opus requires to have each frame compressed, so you cannot just take voice into buffer and send (the same with decompression)
+  compress((Bytef*)buffer, &dstSize,(Bytef*)voiceBuffer, voiceBufferSize);
+ // memcpy(buffer, voiceBuffer, voiceBufferSize); // No compression
   size = voiceBufferSize;
   memset(voiceBuffer, 0, 480 * sizeof(float) * AUDIO_CHANNELS * 4096);
   voiceBufferSize = 0;

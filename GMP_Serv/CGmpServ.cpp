@@ -624,7 +624,7 @@ void CGmpServ::HandleVoice(RakNet::Packet* p)
   data.reserve(p->length);
   memcpy(data.data(), p->data, p->length);
   for (size_t i = 0; i < players.size(); i++) {
-    if (players[i].is_ingame) {
+    if (players[i].is_ingame && players[i].id != p->guid) {
       server->Send(data.data(), p->length, IMMEDIATE_PRIORITY, UNRELIABLE, 5, players[i].id, false);
 	}
   }

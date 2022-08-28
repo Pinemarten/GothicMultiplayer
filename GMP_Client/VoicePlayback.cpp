@@ -1,7 +1,9 @@
 #include "VoicePlayback.h"
 #include <mutex>
 #include <spdlog/spdlog.h>
-
+#include <zlib.h>
+//TODO: Check if work with more than one talking players
+//It's possible that we need one VoicePlayback object per one player
 std::mutex voicePlaybackBufferMutex;
 std::atomic_bool stopPlaybackThread = false;
 
@@ -54,8 +56,12 @@ void VoicePlayback::Loop()
     auto voiceBuffer = voiceBuffers.front();
     voiceBuffers.pop_front();
     voicePlaybackBufferMutex.unlock();
-    
-    SDL_QueueAudio(out, voiceBuffer.data, voiceBuffer.size);
+    int size = 480 * sizeof(float) * 2 * 4096;
+    char* rawData = new char[size];
+    memset(rawData, 0, size);
+    uncompress((Bytef*)rawData, (uLongf*)&size, (Bytef*)voiceBuffer.data, voiceBuffer.size);
+    SDL_QueueAudio(out, rawData, voiceBuffer.size);
+    delete[] rawData;
     delete[] voiceBuffer.data;
   } while (!stopPlaybackThread);
 }
