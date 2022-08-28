@@ -49,6 +49,7 @@ void Network::AddPacketHandlers()
 	packetHandlers[PT_YOUR_NAME] = Game::OnYourName;
 	packetHandlers[PT_GAME_INFO] = Game::OnGameInfo;
 	packetHandlers[PT_LEFT_GAME] = Game::OnLeftGame;
+    packetHandlers[PT_VOICE] = Game::OnVoice;
 	packetHandlers[ID_DISCONNECTION_NOTIFICATION] = Connection::OnDisconnectOrLostConnection;
 	packetHandlers[ID_CONNECTION_LOST] = Connection::OnDisconnectOrLostConnection;
 }

@@ -266,6 +266,9 @@ bool CGmpServ::Receive(sPacket & packet)
 	case PT_MAP_NAME:
 		HandleMapNameReq(p);
 		break;
+    case PT_VOICE:
+        HandleVoice(p);
+        break;
 	default:
 		/*packet.type = CGmpServ::PT_MSG;
 		packet.data.clear();
@@ -612,6 +615,19 @@ void CGmpServ::MakeHPDiff(RakNet::Packet* p){
 		players[pwgd].tod=time(NULL);
 		SendDeathInfo(players[pwgd].id.g);
 	}
+}
+
+void CGmpServ::HandleVoice(RakNet::Packet* p)
+{
+  // TODO: no need to resend player id right now, it won't be needed until we add 3d chat
+  std::string data;
+  data.reserve(p->length);
+  memcpy(data.data(), p->data, p->length);
+  for (size_t i = 0; i < players.size(); i++) {
+    if (players[i].is_ingame) {
+      server->Send(data.data(), p->length, IMMEDIATE_PRIORITY, UNRELIABLE, 5, players[i].id, false);
+	}
+  }
 }
 
 void CGmpServ::HandleNormalMsg(RakNet::Packet* p){

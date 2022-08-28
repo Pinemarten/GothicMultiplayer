@@ -68,6 +68,8 @@ set (CLIENT_SOURCES
   keyboard.cpp
   Mod.cpp
   Network.cpp
+  VoiceCapture.cpp
+  VoicePlayback.cpp
   HTTPDownloader.cpp
   patch.cpp
   SharedUtil.cpp

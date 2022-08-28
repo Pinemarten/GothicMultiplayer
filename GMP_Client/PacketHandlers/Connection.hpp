@@ -15,15 +15,7 @@ namespace Connection {
 	void OnDisconnectOrLostConnection(CGmpClient* client, RakNet::Packet* packet)
 	{
 		client->network->error = packet->data[0];
-		delete LocalPlayer;
-		CPlayer::DeleteAllPlayers();
-		if (client->VobsWorldBuilderMap.size() > 0) {
-			for (int i = 0; i < (int)client->VobsWorldBuilderMap.size(); i++)
-			{
-				client->VobsWorldBuilderMap[i].Vob->RemoveVobFromWorld();
-			}
-			client->VobsWorldBuilderMap.clear();
-		}
+        client->Disconnect();
 		oCNpc::GetHero()->ResetPos(oCNpc::GetHero()->GetPosition());
 		client->network->IsConnected = false;
 		client->IsInGame = false;

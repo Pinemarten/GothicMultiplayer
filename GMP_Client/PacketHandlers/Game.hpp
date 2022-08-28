@@ -705,4 +705,13 @@ namespace Game {
 			}
 		}
 	}
+
+	void OnVoice(CGmpClient* client, RakNet::Packet* packet)
+    {
+        int size;
+		memcpy(&size, packet->data + 1, 4);
+        char* buffer = new char[size];
+        memcpy(buffer, packet->data + 5, size);
+		client->voicePlayback->PlayVoice(buffer, size);
+    }
 }
