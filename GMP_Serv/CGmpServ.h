@@ -92,6 +92,7 @@ public:
 			PT_TAKEITEM,
 			PT_CASTSPELL,
 			PT_CASTSPELLONTARGET,
+			PT_VOICE,
 	};
 	enum FILE_REQ{
 		CLASS_FILE	= 1,
@@ -138,7 +139,7 @@ private:
 	void HandleCastSpell(RakNet::Packet* p, bool Target);
 	void HandleDropItem(RakNet::Packet* p);
 	void HandleTakeItem(RakNet::Packet* p);
-	void HandleFileReq(RakNet::Packet *p);
+	void HandleVoice(RakNet::Packet *p);
 	void SomeoneJoinGame(RakNet::Packet *p);
 	void HandlePlayerUpdate(RakNet::Packet *p);
 	void MakeHPDiff(RakNet::Packet *p);

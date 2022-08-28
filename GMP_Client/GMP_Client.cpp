@@ -100,6 +100,10 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
         std::make_shared<spdlog::sinks::basic_file_sink_mt>("GMP_Log.txt", false));
 		spdlog::flush_on(spdlog::level::debug);
 
+   if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0) {
+      SPDLOG_ERROR("Couldn't initialize SDL: {}", SDL_GetError());
+   }
+
     // Window hook
     CallPatch(0x0050323F, (DWORD)&HookCreateWindowExA, 1);
     CallPatch(0x004FD794, (DWORD)&HookwinResizeMainWindow, 0);

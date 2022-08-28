@@ -51,6 +51,7 @@ public:
         PT_TAKEITEM,
         PT_CASTSPELL,
         PT_CASTSPELLONTARGET,
+        PT_VOICE,
     };
 
     struct Packet

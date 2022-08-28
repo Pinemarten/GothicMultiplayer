@@ -142,6 +142,7 @@ void CIngame::Loop(){
 				client->RestoreHealth();
 				global_ingame->CheckForUpdate();
 				global_ingame->CheckForHPDiff();
+                client->SendVoice();
 			}
 		}
 		// OBSERVE MODE

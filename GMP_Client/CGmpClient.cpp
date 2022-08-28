@@ -59,6 +59,8 @@ CGmpClient::CGmpClient(const char *ip, CLanguage *ptr)
 {
 	srand(static_cast<unsigned int>(time(NULL)));
 	this->network = new Network(this);
+    this->voiceCapture = nullptr;
+    this->voicePlayback = nullptr;
 	this->IsReadyToJoin = false;
 	this->lang=ptr;
 	this->classmgr=NULL;
@@ -87,6 +89,14 @@ CGmpClient::~CGmpClient(void)
 		delete this->spawnpoint;
 		this->spawnpoint=NULL;
 	}
+    if (this->voiceCapture) {
+      delete this->voiceCapture;
+      this->voiceCapture = nullptr;
+	}
+    if (this->voicePlayback) {
+      delete this->voicePlayback;
+	  this->voicePlayback = nullptr;
+	}
 	delete this->network;
 	this->network = NULL;
 	this->clientHost.clear();
@@ -95,7 +105,14 @@ CGmpClient::~CGmpClient(void)
 
 bool CGmpClient::Connect()
 {
-  return network->Connect(clientHost, clientPort);
+	if (network->Connect(clientHost, clientPort)) {
+		this->voiceCapture = new VoiceCapture();
+		this->voiceCapture->StartCapture();
+		this->voicePlayback = new VoicePlayback();
+		this->voicePlayback->StartPlayback();
+		return true;
+	}
+    return false;
 }
 
 void CGmpClient::PrepareToJoin()
@@ -388,6 +405,23 @@ void CGmpClient::SendHPDiff(size_t who, short diff){
 	}
 }
 
+void CGmpClient::SendVoice()
+{
+  int audioChannels = voiceCapture->GetNumberOfChannels();
+  char *voiceBuffer = new char[480 * sizeof(float) * audioChannels * 4096];  // TODO: correct size
+  ZeroMemory(voiceBuffer, 480 * sizeof(float) * audioChannels * 4096);
+  int size;
+  if (voiceCapture->GetAndFlushVoiceBuffer(voiceBuffer, size) && zCInput::GetInput()->KeyPressed(KEY_K)) {
+    std::string data;
+    data.reserve(size + 5);
+    *((unsigned char *)data.data()) = Network::PT_VOICE;
+    memcpy((char*)data.data()+1, &size, 4);
+    memcpy((unsigned char *)data.data() + 5, voiceBuffer, size);
+    network->Send(data.data(), size + 5, IMMEDIATE_PRIORITY, UNRELIABLE);
+  }
+  delete[] voiceBuffer;
+}
+
 void CGmpClient::SyncGameTime(){
 	BYTE data[2]={Network::PT_GAME_INFO, 0};
 	network->Send((char*)data, 1, IMMEDIATE_PRIORITY, RELIABLE);
@@ -423,6 +457,14 @@ void CGmpClient::Disconnect(){
 		delete this->spawnpoint;
 		this->spawnpoint=NULL;
 	}
+    if (this->voiceCapture) {
+        delete this->voiceCapture;
+        this->voiceCapture = nullptr;
+    }
+    if (this->voicePlayback) {
+        delete this->voicePlayback;
+        this->voicePlayback = nullptr;
+    }
 }
 
 MD5Sum *CGmpClient::GetMD5(LPBYTE data, DWORD size){
