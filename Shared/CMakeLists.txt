@@ -22,7 +22,6 @@
 # SOFTWARE.
 
 find_package(toml11 CONFIG REQUIRED)
-find_package(PugiXML CONFIG REQUIRED)
 
 set (SHARED_SOURCES
   CCompression.cpp
@@ -30,5 +29,5 @@ set (SHARED_SOURCES
 )
 
 add_library(SharedLib STATIC ${SHARED_SOURCES})
-target_link_libraries(SharedLib PUBLIC ZLIB::ZLIB common toml11::toml11 pugixml)
+target_link_libraries(SharedLib PUBLIC ZLIB::ZLIB common toml11::toml11)
 target_include_directories(SharedLib PUBLIC .)

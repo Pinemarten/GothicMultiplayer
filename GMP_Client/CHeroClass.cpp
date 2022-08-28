@@ -25,10 +25,11 @@ SOFTWARE.
 
 #include "CHeroClass.h"
 
+#include <spdlog/sinks/basic_file_sink.h>
+#include <spdlog/spdlog.h>
+
 #include <cstring>
 #include <pugixml.hpp>
-#include <spdlog/spdlog.h>
-#include <spdlog/sinks/basic_file_sink.h>
 
 // CHECK FOR SUMMON SPELLS
 zSTRING Sum = "TRF";
@@ -61,7 +62,7 @@ CHeroClass::CHeroClass(const char *szData, BYTE size)
   size_t num_of_classes =
       std::distance(doc.child("character").children("class").begin(), doc.child("character").children("class").end());
 
-  for (size_t i = 0; i < num_of_classes; i++)
+  for (auto classNode : doc.child("character").children("class"))
   {
     SHeroClass *tmp = new SHeroClass;
     tmp->armor.count = 0;
@@ -75,38 +76,49 @@ CHeroClass::CHeroClass(const char *szData, BYTE size)
     tmp->class_description = "No description";
     for (short z = 0; z < SHeroClass::AB_MAX; z++) tmp->skill[z] = 0;
 
-    for (auto classNode : doc.child("character").children("class"))
-    {
-      tmp->class_name = (char *)classNode.child("name").text().get();
-      tmp->team_name = (char *)classNode.child("team").text().get();
-      tmp->class_description = (char *)classNode.child("description").text().get();
-      tmp->Type = (CPlayer::NpcType)classNode.child("npctype").text().as_int();
-      tmp->strength = classNode.child("strength").text().as_int();
-      tmp->dexterity = classNode.child("dexterity").text().as_int();
-      tmp->mp = classNode.child("mana").text().as_int();
-      tmp->hp = classNode.child("health").text().as_int();
-      tmp->skill[SHeroClass::AB_1HWEP] = classNode.child("onehweapon").text().as_int();
-      tmp->skill[SHeroClass::AB_2HWEP] = classNode.child("twohweapon").text().as_int();
-      tmp->skill[SHeroClass::AB_BOW] = classNode.child("bow").text().as_int();
-      tmp->skill[SHeroClass::AB_XBOW] = classNode.child("crossbow").text().as_int();
-      tmp->skill[SHeroClass::AB_MAGIC_LVL] = classNode.child("magic_lvl").text().as_int();
-      tmp->skill[SHeroClass::AB_SNEAK] = classNode.child("sneaking").text().as_int();
-      tmp->skill[SHeroClass::AB_LOCKPICK] = classNode.child("lockpicking").text().as_int();
-      tmp->skill[SHeroClass::AB_ACROBATICS] = classNode.child("acrobatics").text().as_int();
-      tmp->skill[SHeroClass::AB_PICKPOCKETS] = classNode.child("pickpocket").text().as_int();
-      tmp->armor.index = zCParser::GetParser()->GetIndex((char *)classNode.child("armor").text().get());
-      tmp->armor.count = 1;
-      tmp->prim_wep.index = zCParser::GetParser()->GetIndex((char *)classNode.child("prim_wep").text().get());
-      tmp->prim_wep.count = 1;
-      tmp->sec_wep.index = zCParser::GetParser()->GetIndex((char *)classNode.child("sec_wep").text().get());
-      tmp->sec_wep.count = 1;
+    tmp->class_name = classNode.child("name").text().get();
+    tmp->team_name = classNode.child("team").text().get();
+    tmp->class_description = classNode.child("description").text().get();
+    tmp->Type = (CPlayer::NpcType)classNode.child("npctype").text().as_int();
+    tmp->strength = classNode.child("strength").text().as_int();
+    tmp->dexterity = classNode.child("dexterity").text().as_int();
+    tmp->mp = classNode.child("mana").text().as_int();
+    tmp->hp = classNode.child("health").text().as_int();
 
+    tmp->skill[SHeroClass::AB_1HWEP] = classNode.child("onehweapon").text().as_int();
+    tmp->skill[SHeroClass::AB_2HWEP] = classNode.child("twohweapon").text().as_int();
+    tmp->skill[SHeroClass::AB_BOW] = classNode.child("bow").text().as_int();
+    tmp->skill[SHeroClass::AB_XBOW] = classNode.child("crossbow").text().as_int();
+    tmp->skill[SHeroClass::AB_MAGIC_LVL] = classNode.child("magic_lvl").text().as_int();
+    tmp->skill[SHeroClass::AB_SNEAK] = classNode.child("sneaking").text().as_int();
+    tmp->skill[SHeroClass::AB_LOCKPICK] = classNode.child("lockpicking").text().as_int();
+    tmp->skill[SHeroClass::AB_ACROBATICS] = classNode.child("acrobatics").text().as_int();
+    tmp->skill[SHeroClass::AB_PICKPOCKETS] = classNode.child("pickpocket").text().as_int();
+
+    if (!classNode.child("armor").text().empty())
+    {
+      tmp->armor.index = zCParser::GetParser()->GetIndex(classNode.child("armor").text().as_string(""));
+      tmp->armor.count = 1;
+    }
+
+    if (!classNode.child("prim_wep").text().empty())
+    {
+      tmp->prim_wep.index = zCParser::GetParser()->GetIndex(classNode.child("prim_wep").text().as_string(""));
+      tmp->prim_wep.count = 1;
+    }
+
+    if (!classNode.child("sec_wep").text().empty())
+    {
+      tmp->sec_wep.index = zCParser::GetParser()->GetIndex(classNode.child("sec_wep").text().as_string(""));
+      tmp->sec_wep.count = 1;
+    }
+    
+    for (auto itemNode : classNode.child("items").children())
+    {
       SItem *tmp_it = new SItem;
-      for (auto itemNode : classNode.children("items"))
-      {
-        tmp_it->index = zCParser::GetParser()->GetIndex(itemNode.attribute("code").as_string());
-        tmp_it->count = itemNode.attribute("count").as_int();
-      }
+      tmp_it->index = zCParser::GetParser()->GetIndex(itemNode.attribute("code").as_string(""));
+      tmp_it->count = itemNode.attribute("count").as_int(1);
+      tmp->items.push_back(tmp_it);
     }
 
     this->data.push_back(tmp);

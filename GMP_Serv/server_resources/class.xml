@@ -12,7 +12,6 @@
 		<bow>0</bow>
 		<crossbow>0</crossbow>
 		<magic_lvl>0</magic_lvl>
-		<armor>ITAR_MIL_L</armor>
 		<prim_wep>ITMW_SHORTSWORD5</prim_wep>
 		<items>
 			<item code="ITPO_HEALTH_01" count="2" />
@@ -51,7 +50,7 @@
 		<crossbow>0</crossbow>
 		<magic_lvl>1</magic_lvl>
 		<armor>ITAR_NOV_L</armor>
-		<prim_wep>ITMW_oneh_NOV_MACE</prim_wep>
+		<prim_wep>ITMW_1H_NOV_MACE</prim_wep>
 		<items>
 			<item code="ITRU_FIREBOLT" count="1" />
 			<item code="ITRU_LIGHTHEAL" count="1" />
@@ -111,9 +110,9 @@
 		<crossbow>0</crossbow>
 		<magic_lvl>1</magic_lvl>
 		<armor>ITAR_RANGER_ADDON</armor>
-		<prim_wep>ITMW_oneh_NOV_MACE</prim_wep>
+		<prim_wep>ITMW_1H_NOV_MACE</prim_wep>
 		<items>
-			<item code="ITRU_ZAP" count="1" />
+			<item code="ITRU_ZAP" />
 			<item code="ITRU_LIGHTHEAL" count="1" />
 			<item code="ITPO_HEALTH_01" count="2" />
 			<item code="ITPO_MANA_01" count="2" />

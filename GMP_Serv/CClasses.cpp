@@ -37,6 +37,7 @@ CClassManager::CClassManager(){
   if (!result)
   {
     SPDLOG_ERROR("Critical error! Could not open file class.xml!");
+    return;
   }
   size_t n =
       std::distance(doc.child("character").children("class").begin(), doc.child("character").children("class").end());
