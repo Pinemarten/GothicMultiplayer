@@ -6,7 +6,8 @@
     { "name": "spdlog", "version>=": "1.10.0" },
     { "name": "zlib", "version>=": "1.2.12" },
     { "name": "toml11", "version>=": "3.7.1" },
-    { "name": "sdl2", "version>=": "2.0.22" }
+    { "name": "sdl2", "version>=": "2.0.22" },
+    { "name": "pugixml", "version>=": "1.12.1" }
   ],
   "builtin-baseline": "5f83f03a1c7578e6ae04987916b34e018fb63964"
 }

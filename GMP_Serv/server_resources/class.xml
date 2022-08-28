@@ -7,14 +7,15 @@
 		<dexterity>0</dexterity>
 		<mana>0</mana>
 		<health>200</health>
-		<1hweapon>60</1hweapon>
-		<2hweapon>0</2hweapon>
+		<onehweapon>60</onehweapon>
+		<twohweapon>0</twohweapon>
 		<bow>0</bow>
 		<crossbow>0</crossbow>
 		<magic_lvl>0</magic_lvl>
-		<armor>ITAR_MIL_L</armor>
 		<prim_wep>ITMW_SHORTSWORD5</prim_wep>
-		<item><code>ITPO_HEALTH_01</code><count>2</count></item>
+		<items>
+			<item code="ITPO_HEALTH_01" count="2" />
+		</items>
 	</class>
 	<class>
 		<name>Pirate</name>
@@ -23,16 +24,18 @@
 		<dexterity>50</dexterity>
 		<mana>0</mana>
 		<health>200</health>
-		<1hweapon>30</1hweapon>
-		<2hweapon>0</2hweapon>
+		<onehweapon>30</onehweapon>
+		<twohweapon>0</twohweapon>
 		<bow>30</bow>
 		<crossbow>0</crossbow>
 		<magic_lvl>0</magic_lvl>
 		<armor>ITAR_PIR_L_ADDON</armor>
 		<prim_wep>ITMW_RAPIER</prim_wep>
 		<sec_wep>ITRW_BOW_L_04</sec_wep>
-		<item><code>ITRW_ARROW</code><count>100</count></item>
-		<item><code>ITPO_HEALTH_01</code><count>2</count></item>
+		<items>
+			<item code="ITRW_ARROW" count="100" />
+			<item code="ITPO_HEALTH_01" count="2" />
+		</items>
 	</class>
 	<class>
 		<name>Novice</name>
@@ -41,18 +44,20 @@
 		<dexterity>0</dexterity>
 		<mana>50</mana>
 		<health>200</health>
-		<1hweapon>0</1hweapon>
-		<2hweapon>30</2hweapon>
+		<onehweapon>0</onehweapon>
+		<twohweapon>30</twohweapon>
 		<bow>0</bow>
 		<crossbow>0</crossbow>
 		<magic_lvl>1</magic_lvl>
 		<armor>ITAR_NOV_L</armor>
 		<prim_wep>ITMW_1H_NOV_MACE</prim_wep>
-		<item><code>ITRU_FIREBOLT</code></item>
-		<item><code>ITRU_LIGHTHEAL</code></item>
-		<item><code>ITRU_LIGHT</code></item>
-		<item><code>ITPO_HEALTH_01</code><count>2</count></item>
-		<item><code>ITPO_MANA_01</code><count>2</count></item>
+		<items>
+			<item code="ITRU_FIREBOLT" count="1" />
+			<item code="ITRU_LIGHTHEAL" count="1" />
+			<item code="ITRU_LIGHT" count="1" />
+			<item code="ITPO_HEALTH_01" count="2" />
+			<item code="ITPO_MANA_01" count="2" />
+		</items>
 	</class>
 	<class>
 		<name>Barbarian</name>
@@ -61,14 +66,16 @@
 		<dexterity>0</dexterity>
 		<mana>0</mana>
 		<health>200</health>
-		<1hweapon>0</1hweapon>
-		<2hweapon>30</2hweapon>
+		<onehweapon>0</onehweapon>
+		<twohweapon>30</twohweapon>
 		<bow>0</bow>
 		<crossbow>0</crossbow>
 		<magic_lvl>0</magic_lvl>
 		<armor>ITAR_SLD_L</armor>
 		<prim_wep>ITMW_HELLEBARDE</prim_wep>
-		<item><code>ITPO_HEALTH_01</code><count>2</count></item>
+		<items>
+			<item code="ITPO_HEALTH_01" count="2" />
+		</items>
 	</class>
 	<class>
 		<name>Hunter</name>
@@ -77,16 +84,18 @@
 		<dexterity>30</dexterity>
 		<mana>0</mana>
 		<health>200</health>
-		<1hweapon>30</1hweapon>
-		<2hweapon>0</2hweapon>
+		<onehweapon>30</onehweapon>
+		<twohweapon>0</twohweapon>
 		<bow>50</bow>
 		<crossbow>0</crossbow>
 		<magic_lvl>0</magic_lvl>
 		<armor>ITAR_LEATHER_L</armor>
 		<prim_wep>ITMW_ADDON_BANDITTRADER</prim_wep>
 		<sec_wep>ITRW_BOW_L_03</sec_wep>
-		<item><code>ITRW_ARROW</code><count>100</count></item>
-		<item><code>ITPO_HEALTH_01</code><count>2</count></item>
+		<items>
+			<item code="ITRW_ARROW" count="100" />
+			<item code="ITPO_HEALTH_01" count="2" />
+		</items>
 	</class>
 	<class>
 		<name>Guard of Holy Water</name>
@@ -95,16 +104,18 @@
 		<dexterity>0</dexterity>
 		<mana>40</mana>
 		<health>200</health>
-		<1hweapon>0</1hweapon>
-		<2hweapon>30</2hweapon>
+		<onehweapon>0</onehweapon>
+		<twohweapon>30</twohweapon>
 		<bow>0</bow>
 		<crossbow>0</crossbow>
 		<magic_lvl>1</magic_lvl>
 		<armor>ITAR_RANGER_ADDON</armor>
 		<prim_wep>ITMW_1H_NOV_MACE</prim_wep>
-		<item><code>ITRU_ZAP</code></item>
-		<item><code>ITRU_LIGHTHEAL</code></item>
-		<item><code>ITPO_HEALTH_01</code><count>2</count></item>
-		<item><code>ITPO_MANA_01</code><count>2</count></item>
+		<items>
+			<item code="ITRU_ZAP" />
+			<item code="ITRU_LIGHTHEAL" count="1" />
+			<item code="ITPO_HEALTH_01" count="2" />
+			<item code="ITPO_MANA_01" count="2" />
+		</items>
 	</class>
 </character>
