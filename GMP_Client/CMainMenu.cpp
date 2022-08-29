@@ -237,17 +237,17 @@ char x[2]={0, 0};
 		//rss_url+=RSS_URL_ADDON;
 		if(strlen(LangPrefix) < 2) return FALSE;
 		if(!memcmp("ru", LangPrefix, 2)) return FALSE;
-		if(URLDownloadToFileA(NULL, rss_url.c_str(), ".\\System\\NEWS", 0, NULL)==S_OK){
+		if(URLDownloadToFileA(NULL, rss_url.c_str(), ".\\Multiplayer\\NEWS", 0, NULL)==S_OK){
 			std::string rss_msg="";
 			std::wstring rss_newz=L"";
 			char *fB=new char[128*1024];
-			FILE *file=fopen(".\\System\\NEWS", "rb");
+			FILE *file=fopen(".\\Multiplayer\\NEWS", "rb");
 			fseek(file, 0, SEEK_END);
 			long koniec=ftell(file);
 			fseek(file, 0, SEEK_SET);
 			fread(fB, koniec, 1, file);
 			fclose(file);
-			remove(".\\System\\NEWS");
+			remove(".\\Multiplayer\\NEWS");
 			int it=0, it2=0;
 			bool not_first=false;
 			while(it<koniec){
@@ -427,7 +427,7 @@ char x[2]={0, 0};
 					Screen->Print(200, 5200, (user_config->joystick) ? (*LangSetting)[CLanguage::MMENU_JOYSTICKYES] : (*LangSetting)[CLanguage::MMENU_JOYSTICKNO]);
 					FColor = (OptionPos == 6) ? Highlighted : Normal;
 					Screen->SetFontColor(FColor);
-					sprintf(tmpbuff, "%s : %d", (*LangSetting)[CLanguage::MMENU_CHATLINES].ToChar(),  user_config->ChatLines);
+					sprintf(tmpbuff, "%s %d", (*LangSetting)[CLanguage::MMENU_CHATLINES].ToChar(),  user_config->ChatLines);
 					ChatLinesTMP = tmpbuff;
 					Screen->Print(200, 5600, ChatLinesTMP);
 					FColor = (OptionPos == 7) ? Highlighted : Normal;
@@ -703,8 +703,8 @@ char x[2]={0, 0};
 			Screen->Print(100, 8192 - Screen->FontY(), HOWTOWB);
 			if(TitleWeapon) TitleWeapon->RotateWorldX(0.6f);
 			if(Input->KeyToggled(KEY_F1)){
-				g2names.open(".\\WorldBuilder\\g2mobs.wb");
-				g2particles.open(".\\WorldBuilder\\g2particles.wb");
+				g2names.open(".\\Multiplayer\\WorldBuilder\\g2mobs.wb");
+				g2particles.open(".\\Multiplayer\\WorldBuilder\\g2particles.wb");
 				if(g2names.good() && g2particles.good()){
 					ps=WORLDBUILDER_MENU;
 					MState=MENU_WORLDBUILDER;
@@ -1086,7 +1086,7 @@ ALLDONE:
 				WBMapName.Upper();
 				if(!strstr(WBMapName.ToChar(), ".WBM")) WBMapName+=".WBM";
 				char buffer[64];
-				sprintf(buffer, ".\\WorldBuilder\\Maps\\%s", WBMapName.ToChar());
+				sprintf(buffer, ".\\Multiplayer\\WorldBuilder\\Maps\\%s", WBMapName.ToChar());
 				string Map = LoadWorld::GetZenName(buffer);
 				if(Map.size() > 0){
 					CleanUpMainMenu();

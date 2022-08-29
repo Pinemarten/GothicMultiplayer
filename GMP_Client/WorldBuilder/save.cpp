@@ -36,11 +36,11 @@ int SaveWorld::SaveBuilderMap(vector<Info>& Vobs, const char* MapName)
 {
 	if(Vobs.size() < 1) return 0;
 	wb_data.clear();
-	if(!FolderExists(".\\WorldBuilder\\Maps")){
+	if(!FolderExists(".\\Multiplayer\\WorldBuilder\\Maps")){
 		LPSECURITY_ATTRIBUTES attr;
 		attr = NULL;
-		//CreateDirectory(L".\\WorldBuilder", attr);
-		CreateDirectory(".\\WorldBuilder\\Maps", attr);
+		//CreateDirectory(L".\\Multiplayer\\WorldBuilder", attr);
+		CreateDirectory(".\\Multiplayer\\WorldBuilder\\Maps", attr);
 	}
 	int size;
 	zSTRING tempz;
@@ -144,7 +144,7 @@ int SaveWorld::SaveBuilderMap(vector<Info>& Vobs, const char* MapName)
 			}
 		}
 	}
-	const char* FileName = ".\\WorldBuilder\\Maps\\";
+	const char* FileName = ".\\Multiplayer\\WorldBuilder\\Maps\\";
 	char buffer[128];
 	tempz = MapName;
 	tempz.Upper();
