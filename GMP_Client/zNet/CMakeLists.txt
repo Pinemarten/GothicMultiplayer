@@ -1,7 +1,7 @@
 
 # MIT License
 
-# Copyright (c) 2022 Gothic Multiplayer Team (pampi, skejt23, mecio)
+# Copyright (c) 2022 Gothic Multiplayer Team.
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -22,5 +22,6 @@
 # SOFTWARE.
 
 
-add_library(common INTERFACE)
-target_include_directories(common INTERFACE . znet)
+add_library(zNetInterface INTERFACE)
+target_include_directories(zNetInterface INTERFACE .)
+target_link_libraries(zNetInterface INTERFACE common)

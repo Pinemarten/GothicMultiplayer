@@ -313,7 +313,7 @@ char x[2]={0, 0};
 		}
 	};
 
-  void CMainMenu::LaunchMenuScene() // P�niej dorobie wiecej scenek i dodam pare npctow
+	void CMainMenu::LaunchMenuScene()
 	{
 		CamWeapon = oCObjectFactory::GetFactory()->CreateItem(zCParser::GetParser()->GetIndex(string_tmp));
 		CamWeapon->ClearItemName();
@@ -763,12 +763,7 @@ char x[2]={0, 0};
 					zCWorld::DeleteAllNpcsAlt();
 					oCNpc::GetHero()->SetPosition(SpawnpointPos.x, SpawnpointPos.y, SpawnpointPos.z);
 					string WordBuilderMapFileName=".\\Multiplayer\\Data\\";
-					WordBuilderMapFileName+=client->network->GetServerAddress().ToString(false);
-					WordBuilderMapFileName+="_";
-					char lol[8];
-					sprintf(lol, "%hu", client->network->GetServerAddress().GetPort());
-					WordBuilderMapFileName+=lol;
-					lol[1]=0;
+					WordBuilderMapFileName+=client->network->GetServerIp() + "_" + std::to_string(client->network->GetServerPort());
 					ifstream WbMap(WordBuilderMapFileName.c_str());
 					if(WbMap.good()){
 						WbMap.close();

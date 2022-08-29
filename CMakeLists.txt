@@ -23,6 +23,8 @@
 
 cmake_minimum_required(VERSION 3.2)
 
+include(FetchContent)
+
 cmake_policy(SET CMP0091 NEW)
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
@@ -37,6 +39,14 @@ project(GothicMultiplayer VERSION 0.2 DESCRIPTION "Gothic Multiplayer" LANGUAGES
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+FetchContent_Declare(
+    dylib
+    GIT_REPOSITORY "https://github.com/martin-olivier/dylib"
+    GIT_TAG        "v2.1.0"
+)
+
+FetchContent_MakeAvailable(dylib)
 
 find_package(fmt CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)

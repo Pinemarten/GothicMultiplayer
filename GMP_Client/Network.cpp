@@ -1,119 +1,153 @@
+
+/*
+MIT License
+
+Copyright (c) 2022 Gothic Multiplayer Team.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/
+
 #include "Network.h"
+
+#include <spdlog/spdlog.h>
+
+#include <cassert>
+#include <dylib.hpp>
 #include <exception>
+
 #include "PacketHandlers/Connection.hpp"
 #include "PacketHandlers/Game.hpp"
+#include "znet_client.h"
 
-using namespace std;
-using namespace RakNet;
+static Net::NetClient* g_netclient = nullptr;
 
-#define RAKNET_PASSWORD "YOUR_PASS"
+Network::Network(CGmpClient* client) {
+  assert(g_netclient != nullptr);
+  client_ = client;
+  playerID = -1;
+  error = 0;
 
-Network::Network(CGmpClient* client)
-{
-	this->client = client;
-	IsConnected = false;
-	playerID = -1;
-	error = 0;
-	peer = RakPeerInterface::GetInstance();
+  AddPacketHandlers();
+  SPDLOG_ERROR("g_netclient: {}", (void*)g_netclient);
+  g_netclient->AddPacketHandler(*this);
 }
 
-void Network::Init()
+Network::~Network()
 {
-	peer->SetTimeoutTime(1500, UNASSIGNED_SYSTEM_ADDRESS);
-	SocketDescriptor socketDescriptor(0, 0);
-	socketDescriptor.socketFamily = AF_INET;
-	peer->Startup(1, &socketDescriptor, 1);
-	peer->SetOccasionalPing(true);
-	AddPacketHandlers();
+  g_netclient->RemovePacketHandler(*this); 
 }
 
-void Network::AddPacketHandlers()
-{
-	packetHandlers[PT_WHOAMI] = Connection::OnWhoami;
-	packetHandlers[PT_MAP_NAME] = Game::OnMapName;
-	packetHandlers[WL_INGAME] = Game::OnInGame;
-	packetHandlers[PT_ACTUAL_STATISTICS] = Game::OnActualStatistics;
-	packetHandlers[PT_MAP_ONLY] = Game::OnMapOnly;
-	packetHandlers[PT_DODIE] = Game::OnDoDie;
-	packetHandlers[PT_RESPAWN] = Game::OnRespawn;
-	packetHandlers[PT_CASTSPELL] = Game::OnCastSpell;
-	packetHandlers[PT_CASTSPELLONTARGET] = Game::OnCastSpellOnTarget;
-	packetHandlers[PT_DROPITEM] = Game::OnDropItem;
-	packetHandlers[PT_TAKEITEM] = Game::OnTakeItem;
-	packetHandlers[PT_WHISPER] = Game::OnWhisper;
-	packetHandlers[PT_MSG] = Game::OnMessage;
-	packetHandlers[PT_SRVMSG] = Game::OnServerMessage;
-	packetHandlers[PT_RCON] = Game::OnRcon;
-	packetHandlers[PT_ALL_OTHERS] = Game::OnAllOthers;
-	packetHandlers[PT_JOIN_GAME] = Game::OnJoinGame;
-	packetHandlers[PT_YOUR_NAME] = Game::OnYourName;
-	packetHandlers[PT_GAME_INFO] = Game::OnGameInfo;
-	packetHandlers[PT_LEFT_GAME] = Game::OnLeftGame;
-    packetHandlers[PT_VOICE] = Game::OnVoice;
-	packetHandlers[ID_DISCONNECTION_NOTIFICATION] = Connection::OnDisconnectOrLostConnection;
-	packetHandlers[ID_CONNECTION_LOST] = Connection::OnDisconnectOrLostConnection;
+void Network::AddPacketHandlers() {
+  using namespace Net;
+
+  packetHandlers[PT_WHOAMI] = Connection::OnWhoami;
+  packetHandlers[PT_MAP_NAME] = Game::OnMapName;
+  packetHandlers[WL_INGAME] = Game::OnInGame;
+  packetHandlers[PT_ACTUAL_STATISTICS] = Game::OnActualStatistics;
+  packetHandlers[PT_MAP_ONLY] = Game::OnMapOnly;
+  packetHandlers[PT_DODIE] = Game::OnDoDie;
+  packetHandlers[PT_RESPAWN] = Game::OnRespawn;
+  packetHandlers[PT_CASTSPELL] = Game::OnCastSpell;
+  packetHandlers[PT_CASTSPELLONTARGET] = Game::OnCastSpellOnTarget;
+  packetHandlers[PT_DROPITEM] = Game::OnDropItem;
+  packetHandlers[PT_TAKEITEM] = Game::OnTakeItem;
+  packetHandlers[PT_WHISPER] = Game::OnWhisper;
+  packetHandlers[PT_MSG] = Game::OnMessage;
+  packetHandlers[PT_SRVMSG] = Game::OnServerMessage;
+  packetHandlers[PT_RCON] = Game::OnRcon;
+  packetHandlers[PT_ALL_OTHERS] = Game::OnAllOthers;
+  packetHandlers[PT_JOIN_GAME] = Game::OnJoinGame;
+  packetHandlers[PT_YOUR_NAME] = Game::OnYourName;
+  packetHandlers[PT_GAME_INFO] = Game::OnGameInfo;
+  packetHandlers[PT_LEFT_GAME] = Game::OnLeftGame;
+  packetHandlers[PT_VOICE] = Game::OnVoice;
+  packetHandlers[Net::ID_DISCONNECTION_NOTIFICATION] = Connection::OnDisconnectOrLostConnection;
+  packetHandlers[Net::ID_CONNECTION_LOST] = Connection::OnDisconnectOrLostConnection;
 }
 
-bool Network::Connect(string hostAddress, int hostPort)
-{
-	Init();
-	string hostPassword = RAKNET_PASSWORD;
-	ConnectionAttemptResult connectionAttemptResult = peer->Connect(hostAddress.c_str(), hostPort, hostPassword.c_str(), hostPassword.length());
-	if (connectionAttemptResult != CONNECTION_ATTEMPT_STARTED) { return false; }
-	RakNet::Packet* packet = nullptr;
-	do { packet = peer->Receive(); } while (!packet);
-	MessageID message = packet->data[0];
-	serverAddress = packet->systemAddress;
-	peer->DeallocatePacket(packet);
-	if (message != ID_CONNECTION_REQUEST_ACCEPTED) { error = message; return false; }
-	IsConnected = true;
-	client->DownloadWBFile();
-	client->DownloadClassFile();
-	client->DownloadSpawnpointsFile();
-	client->PrepareToJoin();
-	return true;
+bool Network::Connect(std::string hostAddress, int hostPort) {
+  if (!g_netclient->Connect(hostAddress.c_str(), hostPort)) {
+    return false;
+  }
+
+  serverIp_ = hostAddress;
+  serverPort_ = hostPort;
+  client_->DownloadWBFile();
+  client_->DownloadClassFile();
+  client_->DownloadSpawnpointsFile();
+  client_->PrepareToJoin();
+  return true;
 }
 
-void Network::Disconnect()
-{
-	IsConnected = false;
-	peer->CloseConnection(serverAddress, true, 11, IMMEDIATE_PRIORITY);
-	Sleep(1000);
-	RakNet::RakPeerInterface::DestroyInstance(peer);
-	peer = nullptr;
+void Network::Disconnect() {
+  g_netclient->Disconnect();
 }
 
-void Network::Receive()
-{
-	for (RakNet::Packet* packet = peer->Receive(); packet; peer->DeallocatePacket(packet), packet = peer->Receive()) {
-		HandlePacket(packet);
-	}
+bool Network::IsConnected() const {
+  return !connection_lost_ && g_netclient->IsConnected();
 }
 
-void Network::HandlePacket(RakNet::Packet* packet)
-{
-	try {
-		packetHandlers[(int)packet->data[0]](client, packet);
-	}
-	catch (exception& e) {
-		error = packet->data[0];
-	}
+void Network::Receive() {
+  g_netclient->Pulse();
 }
 
-void Network::Send(const char* packet, int length, PacketPriority priority, PacketReliability reliable)
-{
-	peer->Send(packet, length, priority, reliable, 0, serverAddress, false);
+bool Network::HandlePacket(unsigned char* data, std::uint32_t size) {
+  try {
+    packetHandlers[(int)data[0]](client_, Packet{data, size});
+  } catch (std::exception&) {
+    error = data[0];
+  }
+  return true;
 }
 
-int Network::GetPing()
-{
-	return peer->GetAveragePing(peer->GetSystemAddressFromIndex(0));
+void Network::Send(unsigned char* packet, int length, Net::PacketPriority priority, Net::PacketReliability reliable) {
+  g_netclient->SendPacket(packet, length, reliable, priority);
 }
 
-void Network::UpdateMyId(uint64_t id)
-{
-	playerID = id;
-	if (LocalPlayer) {
-		LocalPlayer->id = id;
-	}
+int Network::GetPing() {
+  return g_netclient->GetPing();
+}
+
+void Network::UpdateMyId(uint64_t id) {
+  playerID = id;
+  if (LocalPlayer) {
+    LocalPlayer->id = id;
+  }
+}
+
+std::string Network::GetServerIp() const {
+  return serverIp_;
+}
+
+std::uint32_t Network::GetServerPort() const {
+  return serverPort_;
+}
+
+void Network::LoadNetworkLibrary() {
+  try {
+    static dylib lib("znet");
+    auto create_net_client_func = lib.get_function<Net::NetClient*()>("CreateNetClient");
+    g_netclient = create_net_client_func();
+  } catch (std::exception& ex) {
+    SPDLOG_ERROR("LoadNetworkLibrary error: {}", ex.what());
+    // If loading the network library fails, then GMP will not work.
+    std::abort();
+  }
+  SPDLOG_DEBUG("znet dynamic library loaded: {}", (void*)g_netclient);
 }

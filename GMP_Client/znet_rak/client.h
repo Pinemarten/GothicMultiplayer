@@ -23,28 +23,40 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#pragma once
+#include <RakNetTypes.h>
+#include <RakPeerInterface.h>
 
-#include "../CChat.h"
-#include "../CGmpClient.h"
-#include "CLocalPlayer.h"
+#include <functional>
+#include <unordered_set>
 
-extern CLocalPlayer* LocalPlayer;
-namespace Connection {
-void OnWhoami(CGmpClient* client, Packet packet) {
-  uint64_t playerID;
-  memcpy(&playerID, packet.data + 1, sizeof(uint64_t));
-  client->network->UpdateMyId(playerID);
+#include "znet_client.h"
+
+namespace Net {
+
+class RakNetClient : public NetClient {
+public:
+  ~RakNetClient() override = default;
+
+  void Pulse() override;
+  bool Connect(const char* address, std::uint32_t port) override;
+  void Disconnect() override;
+  bool IsConnected() const override;
+  bool SendPacket(unsigned char* data, std::uint32_t size, PacketReliability packetReliability,
+                  PacketPriority packetPriority) override;
+
+  void AddPacketHandler(PacketHandler& packetHandler) override;
+  void RemovePacketHandler(PacketHandler& packetHandler) override;
+  std::uint32_t GetPing() const override;
+
+private:
+  RakNet::RakPeerInterface* peer_;
+  RakNet::SystemAddress serverAddress_;
+  std::unordered_set<PacketHandler*> packetHandlers_;
+  bool isConnected_{false};
+};
+
+}  // namespace Net
+
+extern "C" {
+__declspec(dllexport) Net::NetClient* CreateNetClient();
 }
-
-void OnDisconnectOrLostConnection(CGmpClient* client, Packet packet) {
-  client->network->error = packet.data[0];
-  client->Disconnect();
-  oCNpc::GetHero()->ResetPos(oCNpc::GetHero()->GetPosition());
-  client->network->connection_lost_ = true;
-  client->IsInGame = false;
-  client->IsReadyToJoin = false;
-  CChat::GetInstance()->WriteMessage(NORMAL, false, zCOLOR(255, 0, 0, 255), "%s",
-                                     (*client->lang)[CLanguage::DISCONNECTED].ToChar());
-}
-}  // namespace Connection
