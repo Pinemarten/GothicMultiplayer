@@ -100,7 +100,7 @@ char x[2]={0, 0};
 		hbX, hbY, ps = 0, MenuPos = 0, OptionPos = 0, WBMenuPos = 0;
 		RECT wymiary;
 		GetWindowRect(Patch::GetHWND(), &wymiary);
-		fWRatio=1280.0f/(float)wymiary.right;	//za³o¿enie jest takie ¿e szerokoœæ jest dopasowywana wed³ug szerokoœci 1280
+		fWRatio=1280.0f/(float)wymiary.right;	//zaï¿½oï¿½enie jest takie ï¿½e szerokoï¿½ï¿½ jest dopasowywana wedï¿½ug szerokoï¿½ci 1280
 		fHRatio=1024.0f/(float)wymiary.top;
 		DisableHealthBar();
 		GMPLogo = new zCView(0,0,8192,8192,VIEW_ITEM);
@@ -284,33 +284,36 @@ char x[2]={0, 0};
 		return FALSE;
 	};
 
-	void CMainMenu::LoadLangNames(void){
-		std::string szTmp=LANG_DIR;
-		szTmp+="index";
-		FILE *fH=fopen(szTmp.c_str(), "r");
-		if(!fH) zCParser::GetParser()->Error(zSTRING("Couldn't find language index file!"), 0);
-		szTmp.clear();
-		szTmp.reserve(32);
-		while(!feof(fH)){
-			fscanf(fH, "%s", (char*)szTmp.data());
-			vec_lang_files.push_back(szTmp.c_str());
+	void CMainMenu::LoadLangNames(void)
+	{
+		std::string indexPath = std::string(LANG_DIR) + "index";
+		std::ifstream ifs(indexPath, std::ifstream::in);
+		if (!ifs.is_open())
+		{
+			SPDLOG_ERROR("Couldn't find language index file {}!", indexPath);
+			std::abort();
 		}
-		if(!vec_lang_files.back().compare(vec_lang_files[vec_lang_files.size()-2].c_str())) vec_lang_files.pop_back();
-		fclose(fH);
-		char buffer[16];
-		for(size_t i=0; i<vec_lang_files.size(); i++){
-			szTmp.clear();
-			szTmp=LANG_DIR;
-			szTmp+=vec_lang_files[i].c_str();
-			fH=fopen(szTmp.c_str(), "r");
-			fscanf(fH, "%s", buffer);
-			vec_choose_lang.push_back(zSTRING(buffer));
-			fclose(fH);
+
+		std::string line;
+		while (std::getline(ifs, line))
+		{
+			vec_lang_files.push_back(std::move(line));
 		}
-		szTmp.clear();
+		if (!vec_lang_files.back().compare(vec_lang_files[vec_lang_files.size() - 2].c_str()))
+		{
+			vec_lang_files.pop_back();
+		}
+
+		for (const auto& lang : vec_lang_files)
+		{
+			std::string langName;
+			std::ifstream langFile(LANG_DIR + lang, std::ifstream::in);
+			langFile >> langName;
+			vec_choose_lang.push_back(zSTRING(langName.c_str()));
+		}
 	};
 
-	void CMainMenu::LaunchMenuScene() // PóŸniej dorobie wiecej scenek i dodam pare npctow
+  void CMainMenu::LaunchMenuScene() // Pï¿½niej dorobie wiecej scenek i dodam pare npctow
 	{
 		CamWeapon = oCObjectFactory::GetFactory()->CreateItem(zCParser::GetParser()->GetIndex(string_tmp));
 		CamWeapon->ClearItemName();
@@ -520,7 +523,7 @@ char x[2]={0, 0};
 			oCNpc::GetHero()->SetName(user_config->Nickname);
 		break;
 		case 1:
-			// WYBIERZ WYGL¥D
+			// WYBIERZ WYGLï¿½D
 			if(AppCamCreated){
 				ChoosingApperance = ApperancePart::FACE;
 				LastApperance = ApperancePart::FACE;
@@ -543,7 +546,7 @@ char x[2]={0, 0};
 			ps=SETTINGS_MENU;
 		break;
 		case 4:
-			// WYJD Z GRY
+			// WYJDï¿½ Z GRY
 			CGameManager::GetGameManager()->Done();
 		break;
 		};
@@ -563,7 +566,7 @@ char x[2]={0, 0};
 			user_config->SaveConfigToFile();
 		break;
 		case 2:
-			// W£¥CZENIE ZEGARA
+			// Wï¿½ï¿½CZENIE ZEGARA
 			user_config->watch = !user_config->watch;
 			user_config->SaveConfigToFile();
 		break;
@@ -595,7 +598,7 @@ char x[2]={0, 0};
 			user_config->SaveConfigToFile();
 		break;
 		case 9:
-			// POWRÓT
+			// POWRï¿½T
 			ps=MAIN_MENU;
 			MState=MENU_LOOP;
 		break;
@@ -616,7 +619,7 @@ char x[2]={0, 0};
 				WBMapName.Clear();
 			break;
 			case 2:
-				// POWRÓT DO MENU
+				// POWRï¿½T DO MENU
 				ps=MAIN_MENU;
 				MState=MENU_LOOP;
 			break;
@@ -981,7 +984,7 @@ char x[2]={0, 0};
 					WritingNickname = false;
 				}
 			}
-			// Wybór opcji przez enter
+			// Wybï¿½r opcji przez enter
 			if(!WritingNickname){
 			if(Input->KeyToggled(KEY_UP)) {
 				OptionPos == 0 ? OptionPos = 9 : OptionPos--;
@@ -994,7 +997,7 @@ char x[2]={0, 0};
 				RunOptionsItem();
 			}
 			}
-			// Opcja od iloœci lini czatu
+			// Opcja od iloï¿½ci lini czatu
 			if(OptionPos == 6){
 				if(Input->KeyToggled(KEY_LEFT)){
 					if(user_config->ChatLines > 0){
@@ -1029,7 +1032,7 @@ char x[2]={0, 0};
 		break;
 		case MENU_WORLDBUILDER:
 			if(TitleWeapon) TitleWeapon->RotateWorldX(0.6f);
-			// Wybór opcji przez enter
+			// Wybï¿½r opcji przez enter
 			if(Input->KeyToggled(KEY_UP)) { 
 				WBMenuPos == 0 ? WBMenuPos = 2 : WBMenuPos--;
 			}
