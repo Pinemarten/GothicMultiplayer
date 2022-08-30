@@ -83,4 +83,19 @@ add_library(GMP SHARED ${CLIENT_SOURCES})
 target_link_libraries(GMP PRIVATE common g2api ${InjectMage} RakNet ${BugTrap} SharedLib wsock32 ws2_32 Iphlpapi httplib spdlog::spdlog cmake_git_version_tracking SDL2::SDL2-static pugixml)
 target_include_directories(GMP PRIVATE ${InjectMage_INCLUDE_DIR} ${BugTrap_INCLUDE_DIR} ${CPP_HTTPLIB_INCLUDE_DIRS})
 
+# Automatically copies GMP client DLL to the directories specified 
+# in GMP_DLL_OUTPUT_DIR environment variable after the build.
+# The variable can contain multiple directories separated by a ';' character.
+# For example, "D:/Program Files (x86)/JoWooD/Gothic2_First/System/;D:/Program Files (x86)/JoWooD/Gothic2_Second/System/"
+set(GOTHIC_2_SYSTEM_DIRECTORY_LIST $ENV{GMP_DLL_OUTPUT_DIR})
+
+if (GOTHIC_2_SYSTEM_DIRECTORY_LIST)
+  foreach(GOTHIC_2_SYSTEM_DIRECTORY IN LISTS GOTHIC_2_SYSTEM_DIRECTORY_LIST)
+    add_custom_command(TARGET GMP POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:GMP> ${GOTHIC_2_SYSTEM_DIRECTORY}/GMP.dll
+        COMMENT "Copying GMP.dll to ${GOTHIC_2_SYSTEM_DIRECTORY}"
+    )
+  endforeach()
+endif()
+
 add_subdirectory(g2api)
