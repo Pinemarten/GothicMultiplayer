@@ -1,7 +1,7 @@
 
 # MIT License
 
-# Copyright (c) 2022 Gothic Multiplayer Team (pampi, skejt23, mecio)
+# Copyright (c) 2022 Gothic Multiplayer Team.
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -21,6 +21,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+set (ZRAKNET_SOURCES
+  client.cpp
+)
 
-add_library(common INTERFACE)
-target_include_directories(common INTERFACE . znet)
+add_library(znet SHARED ${ZRAKNET_SOURCES})
+target_link_libraries(znet PRIVATE RakNet spdlog::spdlog zNetInterface wsock32 ws2_32 Iphlpapi)

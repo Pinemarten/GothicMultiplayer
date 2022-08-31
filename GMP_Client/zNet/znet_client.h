@@ -25,26 +25,36 @@ SOFTWARE.
 
 #pragma once
 
-#include "../CChat.h"
-#include "../CGmpClient.h"
-#include "CLocalPlayer.h"
+#include <cstdint>
+#include <string>
 
-extern CLocalPlayer* LocalPlayer;
-namespace Connection {
-void OnWhoami(CGmpClient* client, Packet packet) {
-  uint64_t playerID;
-  memcpy(&playerID, packet.data + 1, sizeof(uint64_t));
-  client->network->UpdateMyId(playerID);
-}
+#include "net_enums.h"
 
-void OnDisconnectOrLostConnection(CGmpClient* client, Packet packet) {
-  client->network->error = packet.data[0];
-  client->Disconnect();
-  oCNpc::GetHero()->ResetPos(oCNpc::GetHero()->GetPosition());
-  client->network->connection_lost_ = true;
-  client->IsInGame = false;
-  client->IsReadyToJoin = false;
-  CChat::GetInstance()->WriteMessage(NORMAL, false, zCOLOR(255, 0, 0, 255), "%s",
-                                     (*client->lang)[CLanguage::DISCONNECTED].ToChar());
-}
-}  // namespace Connection
+namespace Net {
+class PacketHandler {
+public:
+  virtual ~PacketHandler() = default;
+  virtual bool HandlePacket(unsigned char* data, std::uint32_t size) = 0;
+};
+
+class NetClient {
+public:
+  virtual ~NetClient() = default;
+
+  // Needs to be called periodically in order to retrieve packets.
+  virtual void Pulse() = 0;
+
+  virtual bool Connect(const char* address, std::uint32_t port) = 0;
+  virtual void Disconnect() = 0;
+  virtual bool IsConnected() const = 0;
+
+  virtual bool SendPacket(unsigned char* data, std::uint32_t size, PacketReliability packetReliability,
+                          PacketPriority packetPriority) = 0;
+
+  virtual void AddPacketHandler(PacketHandler& packetHandler) = 0;
+  virtual void RemovePacketHandler(PacketHandler& packetHandler) = 0;
+
+  virtual std::uint32_t GetPing() const = 0;
+};
+
+}  // namespace Net

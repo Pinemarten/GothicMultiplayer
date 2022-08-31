@@ -22,7 +22,6 @@
 # SOFTWARE.
 
 # For git metadata in C++.
-include(FetchContent)
 FetchContent_Declare(cmake_git_version_tracking                   
   GIT_REPOSITORY https://github.com/andrew-hardin/cmake-git-version-tracking.git
   GIT_TAG 904dbda1336ba4b9a1415a68d5f203f576b696bb
@@ -80,7 +79,7 @@ set (CLIENT_SOURCES
 )
 
 add_library(GMP SHARED ${CLIENT_SOURCES})
-target_link_libraries(GMP PRIVATE common g2api ${InjectMage} RakNet ${BugTrap} SharedLib wsock32 ws2_32 Iphlpapi httplib spdlog::spdlog cmake_git_version_tracking SDL2::SDL2-static pugixml)
+target_link_libraries(GMP PRIVATE common g2api ${InjectMage} ${BugTrap} SharedLib wsock32 ws2_32 Iphlpapi httplib spdlog::spdlog cmake_git_version_tracking SDL2::SDL2-static dylib zNetInterface pugixml)
 target_include_directories(GMP PRIVATE ${InjectMage_INCLUDE_DIR} ${BugTrap_INCLUDE_DIR} ${CPP_HTTPLIB_INCLUDE_DIRS})
 
 # Automatically copies GMP client DLL to the directories specified 
@@ -99,3 +98,5 @@ if (GOTHIC_2_SYSTEM_DIRECTORY_LIST)
 endif()
 
 add_subdirectory(g2api)
+add_subdirectory(znet)
+add_subdirectory(znet_rak)

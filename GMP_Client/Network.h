@@ -1,80 +1,80 @@
-﻿#pragma once
+﻿
+/*
+MIT License
 
-#include "RakPeerInterface.h"
-#include "RakNetTypes.h"
-#include "MessageIdentifiers.h"
-#include <string>
-#include <map>
+Copyright (c) 2022 Gothic Multiplayer Team.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/
+
+#pragma once
+
+#include <cstdint>
 #include <functional>
+#include <map>
+#include <string>
+
+#include "net_enums.h"
+#include "znet_client.h"
 
 class CGmpClient;
 
-class Network
-{
-private: //Wszystko prywatne, network to ma być black box
-    CGmpClient* client; //swaghetti
-	RakNet::RakPeerInterface* peer;
-	RakNet::SystemAddress serverAddress;
-    uint64_t playerID;
-    std::map<int, std::function<void(CGmpClient*, RakNet::Packet* packet)> >  packetHandlers;
-public:
-    bool IsConnected;
-    BYTE error;
-
-    enum PacketTypes
-    {
-        WL_PREPARE_TO_JOIN,
-        WL_JOIN_TO_GAME,
-        WL_INGAME,
-        PT_MSG = ID_USER_PACKET_ENUM + 1,
-        PT_NEWCONN,      // <- u�ywa kto� tego?
-        PT_REQUEST_FILE_LENGTH,
-        PT_REQUEST_FILE_PART,
-        PT_WHOAMI,
-        PT_JOIN_GAME,
-        PT_ACTUAL_STATISTICS,   // <- chyba tutaj będe musiał dodac optymalizacje gdyż nie potrzeba nam wszystkich informacji o graczu który jest od nas dalej niż 5000.0f
-        PT_ALL_OTHERS,  //pakiety wysy�any tylko z serwera do klienta, informacje o wszystkich graj�cych wysy�ane jednorazowo
-        PT_HP_DIFF,
-        PT_MAP_ONLY,    //wysy�a tylko informacje o x,y graczy �eby mapka dzia�a�a
-        PT_CHECKSUM,    //pakiet sprawdzaj�cy czy crc32 serwera i klienta s� zgodne
-        PT_RCON,                //administrowanie
-        PT_WHISPER,
-        PT_EXTENDED_4_SCRIPTS,  //jak ju� kiedy� wdro�ymy skrypty
-        PT_SRVMSG,
-        PT_YOUR_NAME,
-        PT_LEFT_GAME,
-        PT_GAME_INFO,
-        PT_MAP_NAME,
-        PT_DODIE,
-        PT_RESPAWN,
-        PT_DROPITEM,
-        PT_TAKEITEM,
-        PT_CASTSPELL,
-        PT_CASTSPELLONTARGET,
-        PT_VOICE,
-    };
-
-    struct Packet
-    {
-        PacketTypes type;
-        std::string data;
-    };
-
-    Network(CGmpClient*);
-    ~Network() = default;
-
-    bool Connect(std::string hostAddress, int hostPort);
-    void Disconnect();
-    int GetPing();
-    void Send(const char*, int, PacketPriority, PacketReliability);
-    void Receive();
-
-    inline uint64_t GetMyId() { return playerID; }
-    void UpdateMyId(uint64_t);
-    inline const RakNet::SystemAddress& GetServerAddress() const { return serverAddress; }
-private:
-    void Init();
-    void AddPacketHandlers();
-    void HandlePacket(RakNet::Packet*);
+struct Packet {
+  unsigned char* data = nullptr;
+  std::uint32_t length = 0;
 };
 
+class Network : public Net::PacketHandler {
+public:
+  bool connection_lost_ = false;
+  std::uint8_t error;
+
+  Network(CGmpClient*);
+  ~Network() override;
+
+  bool Connect(std::string hostAddress, int hostPort);
+  void Disconnect();
+  bool IsConnected() const;
+  int GetPing();
+
+  void Send(const char* data, int size, Net::PacketPriority priority, Net::PacketReliability reliability) {
+    Send(reinterpret_cast<unsigned char*>(const_cast<char*>(data)), size, priority, reliability);
+  }
+  void Send(unsigned char*, int, Net::PacketPriority, Net::PacketReliability);
+  void Receive();
+
+  inline uint64_t GetMyId() {
+    return playerID;
+  }
+  void UpdateMyId(uint64_t);
+  std::string GetServerIp() const;
+  std::uint32_t GetServerPort() const;
+
+  static void LoadNetworkLibrary();
+
+private:
+  void AddPacketHandlers();
+  bool HandlePacket(unsigned char* data, std::uint32_t size) override;
+
+  CGmpClient* client_;  // swaghetti
+  uint64_t playerID;
+  std::map<int, std::function<void(CGmpClient*, Packet packet)> > packetHandlers;
+  std::string serverIp_;
+  std::uint32_t serverPort_{0};
+};

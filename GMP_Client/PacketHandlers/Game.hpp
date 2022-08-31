@@ -1,22 +1,47 @@
+
+/*
+MIT License
+
+Copyright (c) 2022 Gothic Multiplayer Team.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/
+
 #pragma once
-#include "RakNetTypes.h"
+
 #include "../CGmpClient.h"
 #include "../CChat.h"
 
 extern zCOLOR RED;
 namespace Game {
-	void OnMapName(CGmpClient* client, RakNet::Packet* packet) {
+	void OnMapName(CGmpClient* client, Packet packet) {
 		const char* currentMap = oCGame::GetGame()->GetGameWorld()->GetWorldName().ToChar();
-		//TODO: refactor sekretnych algorytmów GMP
-		if (memcmp(packet->data + 1, currentMap, 
-			(packet->length - 1 > strlen(currentMap) + 1) ? strlen(currentMap) + 1 : packet->length - 1)) {
-			client->map = ((char*)packet->data + 1);
+		//TODO: refactor sekretnych algorytmï¿½w GMP
+		if (memcmp(packet.data + 1, currentMap, 
+			(packet.length - 1 > strlen(currentMap) + 1) ? strlen(currentMap) + 1 : packet.length - 1)) {
+			client->map = ((char*)packet.data + 1);
 		}
 		else if (!client->map.IsEmpty()){
 			client->map.Clear(); 
 		}
 		zCOption::GetOption()->ChangeDir(WORK_DATA_WORLDS);
-		zFILE_VDFS* vdf = oCObjectFactory::GetFactory()->CreateZFile((char*)packet->data + 1);
+		zFILE_VDFS* vdf = oCObjectFactory::GetFactory()->CreateZFile((char*)packet.data + 1);
 		if (vdf->Exists()) {
 			vdf->Open(false);
 			BYTE* mapBuffer = new BYTE[vdf->Size()];
@@ -26,21 +51,21 @@ namespace Game {
 			delete[] mapBuffer;
 			BYTE buffer[18];
 			ZeroMemory(buffer, 18);
-			buffer[0] = Network::PT_CHECKSUM;
+			buffer[0] = Net::PT_CHECKSUM;
 			buffer[1] = client->AreDefaultItems();
 			if (md5) {
 				memcpy(buffer + 2, md5, 16);
 			}
-			client->network->Send((const char*)buffer, 18, IMMEDIATE_PRIORITY, RELIABLE);
+			client->network->Send((const char*)buffer, 18, Net::IMMEDIATE_PRIORITY, Net::RELIABLE);
 		}
 	}
 
-	void OnInGame(CGmpClient* client, RakNet::Packet* packet) {
+	void OnInGame(CGmpClient* client, Packet packet) {
 		client->IsInGame = true;
 	}
 
-	//TODO: To nie mo¿e byæ takie du¿e
-	void OnActualStatistics(CGmpClient* client, RakNet::Packet* packet) {
+	//TODO: To nie moï¿½e byï¿½ takie duï¿½e
+	void OnActualStatistics(CGmpClient* client, Packet packet) {
 		//Defines z CGmpClient.cpp
 		static const zSTRING Door = "DOOR";
 		static const zSTRING BowSound = "BOWSHOOT";
@@ -66,13 +91,13 @@ namespace Game {
 		}
 		bool found;
 		unsigned int pIt = 1;
-		while (pIt < packet->length) {
+		while (pIt < packet.length) {
 			CPlayer* player = nullptr;
 			size_t i;
 			found = false;
 			for (i = 0; i < client->player.size(); i++) {
 				player = nullptr;
-				if (!memcmp(packet->data + pIt, &client->player[i]->id, sizeof(uint64_t))) {
+				if (!memcmp(packet.data + pIt, &client->player[i]->id, sizeof(uint64_t))) {
 					found = true;
 					player = client->player[i];
 					break; 
@@ -86,19 +111,19 @@ namespace Game {
 				pIt += sizeof(uint64_t);
 				pIt++;	//miejsce na przetwarzanie flag
 				zVEC3 pos;
-				memcpy(&pos, packet->data + pIt, 12); pIt += 12;
+				memcpy(&pos, packet.data + pIt, 12); pIt += 12;
 				if (!player->enable) {
 					player->npc->Enable(pos);
 					player->enable = TRUE;
 				}
 				else player->AnalyzePosition(pos);
 				float nrot[3];
-				memcpy(nrot, packet->data + pIt, 12); pIt += 12;
+				memcpy(nrot, packet.data + pIt, 12); pIt += 12;
 				if (!player->npc->IsDead()) {
 					player->npc->SetAngle(-nrot[0], nrot[1], 0.0f, nrot[0], nrot[1], nrot[2]);
 				}
 				short word;
-				memcpy(&word, packet->data + pIt, 2); pIt += 2;
+				memcpy(&word, packet.data + pIt, 2); pIt += 2;
 				if (word == 0) {
 					if (player->npc->GetLeftHand()) {
 						oCItem* lptr = player->npc->GetLeftHand();
@@ -124,8 +149,8 @@ namespace Game {
 						}
 					}
 				}
-				//sprawdzanie lewej rêki
-				memcpy(&word, packet->data + pIt, 2); pIt += 2;
+				//sprawdzanie lewej rï¿½ki
+				memcpy(&word, packet.data + pIt, 2); pIt += 2;
 				if (word == 0) {
 					if (player->npc->GetRightHand()) {
 						oCItem* rptr = player->npc->GetRightHand();
@@ -152,8 +177,8 @@ namespace Game {
 						}
 					}
 				}
-				//sprawdzanie prawej rêki
-				memcpy(&word, packet->data + pIt, 2); pIt += 2;
+				//sprawdzanie prawej rï¿½ki
+				memcpy(&word, packet.data + pIt, 2); pIt += 2;
 				if (word == 0) {
 					if (player->npc->GetEquippedArmor()) {
 						player->npc->UnequipItem(player->npc->GetEquippedArmor());
@@ -180,7 +205,7 @@ namespace Game {
 					}
 				}
 				//sprawdzanie zbroi
-				memcpy(&word, packet->data + pIt, 2); pIt += 2;
+				memcpy(&word, packet.data + pIt, 2); pIt += 2;
 				if (player->npc && word > 0 && word < 1400) {
 					zCModelAni* Ani = player->npc->GetModel()->GetAniFromAniID(static_cast<int>(word));
 					if (Ani && !player->npc->IsDead()) {
@@ -255,7 +280,7 @@ namespace Game {
 					}
 				}
 				//sprawdzanie animacji
-				memcpy(&word, packet->data + pIt, 2); pIt += 2;
+				memcpy(&word, packet.data + pIt, 2); pIt += 2;
 				if (word > player->npc->GetHealth()) {
 					if (player->npc->GetHealth() == 1) {
 						player->npc->RefreshNpc();
@@ -278,10 +303,10 @@ namespace Game {
 					else player->update_hp_packet++;
 				}
 				//update hp
-				memcpy(&word, packet->data + pIt, 2); pIt += 2;
+				memcpy(&word, packet.data + pIt, 2); pIt += 2;
 				player->npc->SetMana(static_cast<int>(word));
 				// update many
-				memcpy(&word, packet->data + pIt, 1); pIt++;
+				memcpy(&word, packet.data + pIt, 1); pIt++;
 				BYTE SpellNr = static_cast<BYTE>(word);
 				if (SpellNr != player->npc->GetActiveSpellNr() && SpellNr > 0 && SpellNr < 100)
 				{
@@ -300,13 +325,13 @@ namespace Game {
 				else if (player->npc->IsDead()) {
 					player->npc->GetSpellBook()->Close(1);
 				}
-				// update spella w rêkach
-				if ((BYTE)player->npc->GetWeaponMode() != packet->data[pIt]) {
-					player->npc->SetWeaponMode((oCNpc_WeaponMode)packet->data[pIt]);
+				// update spella w rï¿½kach
+				if ((BYTE)player->npc->GetWeaponMode() != packet.data[pIt]) {
+					player->npc->SetWeaponMode((oCNpc_WeaponMode)packet.data[pIt]);
 					pIt++;
 				}
 				//sprawdzenie pozycji bojowej
-				switch ((CPlayer::HeadState)packet->data[pIt])
+				switch ((CPlayer::HeadState)packet.data[pIt])
 				{
 				case CPlayer::HEAD_NONE:
 					player->npc->GetAnictrl()->SetLookAtTarget(0.5f, 0.5f);
@@ -325,8 +350,8 @@ namespace Game {
 					break;
 				}
 				pIt++;
-				// synchro obrotu g³owy
-				memcpy(&word, packet->data + pIt, 2); pIt += 2;
+				// synchro obrotu gï¿½owy
+				memcpy(&word, packet.data + pIt, 2); pIt += 2;
 				if (word == 0) {
 					if (player->npc->GetEquippedRangedWeapon()) {
 						player->npc->UnequipItem(player->npc->GetEquippedRangedWeapon());
@@ -353,7 +378,7 @@ namespace Game {
 					}
 				}
 				//sprawdzanie broni dystansowej
-				memcpy(&word, packet->data + pIt, 2); pIt += 2;
+				memcpy(&word, packet.data + pIt, 2); pIt += 2;
 				if (word == 0) {
 					if (player->npc->GetEquippedMeleeWeapon()) {
 						player->npc->UnequipItem(player->npc->GetEquippedMeleeWeapon());
@@ -379,13 +404,13 @@ namespace Game {
 						}
 					}
 				}
-				//sprawdzanie broni do walki w rêcz
+				//sprawdzanie broni do walki w rï¿½cz
 			}
 			else {
 				pIt += sizeof(uint64_t);
 				if (client->player[0]->update_hp_packet >= 5) {
 					short last_hp = client->player[0]->hp;
-					memcpy(&client->player[0]->hp, packet->data + pIt, 2); pIt += 2;
+					memcpy(&client->player[0]->hp, packet.data + pIt, 2); pIt += 2;
 					if ((!last_hp) && (client->player[0]->hp == client->player[0]->npc->GetMaxHealth())) {
 						client->player[0]->npc->RefreshNpc();
 						client->player[0]->npc->SetMovLock(0);
@@ -444,15 +469,15 @@ namespace Game {
 		}
 	}
 
-	void OnMapOnly(CGmpClient* client, RakNet::Packet* packet)
+	void OnMapOnly(CGmpClient* client, Packet packet)
 	{
 		bool found;
 		unsigned int pIt = 1;
-		while (pIt < packet->length) {
+		while (pIt < packet.length) {
 			size_t i;
 			found = false;
 			for (i = 0; i < client->player.size(); i++) {
-				if (!memcmp(packet->data + pIt, &client->player[i]->id, sizeof(uint64_t))) {
+				if (!memcmp(packet.data + pIt, &client->player[i]->id, sizeof(uint64_t))) {
 					found = true;
 					break;
 				}
@@ -460,7 +485,7 @@ namespace Game {
 			if (found) {
 				pIt += sizeof(uint64_t);
 				float pos[2];
-				memcpy(pos, packet->data + pIt, 8);
+				memcpy(pos, packet.data + pIt, 8);
 				client->player[i]->npc->SetPosition(pos[0], client->player[i]->npc->GetPosition().y, pos[1]);
 				client->player[i]->DisablePlayer();
 				pIt += 8;
@@ -469,10 +494,10 @@ namespace Game {
 		}
 	}
 
-	void OnDoDie(CGmpClient* client, RakNet::Packet* packet)
+	void OnDoDie(CGmpClient* client, Packet packet)
 	{
 		for (size_t i = 0; i < client->player.size(); i++) {
-			if (!memcmp(&client->player[i]->id, packet->data + 1, sizeof(uint64_t))) {
+			if (!memcmp(&client->player[i]->id, packet.data + 1, sizeof(uint64_t))) {
 				client->player[i]->hp = 0;
 				client->player[i]->update_hp_packet = 0;
 				client->player[i]->SetHealth(0);
@@ -480,22 +505,22 @@ namespace Game {
 		}
 	}
 
-	void OnRespawn(CGmpClient* client, RakNet::Packet* packet)
+	void OnRespawn(CGmpClient* client, Packet packet)
 	{
 		for (size_t i = 0; i < client->player.size(); i++) {
-			if (!memcmp(&client->player[i]->id, packet->data + 1, sizeof(uint64_t))) {
+			if (!memcmp(&client->player[i]->id, packet.data + 1, sizeof(uint64_t))) {
 				client->player[i]->RespawnPlayer();
 			}
 		}
 	}
 
-	void OnCastSpell(CGmpClient* client, RakNet::Packet* packet)
+	void OnCastSpell(CGmpClient* client, Packet packet)
 	{
 		short SpellId = 0;
-		memcpy(&SpellId, packet->data + 1 + sizeof(uint64_t), 1);
+		memcpy(&SpellId, packet.data + 1 + sizeof(uint64_t), 1);
 		if (SpellId >= 0 && SpellId < 100) {
 			for (size_t i = 0; i < client->player.size(); i++) {
-				if (!memcmp(&client->player[i]->id, packet->data + 1, sizeof(uint64_t))) {
+				if (!memcmp(&client->player[i]->id, packet.data + 1, sizeof(uint64_t))) {
 					oCSpell* Spell = oCSpell::_CreateNewInstance();
 					Spell->InitValues(SpellId);
 					Spell->Setup(client->player[i]->GetNpc(), 0, 0);
@@ -507,15 +532,15 @@ namespace Game {
 		}
 	}
 
-	void OnCastSpellOnTarget(CGmpClient* client, RakNet::Packet* packet)
+	void OnCastSpellOnTarget(CGmpClient* client, Packet packet)
 	{
 		uint64_t TargetId;
 		short SpellId = 0;
-		memcpy(&TargetId, packet->data + 1 + sizeof(uint64_t), 8);
-		memcpy(&SpellId, packet->data + 9 + sizeof(uint64_t), 1);
+		memcpy(&TargetId, packet.data + 1 + sizeof(uint64_t), 8);
+		memcpy(&SpellId, packet.data + 9 + sizeof(uint64_t), 1);
 		if (SpellId >= 0 && SpellId < 100) {
 			for (size_t i = 0; i < client->player.size(); i++) {
-				if (!memcmp(&client->player[i]->id, packet->data + 1, sizeof(uint64_t))) {
+				if (!memcmp(&client->player[i]->id, packet.data + 1, sizeof(uint64_t))) {
 					for (size_t s = 0; s < client->player.size(); s++) {
 						if (!memcmp(&client->player[s]->id, &TargetId, sizeof(uint64_t))) {
 							oCSpell* Spell = oCSpell::_CreateNewInstance();
@@ -531,15 +556,15 @@ namespace Game {
 		}
 	}
 
-	void OnDropItem(CGmpClient* client, RakNet::Packet* packet)
+	void OnDropItem(CGmpClient* client, Packet packet)
 	{
 		short instance;
 		short amount;
-		memcpy(&instance, packet->data + 1 + sizeof(uint64_t), 2);
-		memcpy(&amount, packet->data + 3 + sizeof(uint64_t), 2);
+		memcpy(&instance, packet.data + 1 + sizeof(uint64_t), 2);
+		memcpy(&amount, packet.data + 3 + sizeof(uint64_t), 2);
 		if (instance > 5892 && instance < 7850) {
 			for (size_t i = 0; i < client->player.size(); i++) {
-				if (!memcmp(&client->player[i]->id, packet->data + 1, sizeof(uint64_t))) {
+				if (!memcmp(&client->player[i]->id, packet.data + 1, sizeof(uint64_t))) {
 					oCWorld* world = oCGame::GetGame()->GetGameWorld();
 					oCItem* NpcDrop = oCObjectFactory::GetFactory()->CreateItem(instance);
 					NpcDrop->SetAmount(amount);
@@ -554,15 +579,15 @@ namespace Game {
 		}
 	}
 
-	void OnTakeItem(CGmpClient* client, RakNet::Packet* packet)
+	void OnTakeItem(CGmpClient* client, Packet packet)
 	{
 		short number;
-		memcpy(&number, packet->data + 1 + sizeof(uint64_t), 2);
+		memcpy(&number, packet.data + 1 + sizeof(uint64_t), 2);
 		if (number > 5892 && number < 7850) {
 			zCListSort<oCItem>* ItemList = oCGame::GetGame()->GetWorld()->GetItemList();
 			int size = ItemList->GetSize();
 			for (size_t x = 0; x < client->player.size(); x++) {
-				if (!memcmp(&client->player[x]->id, packet->data + 1, sizeof(uint64_t))) {
+				if (!memcmp(&client->player[x]->id, packet.data + 1, sizeof(uint64_t))) {
 					for (int i = 0; i < size; i++) {
 						ItemList = ItemList->GetNext();
 						oCItem* ItemInList = ItemList->GetData();
@@ -578,92 +603,92 @@ namespace Game {
 		}
 	}
 
-	void OnWhisper(CGmpClient* client, RakNet::Packet* packet)
+	void OnWhisper(CGmpClient* client, Packet packet)
 	{
 		size_t i;
 		bool found = false;
 		for (i = 0; i < client->player.size(); i++) {
-			if (!memcmp(packet->data + 1, &client->player[i]->id, sizeof(uint64_t))) { 
+			if (!memcmp(packet.data + 1, &client->player[i]->id, sizeof(uint64_t))) { 
 				found = true;
 				break;
 			}
 		}
 		if (found) {
-			CChat::GetInstance()->WriteMessage(WHISPER, true, zCOLOR(0, 255, 255, 255), "%s-> %s", client->player[i]->npc->GetName().ToChar(), (const char*)packet->data + 1 + sizeof(uint64_t) * 2);
+			CChat::GetInstance()->WriteMessage(WHISPER, true, zCOLOR(0, 255, 255, 255), "%s-> %s", client->player[i]->npc->GetName().ToChar(), (const char*)packet.data + 1 + sizeof(uint64_t) * 2);
 		}
 	}
 
-	void OnMessage(CGmpClient* client, RakNet::Packet* packet)
+	void OnMessage(CGmpClient* client, Packet packet)
 	{
 		size_t i = 0;
 		bool found = false;
 		for (i = 0; i < client->player.size(); i++) {
-			if (!memcmp(packet->data + 1, &client->player[i]->id, sizeof(uint64_t))) {
+			if (!memcmp(packet.data + 1, &client->player[i]->id, sizeof(uint64_t))) {
 				found = true;
 				break;
 			}
 		}
 		if (found) {
-			CChat::GetInstance()->WriteMessage(NORMAL, false, "%s: %s", client->player[i]->npc->GetName().ToChar(), (const char*)packet->data + 1 + sizeof(uint64_t));
+			CChat::GetInstance()->WriteMessage(NORMAL, false, "%s: %s", client->player[i]->npc->GetName().ToChar(), (const char*)packet.data + 1 + sizeof(uint64_t));
 		}
 	}
 
-	void OnServerMessage(CGmpClient* client, RakNet::Packet* packet)
+	void OnServerMessage(CGmpClient* client, Packet packet)
 	{
-		CChat::GetInstance()->WriteMessage(NORMAL, false, zCOLOR(255, 128, 0, 255), "(SERVER): %s", (const char*)packet->data + 1);
+		CChat::GetInstance()->WriteMessage(NORMAL, false, zCOLOR(255, 128, 0, 255), "(SERVER): %s", (const char*)packet.data + 1);
 	}
 
-	void OnRcon(CGmpClient* client, RakNet::Packet* packet)
+	void OnRcon(CGmpClient* client, Packet packet)
 	{
-		if (packet->data[1] == 0x41) {
+		if (packet.data[1] == 0x41) {
 			client->IsAdminOrModerator = true;
 		}
-		CChat::GetInstance()->WriteMessage(ADMIN, false, RED, "%s", (char*)packet->data + 1);
+		CChat::GetInstance()->WriteMessage(ADMIN, false, RED, "%s", (char*)packet.data + 1);
 	}
 
-	void OnAllOthers(CGmpClient* client, RakNet::Packet* packet)
+	void OnAllOthers(CGmpClient* client, Packet packet)
 	{
 		unsigned int pIt = 1;
-		while (pIt < packet->length) {
+		while (pIt < packet.length) {
 			CPlayer* newhero = new CPlayer();
 			newhero->enable = FALSE;
-			memcpy(&newhero->id, packet->data + pIt, sizeof(uint64_t)); pIt += sizeof(uint64_t);
+			memcpy(&newhero->id, packet.data + pIt, sizeof(uint64_t)); pIt += sizeof(uint64_t);
 			oCNpc* npc = oCObjectFactory::GetFactory()->CreateNpc(oCNpc::GetHero()->GetInstance());
 			newhero->SetNpc(npc);
-			newhero->char_class = packet->data[pIt];
-			client->classmgr->EquipNPC(packet->data[pIt], newhero, true); pIt++;
+			newhero->char_class = packet.data[pIt];
+			client->classmgr->EquipNPC(packet.data[pIt], newhero, true); pIt++;
 			newhero->npc->SetGuild(9);
 			newhero->hp = static_cast<short>(newhero->GetHealth());
 			zVEC3 pos;
-			memcpy(&pos, packet->data + pIt, 12);
+			memcpy(&pos, packet.data + pIt, 12);
 			newhero->SetPosition(pos); pIt += 12;
-			pIt += 6;	//pomijam l/p d³oñ+zbroje
-			if (newhero->Type == CPlayer::NPC_HUMAN) newhero->SetAppearance(packet->data[pIt], packet->data[pIt + 1], packet->data[pIt + 2]); pIt += 3;
-			if (newhero->Type > CPlayer::NPC_DRACONIAN || newhero->Type == CPlayer::NPC_HUMAN) newhero->npc->ApplyOverlay(CPlayer::GetWalkStyleFromByte(packet->data[pIt])); pIt++;
-			const char* heroname = (const char*)packet->data + pIt; pIt += strlen(heroname) + 1;
+			pIt += 6;	//pomijam l/p dï¿½oï¿½+zbroje
+			if (newhero->Type == CPlayer::NPC_HUMAN) newhero->SetAppearance(packet.data[pIt], packet.data[pIt + 1], packet.data[pIt + 2]); pIt += 3;
+			if (newhero->Type > CPlayer::NPC_DRACONIAN || newhero->Type == CPlayer::NPC_HUMAN) newhero->npc->ApplyOverlay(CPlayer::GetWalkStyleFromByte(packet.data[pIt])); pIt++;
+			const char* heroname = (const char*)packet.data + pIt; pIt += strlen(heroname) + 1;
 			newhero->SetName(heroname);
 			newhero->update_hp_packet = 0;
 			client->player.push_back(newhero);
 		}
 	}
 
-	void OnJoinGame(CGmpClient* client, RakNet::Packet* packet)
+	void OnJoinGame(CGmpClient* client, Packet packet)
 	{
 		CPlayer* newhero = new CPlayer();
-		memcpy(&newhero->id, packet->data + 1, sizeof(uint64_t));
+		memcpy(&newhero->id, packet.data + 1, sizeof(uint64_t));
 		zVEC3 pos;
-		memcpy(&pos, packet->data + (2 + sizeof(uint64_t)), 12);
+		memcpy(&pos, packet.data + (2 + sizeof(uint64_t)), 12);
 		oCNpc* npc = oCObjectFactory::GetFactory()->CreateNpc(oCNpc::GetHero()->GetInstance());
 		newhero->SetNpc(npc);
-		client->classmgr->EquipNPC(packet->data[1 + sizeof(uint64_t)], newhero, true);
-		newhero->char_class = packet->data[1 + sizeof(uint64_t)];
+		client->classmgr->EquipNPC(packet.data[1 + sizeof(uint64_t)], newhero, true);
+		newhero->char_class = packet.data[1 + sizeof(uint64_t)];
 		newhero->npc->SetGuild(9);
 		newhero->hp = static_cast<short>(newhero->GetHealth());
 		newhero->SetPosition(pos);
-		const char* heroname = (const char*)packet->data + (38 + sizeof(uint64_t));
+		const char* heroname = (const char*)packet.data + (38 + sizeof(uint64_t));
 		newhero->SetName(heroname);
-		if (newhero->Type == CPlayer::NPC_HUMAN) newhero->SetAppearance(packet->data[sizeof(uint64_t) + 34], packet->data[sizeof(uint64_t) + 35], packet->data[sizeof(uint64_t) + 36]);
-		if (newhero->Type > CPlayer::NPC_DRACONIAN || newhero->Type == CPlayer::NPC_HUMAN) newhero->npc->ApplyOverlay(CPlayer::GetWalkStyleFromByte(packet->data[sizeof(uint64_t) + 37]));
+		if (newhero->Type == CPlayer::NPC_HUMAN) newhero->SetAppearance(packet.data[sizeof(uint64_t) + 34], packet.data[sizeof(uint64_t) + 35], packet.data[sizeof(uint64_t) + 36]);
+		if (newhero->Type > CPlayer::NPC_DRACONIAN || newhero->Type == CPlayer::NPC_HUMAN) newhero->npc->ApplyOverlay(CPlayer::GetWalkStyleFromByte(packet.data[sizeof(uint64_t) + 37]));
 		CChat::GetInstance()->WriteMessage(NORMAL, false, zCOLOR(0, 255, 0, 255), "%s%s", heroname, (*client->lang)[CLanguage::SOMEONE_JOIN_GAME].ToChar());
 		newhero->enable = FALSE;
 		newhero->update_hp_packet = 0;
@@ -671,32 +696,32 @@ namespace Game {
 		client->player.push_back(newhero);
 	}
 
-	void OnYourName(CGmpClient* client, RakNet::Packet* packet)
+	void OnYourName(CGmpClient* client, Packet packet)
 	{
-		zSTRING tmpStr = (const char*)(packet->data + 1);
+		zSTRING tmpStr = (const char*)(packet.data + 1);
 		oCNpc::GetHero()->SetName(tmpStr);
 		tmpStr.Clear();
 	}
 
-	void OnGameInfo(CGmpClient* client, RakNet::Packet* packet)
+	void OnGameInfo(CGmpClient* client, Packet packet)
 	{
 		STime t;
-		memcpy(&t, packet->data + 1, 4);
+		memcpy(&t, packet.data + 1, 4);
 		oCGame::GetGame()->SetTime(static_cast<int>(t.day), static_cast<int>(t.hour), static_cast<int>(t.min));
 		if (!client->IgnoreFirstTimeMessage) CChat::GetInstance()->WriteMessage(NORMAL, false, "Time set to: %d:%.2d", t.hour, t.min);
 		client->IgnoreFirstTimeMessage = false;
-		client->game_mode = packet->data[5];
-		UsePotionKeys = packet->data[6] & 0x01;
-		client->DropItemsAllowed = packet->data[6] & 0x02;
-		client->ForceHideMap = packet->data[6] & 0x04;
-		if (packet->data[6] & 0x08) memcpy(&client->mp_restore, packet->data + 7, 2);
+		client->game_mode = packet.data[5];
+		UsePotionKeys = packet.data[6] & 0x01;
+		client->DropItemsAllowed = packet.data[6] & 0x02;
+		client->ForceHideMap = packet.data[6] & 0x04;
+		if (packet.data[6] & 0x08) memcpy(&client->mp_restore, packet.data + 7, 2);
 		else client->mp_restore = 0;
 	}
 
-	void OnLeftGame(CGmpClient* client, RakNet::Packet* packet)
+	void OnLeftGame(CGmpClient* client, Packet packet)
 	{
 		for (size_t i = 1; i < client->player.size(); i++) {
-			if (!memcmp(packet->data + 1, &client->player[i]->id, sizeof(uint64_t))) {
+			if (!memcmp(packet.data + 1, &client->player[i]->id, sizeof(uint64_t))) {
 				CChat::GetInstance()->WriteMessage(NORMAL, false, zCOLOR(255, 0, 0, 255), "%s%s", client->player[i]->GetName(), (*client->lang)[CLanguage::SOMEONEDISCONNECT_FROM_SERVER].ToChar());
 				client->player[i]->LeaveGame();
 				delete client->player[i];
@@ -706,12 +731,12 @@ namespace Game {
 		}
 	}
 
-	void OnVoice(CGmpClient* client, RakNet::Packet* packet)
+	void OnVoice(CGmpClient* client, Packet packet)
     {
         int size;
-		memcpy(&size, packet->data + 1, 4);
+		memcpy(&size, packet.data + 1, 4);
         char* buffer = new char[size];
-        memcpy(buffer, packet->data + 5, size);
+        memcpy(buffer, packet.data + 5, size);
 		client->voicePlayback->PlayVoice(buffer, size);
     }
 }

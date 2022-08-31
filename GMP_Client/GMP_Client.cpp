@@ -35,6 +35,7 @@ SOFTWARE.
 #include "ocgame.hpp"
 #include "patch.h"
 #include "version.h"
+#include "Network.h"
 #include "zcoption.hpp"
 
 #include <SDL.h>
@@ -99,6 +100,8 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
     spdlog::default_logger()->sinks().push_back(
         std::make_shared<spdlog::sinks::basic_file_sink_mt>("GMP_Log.txt", false));
 		spdlog::flush_on(spdlog::level::debug);
+
+    Network::LoadNetworkLibrary();
 
    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0) {
       SPDLOG_ERROR("Couldn't initialize SDL: {}", SDL_GetError());
