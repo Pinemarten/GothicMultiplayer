@@ -1,6 +1,5 @@
 #include "HTTPDownloader.h"
 
-#include <spdlog/spdlog.h>
 #include <httplib.h>
 
 using namespace std;
@@ -9,7 +8,6 @@ using namespace httplib;
 string HTTPDownloader::GetContentOfHost(string address, string path)
 {
 	Client client("http://" + address);
-	SPDLOG_ERROR("GetContentOfHost: {}, {}", address, path);
 	auto response = client.Get("/" + path);
 	return response->body;
 }
