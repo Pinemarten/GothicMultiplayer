@@ -30,7 +30,6 @@ set (SERVER_SOURCES
   crypt.cpp   
   GMP_Serv.cpp       
   platform_depend.cpp
-  zBitStream.cpp
   HTTPServer.cpp
 )
 
