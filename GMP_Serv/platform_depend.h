@@ -29,8 +29,5 @@ SOFTWARE.
 namespace System{
 	void MakeMeDaemon(bool stdout);
 }
-
-#else //dla windy
-// #include <windows.h>
 #endif
 

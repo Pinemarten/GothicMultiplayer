@@ -31,6 +31,7 @@ SOFTWARE.
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 void System::MakeMeDaemon(bool stdout){
 	pid_t pid, sid;
