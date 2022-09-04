@@ -33,7 +33,6 @@ SOFTWARE.
 #include "CAnimMenu.h"
 #include <ctime>
 #include "CShrinker.h"
-#include "CSanta.h"
 #include "CInventory.h"
 #include "CInterpolatePos.h"
 
@@ -65,7 +64,6 @@ public:
 	CMap* MMap;
 	CShrinker* Shrinker;
 	bool Christmas;
-	CSanta* Santa;
 	CInventory* Inventory;
 	std::vector<CInterpolatePos*> Interpolation;
 private:

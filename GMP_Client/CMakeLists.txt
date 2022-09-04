@@ -48,8 +48,7 @@ set (CLIENT_SOURCES
   CObjectMenu.cpp    
   CObservation.cpp   
   CPlayer.cpp        
-  CPlayerList.cpp    
-  CSanta.cpp
+  CPlayerList.cpp
   CSelectClass.cpp   
   CServerList.cpp    
   CShrinker.cpp      
@@ -71,7 +70,6 @@ set (CLIENT_SOURCES
   VoicePlayback.cpp
   HTTPDownloader.cpp
   patch.cpp
-  SharedUtil.cpp
   Table.cpp
   WorldBuilder/CBuilder.cpp
   WorldBuilder/load.cpp

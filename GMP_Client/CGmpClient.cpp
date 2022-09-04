@@ -432,8 +432,6 @@ void CGmpClient::Disconnect(){
 		IsInGame = false;
 		IgnoreFirstTimeMessage = true;
 		global_ingame->IgnoreFirstSync = true;
-		delete global_ingame->Santa;
-		global_ingame->Santa = NULL;
 		LocalPlayer->SetNpcType(CPlayer::NPC_HUMAN);
 		network->Disconnect();
 		delete LocalPlayer;

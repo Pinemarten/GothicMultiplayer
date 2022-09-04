@@ -47,7 +47,6 @@ SOFTWARE.
 #include "CUpdate.h"
 #include "CSyncFuncs.h"
 #include "WorldBuilder\CBuilder.h"
-#include "SharedUtil.h"
 #include "ExtendedServerList.h"
 #include <spdlog/spdlog.h>
 
@@ -130,7 +129,6 @@ char x[2]={0, 0};
 		Angle = oCNpc::GetHero()->GetAngle();
 		NAngle = oCNpc::GetHero()->GetAngleN();
 		ClearNpcTalents(oCNpc::GetHero());
-		Christmas = SharedUtil::IsChristmas();
 		zCSoundFX* FXMusic;
 		if(Christmas) FXMusic = zCSoundSystem::GetSoundSystem()->LoadSoundFX("XMAS.WAV");
 		else FXMusic = zCSoundSystem::GetSoundSystem()->LoadSoundFX("K_KURKOWSKI_A_CERTAIN_PLACE.WAV");

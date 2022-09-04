@@ -34,7 +34,6 @@ SOFTWARE.
 #include "patch.h"
 #include "CMainMenu.h"
 #include <time.h>
-#include "SharedUtil.h"
 #include "CLocalPlayer.h"
 
 CIngame *global_ingame=NULL;
@@ -65,8 +64,6 @@ CIngame::CIngame(CLanguage *pLang){
 	WritingOnChat = false;
 	IgnoreFirstSync = true;
 	SwampLightsOn = false;
-	Christmas = false;
-	Santa = NULL;
 	Movement = NULL;
 	RecognizedMap = MAP_UNKNOWN;
 	if(!memcmp("OLDVALLEY.ZEN", oCGame::GetGame()->GetWorld()->GetWorldName().ToChar(), 13) || !memcmp("COLONY.ZEN", oCGame::GetGame()->GetWorld()->GetWorldName().ToChar(), 10)) RecognizedMap = MAP_COLONY;
@@ -81,13 +78,10 @@ CIngame::CIngame(CLanguage *pLang){
 	WhisperingTo = "";
 	chat_interface->WriteMessage(NORMAL, false, "Gothic Multiplayer");
 	global_ingame=this;
-	Christmas = SharedUtil::IsChristmas();
-	if(Christmas) chat_interface->WriteMessage(NORMAL, false, (*pLang)[CLanguage::MERRY_CHRISTMAS].ToChar());
 	HooksManager::GetInstance()->AddHook(HT_RENDER, (DWORD)CIngame::Loop, false);
 }
 
 CIngame::~CIngame(){
-	delete Santa;
 	delete Shrinker;
 	delete Inventory;
 	this->lang=NULL;
@@ -96,7 +90,6 @@ CIngame::~CIngame(){
 	this->PList=NULL;
 	this->AMenu=NULL;
 	this->Shrinker=NULL;
-	this->Santa=NULL;
 	this->Inventory=NULL;
 	global_ingame=NULL;
 	HooksManager::GetInstance()->RemoveHook(HT_RENDER, (DWORD)CIngame::Loop);
@@ -170,13 +163,6 @@ void CIngame::Loop(){
 		}
 		// INVENTORY RENDER
 		if(global_ingame->Inventory) global_ingame->Inventory->RenderInventory();
-		// SANTA
-		/*if(global_ingame->Christmas){
-			if(global_ingame->RecognizedMap == MAP_COLONY || global_ingame->RecognizedMap == MAP_KHORINIS || global_ingame->RecognizedMap == MAP_OLDWORLD){
-				if(global_ingame->Santa) global_ingame->Santa->RenderSanta();
-				else global_ingame->Santa = new CSanta(global_ingame->RecognizedMap);
-			}
-		}*/
 		// START SNOW IF CHRISTMAS
 		if(global_ingame->Christmas) oCGame::GetGame()->GetWorld()->StartSnow();
 		// RUN SHRINKER
