@@ -44,7 +44,6 @@ Network::Network(CGmpClient* client) {
   error = 0;
 
   AddPacketHandlers();
-  SPDLOG_ERROR("g_netclient: {}", (void*)g_netclient);
   g_netclient->AddPacketHandler(*this);
 }
 

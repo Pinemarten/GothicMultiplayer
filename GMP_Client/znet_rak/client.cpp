@@ -53,7 +53,20 @@ namespace {
   }
   return ::MEDIUM_PRIORITY;
 }
+
 ::PacketReliability ToRakNetPacketReliability(Net::PacketReliability packetPriority) {
+  switch (packetPriority) {
+    case RELIABLE:
+      return ::RELIABLE;
+    case RELIABLE_ORDERED:
+      return ::RELIABLE_ORDERED;
+    case RELIABLE_SEQUENCED:
+      return ::RELIABLE_SEQUENCED;
+    case UNRELIABLE:
+      return ::UNRELIABLE;
+    case UNRELIABLE_SEQUENCED:
+      return ::UNRELIABLE_SEQUENCED;
+  }
   return ::RELIABLE;
 }
 }  // namespace
@@ -80,7 +93,7 @@ bool RakNetClient::Connect(const char* address, std::uint32_t port) {
   serverAddress_ = packet->systemAddress;
   peer_->DeallocatePacket(packet);
   if (message != ID_CONNECTION_REQUEST_ACCEPTED) {
-    SPDLOG_ERROR("Connection not accepted.");
+    SPDLOG_ERROR("Connection not accepted ({}).", message);
     return false;
   }
   isConnected_ = true;

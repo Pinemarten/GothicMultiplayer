@@ -39,6 +39,7 @@ void OnWhoami(CGmpClient* client, Packet packet) {
 
 void OnDisconnectOrLostConnection(CGmpClient* client, Packet packet) {
   client->network->error = packet.data[0];
+  SPDLOG_WARN("OnDisconnectOrLostConnection, code: {}", client->network->error);
   client->Disconnect();
   oCNpc::GetHero()->ResetPos(oCNpc::GetHero()->GetPosition());
   client->network->connection_lost_ = true;
