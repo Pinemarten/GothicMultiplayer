@@ -23,21 +23,14 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#ifndef PLATFORM_DEPEND_H
-#define	PLATFORM_DEPEND_H
+#pragma once 
 
 #ifndef WIN32
-#include <unistd.h>
-//odpowiednik windowsowego Sleep()
-#define Sleep(x) usleep(x*1000)
-
 namespace System{
 	void MakeMeDaemon(bool stdout);
 }
 
 #else //dla windy
-#include <windows.h>
-#endif
-
+// #include <windows.h>
 #endif
 

@@ -26,35 +26,33 @@ SOFTWARE.
 #ifndef _CCompression_H
 #define _CCompression_H
 
-#ifndef BYTE
-#define BYTE unsigned char
-#endif
-#ifndef UINT32
-#define UINT32 unsigned int
-#endif
+#include <cstdint>
 
 #include "singleton.h"
 #include "zlib.h"
 
-class CCompression : public TSingleton<CCompression>{
+class CCompression : public TSingleton<CCompression> {
 public:
-	enum{
-		DEFLATE	= 0,
-		DEFAULT,
-	};
-	enum{
-		DT_BINARY	= 0,
-		DT_TEXT,
-		DT_DEFAULT,
-	};
-	CCompression(void);
-	~CCompression(void);
-	void ChangeType(BYTE type);
-	UINT32 Compress(BYTE *src, BYTE *dst, UINT32 src_len, UINT32 &dst_len, BYTE method=DEFLATE);
-	UINT32 Decompress(BYTE *src, BYTE *dst, UINT32 src_len, UINT32 &dst_len, BYTE method=DEFLATE);
+  enum {
+    DEFLATE = 0,
+    DEFAULT,
+  };
+  enum {
+    DT_BINARY = 0,
+    DT_TEXT,
+    DT_DEFAULT,
+  };
+  CCompression(void);
+  ~CCompression(void);
+  void ChangeType(std::uint8_t type);
+  std::uint32_t Compress(std::uint8_t *src, std::uint8_t *dst, std::uint32_t src_len, std::uint32_t &dst_len,
+                         std::uint8_t method = DEFLATE);
+  std::uint32_t Decompress(std::uint8_t *src, std::uint8_t *dst, std::uint32_t src_len, std::uint32_t &dst_len,
+                           std::uint8_t method = DEFLATE);
+
 private:
-	BYTE ratio, data_type;
-	z_stream strm;
+  std::uint8_t ratio, data_type;
+  z_stream strm;
 };
 
 #endif

@@ -27,7 +27,7 @@ SOFTWARE.
 #define CPERMISSIONS_H
 
 #include <list>
-#include "../common/singleton.h"
+#include "singleton.h"
 
 struct SModerator{
 	char* nickname;

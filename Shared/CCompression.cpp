@@ -40,7 +40,7 @@ void CCompression::ChangeType(unsigned char type){
 	else data_type=type;
 }
 
-UINT32 CCompression::Compress(unsigned char *src, unsigned char *dst, UINT32 src_len, UINT32 &dst_len, BYTE method){
+std::uint32_t CCompression::Compress(unsigned char *src, unsigned char *dst, std::uint32_t src_len, std::uint32_t &dst_len, std::uint8_t method){
 	switch(method){
 		default:
 		case DEFLATE:
@@ -57,14 +57,14 @@ UINT32 CCompression::Compress(unsigned char *src, unsigned char *dst, UINT32 src
 				strm.avail_in=src_len;
 				deflate(&strm, Z_FINISH);
 				deflateEnd(&strm);
-				dst_len=static_cast<UINT32>(1<<10) - strm.avail_out;
-				return (UINT32)(static_cast<UINT32>(1<<10) - strm.avail_out);
+				dst_len=static_cast<std::uint32_t>(1<<10) - strm.avail_out;
+				return (std::uint32_t)(static_cast<std::uint32_t>(1<<10) - strm.avail_out);
 			break;
 	}
 	return 0;	//should never happen
 }
 
-UINT32 CCompression::Decompress(BYTE *src, BYTE *dst, UINT32 src_len, UINT32 &dst_len, BYTE method){
+std::uint32_t CCompression::Decompress(std::uint8_t *src, std::uint8_t *dst, std::uint32_t src_len, std::uint32_t &dst_len, std::uint8_t method){
 	switch(method){
 		default:
 		case DEFLATE:
@@ -82,8 +82,8 @@ UINT32 CCompression::Decompress(BYTE *src, BYTE *dst, UINT32 src_len, UINT32 &ds
 			strm.next_out=dst;
 			inflate(&strm, Z_NO_FLUSH);
 			inflateEnd(&strm);
-			dst_len=static_cast<UINT32>(1<<10) - strm.avail_out;
-			return (UINT32)(static_cast<UINT32>(1<<10) - strm.avail_out);
+			dst_len=static_cast<std::uint32_t>(1<<10) - strm.avail_out;
+			return (std::uint32_t)(static_cast<std::uint32_t>(1<<10) - strm.avail_out);
 		break;
 	}
 	return 0;	//should never happen

@@ -26,15 +26,6 @@ SOFTWARE.
 
 #pragma once
 
-#include <MessageIdentifiers.h>
-#include <RakPeerInterface.h>
-#include <RakNetStatistics.h>
-#include <RakNetTypes.h>
-#include <BitStream.h>
-#include <RakThread.h>
-#include <RakSleep.h>
-#include <PacketLogger.h>
-
 #include <string.h>
 #include <memory>
 #include <string>
@@ -42,8 +33,9 @@ SOFTWARE.
 #include <ctime>
 #include <future>
 #include "config.h"
-#include "CClasses.h"   //CClassManager
+#include "CClasses.h"
 #include "CPermissions.h"
+#include "znet_server.h"
 
 #define DEFAULT_PORT 0xDEAD
 #define DEFAULT_ADMIN_PORT 0x404
@@ -58,41 +50,19 @@ enum CONFIG_FLAGS{
 	MANA_REGENERATION	= 0x08,
 };
 
-class CGmpServ
+struct Packet {
+	// Not owning.
+  unsigned char* data = nullptr;
+  std::uint32_t length = 0;
+	Net::PlayerId id;
+};
+
+class CGmpServ : public Net::PacketHandler
 {
 public:
 	enum PL_FLAGS{
 		PL_UNCONCIOUS = 0x01,   //00000001
 		PL_BURN = 0x02, //00000010
-	};
-	enum P_TYPE
-	{
-		PT_MSG = ID_USER_PACKET_ENUM+1,
-		PT_NEWCONN,	 // <- używa ktoś tego?
-			PT_REQUEST_FILE_LENGTH,
-			PT_REQUEST_FILE_PART,
-			PT_WHOAMI,
-			PT_JOIN_GAME,
-			PT_ACTUAL_STATISTICS,   // <- chyba tutaj będe musiał dodac optymalizacje gdyż nie potrzeba nam wszystkich informacji o graczu który jest od nas dalej niż 5000.0f
-			PT_ALL_OTHERS,  //pakiety wysyłany tylko z serwera do klienta, informacje o wszystkich grających wysyłane jednorazowo
-			PT_HP_DIFF,
-			PT_MAP_ONLY,	//wysyła tylko informacje o x,y graczy żeby mapka działała
-			PT_CHECKSUM,	//pakiet sprawdzający czy crc32 serwera i klienta są zgodne
-			PT_RCON,		//remote console, czyli zdalny admin
-			PT_WHISPER,
-			PT_EXTENDED_4_SCRIPTS,  //jak już kiedyś wdrożymy skrypty
-			PT_SRVMSG,
-			PT_YOUR_NICKNAME,
-			PT_LEFT_GAME,	//+
-			PT_GAME_INFO,	//+
-			PT_MAP_NAME,	//+
-			PT_DODIE,
-			PT_RESPAWN,
-			PT_DROPITEM,
-			PT_TAKEITEM,
-			PT_CASTSPELL,
-			PT_CASTSPELLONTARGET,
-			PT_VOICE,
 	};
 	enum FILE_REQ{
 		CLASS_FILE	= 1,
@@ -100,30 +70,27 @@ public:
 		WB_FILE		= 3,
 		NULL_SIZE	= 255
 	};
-	struct sPacket
-	{
-		P_TYPE type;
-		std::string data;
-	};
-	struct sPlayer{
-		RakNet::RakNetGUID id;
+	struct sPlayer {
+		Net::PlayerId id;
 		std::string name;
-		unsigned char char_class, flags, head, skin, body, walkstyle, figth_pos, spellhand, headstate, has_admin, admin_passwd, moderator_passwd, is_ingame, passed_crc_test, mute;
+		unsigned char char_class, flags, head, skin, body, walkstyle, figth_pos, spellhand, headstate, has_admin,
+				admin_passwd, moderator_passwd, is_ingame, passed_crc_test, mute;
 		SModerator *moderator;
 		short health, mana;
 		float pos[3];
 		float nrot[3];
-		//miejce na obrót głowy
-		time_t tod; //time of death
+		// miejce na obrót głowy
+		time_t tod;  // time of death
 		unsigned short left_hand, right_hand, armor, rangedeq, meleeeq, animation;
 	};
+
 public:
-	CGmpServ(const char *password, int argc, char **argv);
+	CGmpServ(int argc, char **argv);
 
 	~CGmpServ();
-	static RAK_THREAD_DECLARATION(AddToPublicListHTTP);
-	bool Send(std::string message);
-	bool Receive(sPacket & packet);
+	void AddToPublicListHTTP();
+	bool Receive();
+	bool HandlePacket(Net::PlayerId playerId, unsigned char* data, std::uint32_t size);
 	void Run();
 	bool Init();
 	void SaveBanList(void);
@@ -133,25 +100,25 @@ public:
 	void RegenerationHPMP(void);
 private:
 	void HTTPServerThread(std::int32_t port);
-	void DeleteFromPlayerList(RakNet::RakNetGUID guid);
+	void DeleteFromPlayerList(Net::PlayerId guid);
 	sPlayer* FindPlayer(const char* nickname);
 	void LoadBanList(void);
-	void HandleCastSpell(RakNet::Packet* p, bool Target);
-	void HandleDropItem(RakNet::Packet* p);
-	void HandleTakeItem(RakNet::Packet* p);
-	void HandleVoice(RakNet::Packet *p);
-	void SomeoneJoinGame(RakNet::Packet *p);
-	void HandlePlayerUpdate(RakNet::Packet *p);
-	void MakeHPDiff(RakNet::Packet *p);
-	void HandleNormalMsg(RakNet::Packet *p);
-	void HandleWhisp(RakNet::Packet *p);
-	void HandleRMConsole(RakNet::Packet *p);
-	void HandleGameInfo(RakNet::Packet *p);
-	void HandleMapNameReq(RakNet::Packet *p);
+	void HandleCastSpell(Packet p, bool Target);
+	void HandleDropItem(Packet p);
+	void HandleTakeItem(Packet p);
+	void HandleVoice(Packet p);
+	void SomeoneJoinGame(Packet p);
+	void HandlePlayerUpdate(Packet p);
+	void MakeHPDiff(Packet p);
+	void HandleNormalMsg(Packet p);
+	void HandleWhisp(Packet p);
+	void HandleRMConsole(Packet p);
+	void HandleGameInfo(Packet p);
+	void HandleMapNameReq(Packet p);
 	void SendDisconnectionInfo(uint64_t disconnected_id);
 	void SendDeathInfo(uint64_t deadman);
 	void SendRespawnInfo(uint64_t luckyguy);
-	void SendGameInfo(RakNet::RakNetGUID who);
+	void SendGameInfo(Net::PlayerId guid);
 	size_t FindIDOnList(uint64_t guid);
 
 	std::vector<std::string> ban_list;
@@ -159,20 +126,17 @@ private:
 	time_t last_stand_timer;
 	time_t regen_time;
 	
-	unsigned char GetPacketIdentifier(RakNet::Packet *p);
+	unsigned char GetPacketIdentifier(const Packet& p);
 	int serverPort;
 	int arg_count;
 	char **arg_vec;
 	unsigned short maxConnections;
 	time_t spam_time;
-	std::string serverPassword;
-	RakNet::RakPeerInterface * server;
-	RakNet::RakNetStatistics *rss;
 	std::vector<sPlayer> players;
-	DataStructures::List<RakNet::RakNetSocket2* > sockets;
 	bool allow_modification = false;
 	std::string loop_msg;
 	Config config_;
 	std::unique_ptr<GothicClock> clock_;
 	std::future<void> http_thread_future_;
+	std::future<void> public_list_http_thread_future_;
 };

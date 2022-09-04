@@ -1,7 +1,7 @@
 
 # MIT License
 
-# Copyright (c) 2022 Gothic Multiplayer Team (pampi, skejt23, mecio)
+# Copyright (c) 2022 Gothic Multiplayer Team.
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -21,22 +21,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-set (SERVER_SOURCES
-  CClasses.cpp
-  config.cpp
-  gothic_clock.cpp
-  CGmpServ.cpp
-  CPermissions.cpp   
-  crypt.cpp   
-  GMP_Serv.cpp       
-  platform_depend.cpp
-  HTTPServer.cpp
-)
 
-add_executable(GMP_Serv ${SERVER_SOURCES})
-target_link_libraries(GMP_Serv PRIVATE SharedLib spdlog::spdlog fmt::fmt httplib pugixml zNetServerInterface dylib)
-target_include_directories(GMP_Serv PRIVATE ${CPP_HTTPLIB_INCLUDE_DIRS})
-
-
-add_subdirectory(znet)
-add_subdirectory(znet_rak)
+add_library(zNetServerInterface INTERFACE)
+target_include_directories(zNetServerInterface INTERFACE .)
+target_link_libraries(zNetServerInterface INTERFACE common)

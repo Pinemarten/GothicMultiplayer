@@ -113,5 +113,9 @@ set (RAKNET_SOURCES
 )
 
 add_library(RakNet STATIC ${RAKNET_SOURCES})
-target_link_libraries(RakNet PRIVATE Threads::Threads)
+if (WIN32)
+  target_link_libraries(RakNet PRIVATE Threads::Threads wsock32 ws2_32 Iphlpapi)
+else()
+  target_link_libraries(RakNet PRIVATE Threads::Threads)
+endif()
 target_include_directories(RakNet PUBLIC Source)
