@@ -27,8 +27,6 @@ FetchContent_Declare(
   GIT_TAG 904dbda1336ba4b9a1415a68d5f203f576b696bb)
 FetchContent_MakeAvailable(cmake_git_version_tracking)
 
-find_package(OpenAL CONFIG REQUIRED)
-
 set(CLIENT_SOURCES
     Button.cpp
     CActiveAniID.cpp

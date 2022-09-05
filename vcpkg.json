@@ -2,12 +2,34 @@
   "name": "gothicmultiplayer",
   "version-string": "0.2",
   "dependencies": [
-    { "name": "fmt", "version>=": "9.0.0" },
-    { "name": "spdlog", "version>=": "1.10.0" },
-    { "name": "zlib", "version>=": "1.2.12" },
-    { "name": "toml11", "version>=": "3.7.1" },
-    { "name": "sdl2", "version>=": "2.0.22" },
-    { "name": "pugixml", "version>=": "1.12.1" }
+    {
+      "name": "fmt",
+      "version>=": "9.0.0"
+    },
+    {
+      "name": "spdlog",
+      "version>=": "1.10.0"
+    },
+    {
+      "name": "zlib",
+      "version>=": "1.2.12"
+    },
+    {
+      "name": "toml11",
+      "version>=": "3.7.1"
+    },
+    {
+      "name": "sdl2",
+      "version>=": "2.0.22"
+    },
+    {
+      "name": "pugixml",
+      "version>=": "1.12.1"
+    },
+    {
+      "name": "openal-soft",
+      "version>=": "1.22.2"
+    }
   ],
   "builtin-baseline": "5f83f03a1c7578e6ae04987916b34e018fb63964"
 }
