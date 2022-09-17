@@ -27,12 +27,14 @@ SOFTWARE.
 
 #include <spdlog/common.h>
 #include <spdlog/fmt/ostr.h>
+#include <spdlog/fmt/ranges.h>
 #include <spdlog/spdlog.h>
 
 #include <cstdint>
 #include <set>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include "TomlWrapper.h"
 
@@ -40,7 +42,7 @@ namespace
 {
 constexpr std::uint32_t kMaxNameLength = 100;
 
-const std::unordered_map<std::string, std::variant<std::string, std::int32_t, bool, GothicClock::Time>>
+const std::unordered_map<std::string, std::variant<std::string, std::vector<std::string>, std::int32_t, bool, GothicClock::Time>>
     kDefault_Config_Values = {{"name", std::string("Gothic Multiplayer Server")},
                               {"port", 57005},
                               {"admin_passwd", std::string("")},
@@ -65,6 +67,7 @@ const std::unordered_map<std::string, std::variant<std::string, std::int32_t, bo
                               {"log_to_stdout", true},
                               {"log_level", std::string("info")},
                               {"game_time", GothicClock::Time{1u, 8u, 0u}},  // 8:00
+                              {"scripts", std::vector<std::string>{std::string("main.lua")}},
 #ifndef WIN32
                               {"daemon", true}
 #else

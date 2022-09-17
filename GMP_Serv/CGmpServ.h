@@ -36,6 +36,7 @@ SOFTWARE.
 #include "CClasses.h"
 #include "CPermissions.h"
 #include "znet_server.h"
+#include "Script.h"
 
 #define DEFAULT_PORT 0xDEAD
 #define DEFAULT_ADMIN_PORT 0x404
@@ -123,6 +124,7 @@ private:
 
 	std::vector<std::string> ban_list;
 	CClassManager *classmgr;
+    Script * script;
 	time_t last_stand_timer;
 	time_t regen_time;
 	
