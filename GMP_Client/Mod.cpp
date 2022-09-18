@@ -404,30 +404,26 @@ BOOL CALLBACK CheckIfCheatEngineIsRunning(HWND hWnd, LPARAM lParam)
 	char title[128];
     ZeroMemory(title, sizeof(title));
     GetWindowTextA(hWnd, title, sizeof(title));
-	BYTE buffer[4]={0xB0, 0x93, 0x93, 0x86};
-	for(int i=0; i<128; i++){
-		if(buffer[i]==0) break;
-			buffer[i]^=0xFF;
+    BYTE buffer[4] = {0xB0, 0x93, 0x93, 0x86};
+	for(int i=0; i<4; i++){
+		buffer[i]^=0xFF;
 	}
 	char Text[32];
 	ZeroMemory(Text, 32);
 	for(int i=0; i<4; i++){
-			if(buffer[i]==0) break;
-			Text[i]=buffer[i];
+		Text[i]=buffer[i];
 	}
 	// CHEATENGINE
 	BYTE buffer1[5]={0xBC, 0x97, 0x9A, 0x9E, 0x8B};
-	for(int i=0; i<128; i++){
-		if(buffer1[i]==0) break;
-			buffer1[i]^=0xFF;
+	for(int i=0; i<5; i++){
+		buffer1[i]^=0xFF;
 	}
 	char TextCE[32];
 	ZeroMemory(TextCE, 32);
 	for(int i=0; i<5; i++){
-			if(buffer1[i]==0) break;
-			TextCE[i]=buffer1[i];
+		TextCE[i]=buffer1[i];
 	}
-	if(strstr(title, TextCE) || strstr(title, Text))
+    if (strstr(title, TextCE) || strstr(title, Text))
 	{
 		DWORD* processID = new DWORD;
 		GetWindowThreadProcessId(hWnd, processID);
