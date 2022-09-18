@@ -52,6 +52,8 @@ find_package(fmt CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
 find_package(ZLIB REQUIRED)
 find_package(PugiXML CONFIG REQUIRED)
+find_package(Lua CONFIG REQUIRED)
+find_package(sol2 CONFIG REQUIRED)
 
 add_compile_definitions(SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE)
 

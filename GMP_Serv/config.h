@@ -32,6 +32,7 @@ SOFTWARE.
 #include <toml.hpp>
 #include <unordered_map>
 #include <variant>
+#include <vector>
 
 #include "gothic_clock.h"
 
@@ -55,6 +56,6 @@ protected:
   void ValidateAndFixValues();
   void Load();
 
-  std::unordered_map<std::string, std::variant<std::string, std::int32_t, bool, GothicClock::Time>>
+  std::unordered_map<std::string, std::variant<std::string, std::vector<std::string>, std::int32_t, bool, GothicClock::Time>>
       values_;
 };

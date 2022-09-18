@@ -31,11 +31,13 @@ set (SERVER_SOURCES
   GMP_Serv.cpp       
   platform_depend.cpp
   HTTPServer.cpp
+  Script.cpp
+  LuaSpdlogFuncs.cpp
 )
 
 add_executable(GMP_Serv ${SERVER_SOURCES})
-target_link_libraries(GMP_Serv PRIVATE SharedLib spdlog::spdlog fmt::fmt httplib pugixml zNetServerInterface dylib)
-target_include_directories(GMP_Serv PRIVATE ${CPP_HTTPLIB_INCLUDE_DIRS})
+target_link_libraries(GMP_Serv PRIVATE SharedLib spdlog::spdlog fmt::fmt httplib pugixml zNetServerInterface dylib ${LUA_LIBRARIES} sol2)
+target_include_directories(GMP_Serv PRIVATE ${CPP_HTTPLIB_INCLUDE_DIRS} ${LUA_INCLUDE_DIR} sol2)
 
 
 add_subdirectory(znet)

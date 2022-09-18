@@ -29,6 +29,14 @@
     {
       "name": "openal-soft",
       "version>=": "1.22.2"
+    },
+    {
+      "name": "lua",
+      "version>=": "5.4.4"
+    },
+	{
+      "name": "sol2",
+      "version>=": "3.3.0"
     }
   ],
   "builtin-baseline": "5f83f03a1c7578e6ae04987916b34e018fb63964"

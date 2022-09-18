@@ -9,3 +9,4 @@ allow_modification = true
 message_of_the_day = "Welcome to my server!"
 log_to_stdout = true
 log_level = "trace"
+scripts = ["script.lua"]

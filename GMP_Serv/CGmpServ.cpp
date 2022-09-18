@@ -120,6 +120,7 @@ CGmpServ::CGmpServ(int argc, char** argv)
 CGmpServ::~CGmpServ() {
   g_net_server->RemovePacketHandler(*this);
   delete classmgr;
+  delete script;
   // server->Shutdown(300);
   pSrv = nullptr;
 }
@@ -138,6 +139,7 @@ bool CGmpServ::Init()
 	perms=NULL;
 	this->spam_time=time(NULL)+10;
 	this->classmgr = new CClassManager;
+        script = new Script(config_.Get<std::vector<std::string>>("scripts"));
 
 	auto slots = config_.Get<std::int32_t>("slots");
 	allow_modification = config_.Get<bool>("allow_modification");
