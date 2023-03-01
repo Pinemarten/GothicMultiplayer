@@ -4,11 +4,11 @@
   "dependencies": [
     {
       "name": "fmt",
-      "version>=": "9.0.0"
+      "version>=": "9.1.0"
     },
     {
       "name": "spdlog",
-      "version>=": "1.10.0"
+      "version>=": "1.11.0"
     },
     {
       "name": "zlib",
@@ -39,5 +39,5 @@
       "version>=": "3.3.0"
     }
   ],
-  "builtin-baseline": "5f83f03a1c7578e6ae04987916b34e018fb63964"
+  "builtin-baseline": "f3a39f1aaffe48b1190df69aab3a8657f91b632a"
 }
