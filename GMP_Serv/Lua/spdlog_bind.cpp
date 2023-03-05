@@ -1,6 +1,9 @@
-#include "LuaSpdlogFuncs.h"
 #include <spdlog/spdlog.h>
 
+#include "spdlog_bind.h"
+#include "event.h"
+
+namespace {
 void spdlog_error(std::string text) {
   SPDLOG_ERROR(text);
 }
@@ -20,11 +23,17 @@ void spdlog_critical(std::string text) {
 void spdlog_warn(std::string text) {
   SPDLOG_WARN(text);
 }
+}  // namespace
 
-void LuaSpdlogFuncs::Bind(sol::state& lua) {
+namespace lua {
+namespace bindings {
+void Bind_spdlog(sol::state& lua) {
   lua["SPDLOG_ERROR"] = spdlog_error;
   lua["SPDLOG_INFO"] = spdlog_info;
   lua["SPDLOG_DEBUG"] = spdlog_debug;
   lua["SPDLOG_CRITICAL"] = spdlog_critical;
   lua["SPDLOG_WARN"] = spdlog_warn;
 }
+
+}  // namespace bindings
+}  // namespace lua

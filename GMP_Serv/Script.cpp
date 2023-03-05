@@ -1,14 +1,17 @@
 #include "Script.h"
-#include "sol/sol.hpp"
+
 #include <spdlog/spdlog.h>
-//Binds
-#include "LuaSpdlogFuncs.h"
+
+#include "sol/sol.hpp"
+// Binds
+#include "Lua/spdlog_bind.h"
+#include "Lua/event_bind.h"
 
 using namespace std;
 const string directory = "scripts";
 
 int script_exception_handler(lua_State* L, sol::optional<const std::exception&> maybe_exception,
-                         sol::string_view description) {
+                             sol::string_view description) {
   SPDLOG_ERROR("An exception occurred in a function, here's what it says ");
   if (maybe_exception) {
     SPDLOG_ERROR("(straight from the exception): ");
@@ -29,43 +32,35 @@ inline void script_panic(sol::optional<std::string> maybe_msg) {
   }
 }
 
-
-Script::Script(vector<string> scripts)
-{
+Script::Script(vector<string> scripts) {
   Init();
   LoadScripts(scripts);
 }
 
-Script::~Script()
-{
-
+Script::~Script() {
 }
 
-void Script::Init()
-{
+void Script::Init() {
   lua.open_libraries();
   lua.set_exception_handler(&script_exception_handler);
   lua.set_panic(sol::c_call<decltype(&script_panic), &script_panic>);
   BindFunctionsAndVariables();
 }
 
-void Script::BindFunctionsAndVariables()
-{
-  LuaSpdlogFuncs::Bind(lua);
+void Script::BindFunctionsAndVariables() {
+  lua::bindings::Bind_spdlog(lua);
+  lua::bindings::BindEvents(lua);
 }
 
-void Script::LoadScripts(vector<string> scripts) 
-{
+void Script::LoadScripts(vector<string> scripts) {
   for_each(scripts.begin(), scripts.end(), bind(&Script::LoadScript, this, placeholders::_1));
 }
 
-void Script::LoadScript(string script) 
-{
+void Script::LoadScript(string script) {
   try {
     auto result = lua.safe_script_file(directory + "/" + script);
-    SPDLOG_INFO("Lua script: {} has been loaded!", script);
+    SPDLOG_INFO("Lua script {} has been loaded!", script);
   } catch (const sol::error& e) {
-    SPDLOG_ERROR("Lua script: {} cannot be loaded!", script);
-    SPDLOG_ERROR(e.what());
+    SPDLOG_ERROR("Lua script {} cannot be loaded: {}", script, e.what());
   }
 }

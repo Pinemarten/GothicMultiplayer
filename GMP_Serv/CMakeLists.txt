@@ -1,7 +1,7 @@
 
 # MIT License
 
-# Copyright (c) 2022 Gothic Multiplayer Team (pampi, skejt23, mecio)
+# Copyright (c) 2023 Gothic Multiplayer.
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -32,7 +32,8 @@ set (SERVER_SOURCES
   platform_depend.cpp
   HTTPServer.cpp
   Script.cpp
-  LuaSpdlogFuncs.cpp
+  Lua/spdlog_bind.cpp
+  Lua/event_bind.cpp
 )
 
 add_executable(GMP_Serv ${SERVER_SOURCES})

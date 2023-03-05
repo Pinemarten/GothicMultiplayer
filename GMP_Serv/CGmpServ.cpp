@@ -29,6 +29,8 @@ SOFTWARE.
 #include "CCompression.h"
 #include "gothic_clock.h"
 #include "znet_server.h"
+#include "server_events.h"
+#include "event.h"
 #include <dylib.hpp>
 #include <fstream>
 #include <string>
@@ -115,6 +117,9 @@ CGmpServ::CGmpServ(int argc, char** argv)
   pSrv = this;
   arg_count = argc;
   arg_vec = argv;
+
+	// Register server-side events.
+	EventManager::Instance().RegisterEvent("OnPlayerConnect");
 }
 
 CGmpServ::~CGmpServ() {
@@ -125,41 +130,38 @@ CGmpServ::~CGmpServ() {
   pSrv = nullptr;
 }
 
-bool CGmpServ::Init()
-{
-	LoadNetworkLibrary();
-	g_net_server->AddPacketHandler(*this);
+bool CGmpServ::Init() {
+  LoadNetworkLibrary();
+  g_net_server->AddPacketHandler(*this);
 #ifndef WIN32
-    if(config_.Get<bool>("daemon"))
-		{ 
-			System::MakeMeDaemon(false);
-		}
+  if (config_.Get<bool>("daemon")) {
+    System::MakeMeDaemon(false);
+  }
 #endif
-	CPermissions *perms=new CPermissions();
-	perms=NULL;
-	this->spam_time=time(NULL)+10;
-	this->classmgr = new CClassManager;
-        script = new Script(config_.Get<std::vector<std::string>>("scripts"));
+  CPermissions* perms = new CPermissions();
+  perms = NULL;
+  this->spam_time = time(NULL) + 10;
+  this->classmgr = new CClassManager;
 
-	auto slots = config_.Get<std::int32_t>("slots");
-	allow_modification = config_.Get<bool>("allow_modification");
-	loop_msg = config_.Get<std::string>("message_of_the_day");
+  auto slots = config_.Get<std::int32_t>("slots");
+  allow_modification = config_.Get<bool>("allow_modification");
+  loop_msg = config_.Get<std::string>("message_of_the_day");
 
-	auto port = config_.Get<std::int32_t>("port");
+  auto port = config_.Get<std::int32_t>("port");
 
-	if (!g_net_server->Start(port, slots))
-	{
-		return false;
-	}
-	
-	SPDLOG_INFO("GMP server started!");
-	LoadBanList();
+  if (!g_net_server->Start(port, slots)) {
+    return false;
+  }
 
-	clock_ = std::make_unique<GothicClock>(config_.Get<GothicClock::Time>("game_time"));
-	public_list_http_thread_future_ = std::async(&CGmpServ::AddToPublicListHTTP, this);
-	http_thread_future_ = std::async(&CGmpServ::HTTPServerThread, this, port + 1);
-	this->last_stand_timer=0;
-	return true;
+  SPDLOG_INFO("GMP server started!");
+  LoadBanList();
+
+  clock_ = std::make_unique<GothicClock>(config_.Get<GothicClock::Time>("game_time"));
+  public_list_http_thread_future_ = std::async(&CGmpServ::AddToPublicListHTTP, this);
+  http_thread_future_ = std::async(&CGmpServ::HTTPServerThread, this, port + 1);
+  this->last_stand_timer = 0;
+  script = new Script(config_.Get<std::vector<std::string>>("scripts"));
+  return true;
 }
 
 void CGmpServ::HTTPServerThread(std::int32_t port)
@@ -438,6 +440,9 @@ void CGmpServ::SomeoneJoinGame(Packet p){
 		szIt=1;
 	}
 	players[pos_in_list].is_ingame=1;
+
+	// join
+	EventManager::Instance().TriggerEvent("OnPlayerConnect", p.id.guid);
 }
 
 size_t CGmpServ::FindIDOnList(uint64_t guid) {

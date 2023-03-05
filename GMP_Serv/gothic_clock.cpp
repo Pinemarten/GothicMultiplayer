@@ -25,59 +25,54 @@ SOFTWARE.
 
 #include "gothic_clock.h"
 
-#include <chrono>
 #include <spdlog/spdlog.h>
 
-namespace
-{
+#include <chrono>
+
+#include "event.h"
+#include "server_events.h"
+
+namespace {
 constexpr std::chrono::seconds kClockUpdateInterval(4);
 }
 
-GothicClock::GothicClock(Time initial_time) : time_(initial_time)
-{
+GothicClock::GothicClock(Time initial_time) : time_(initial_time) {
+  EventManager::Instance().RegisterEvent("OnClockUpdate");
 }
 
-void GothicClock::RunClock()
-{
+void GothicClock::RunClock() {
   auto now = std::chrono::steady_clock::now();
-  if ((now - last_update_time_) > kClockUpdateInterval)
-  {
-    if (++time_.min_ > 59)
-    {
+  if ((now - last_update_time_) > kClockUpdateInterval) {
+    if (++time_.min_ > 59) {
       time_.min_ = 0;
-      if (++time_.hour_ > 23)
-      {
+      if (++time_.hour_ > 23) {
         time_.hour_ = 0;
         time_.day_++;
       }
     }
     last_update_time_ = now;
     SPDLOG_TRACE("Gothic clock interval update: {}", time_);
+    EventManager::Instance().TriggerEvent("OnClockUpdate", OnClockUpdateEvent{time_.day_, time_.hour_, time_.min_});
   }
 }
 
-void GothicClock::UpdateTime(GothicClock::Time new_time)
-{
+void GothicClock::UpdateTime(GothicClock::Time new_time) {
   time_ = new_time;
   SPDLOG_DEBUG("Gothic clock updated to {}", time_);
 }
 
-GothicClock::Time GothicClock::GetTime() const
-{
+GothicClock::Time GothicClock::GetTime() const {
   Time current_time;
   current_time = time_;
   return current_time;
 }
 
-void GothicClock::Time::from_toml(const toml::value& v)
-{
+void GothicClock::Time::from_toml(const toml::value& v) {
   day_ = toml::find<std::uint16_t>(v, "day");
   hour_ = toml::find<std::uint8_t>(v, "hour");
   min_ = toml::find<std::uint8_t>(v, "min");
 }
 
-std::ostream& operator<<(std::ostream& os, const GothicClock::Time& d)
-{
-  return os << d.day_ << '-' << static_cast<std::int32_t>(d.hour_) << ':'
-            << static_cast<std::int32_t>(d.min_);
+std::ostream& operator<<(std::ostream& os, const GothicClock::Time& d) {
+  return os << d.day_ << '-' << static_cast<std::int32_t>(d.hour_) << ':' << static_cast<std::int32_t>(d.min_);
 }

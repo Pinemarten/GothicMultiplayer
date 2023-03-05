@@ -26,6 +26,7 @@ find_package(toml11 CONFIG REQUIRED)
 set (SHARED_SOURCES
   CCompression.cpp
   TomlWrapper.cpp
+  event.cpp
 )
 
 add_library(SharedLib STATIC ${SHARED_SOURCES})
