@@ -126,7 +126,8 @@ CGmpServ::CGmpServ(int argc, char** argv)
   arg_vec = argv;
 
 	// Register server-side events.
-	EventManager::Instance().RegisterEvent("OnPlayerConnect");
+  EventManager::Instance().RegisterEvent("OnPlayerConnect");
+  EventManager::Instance().RegisterEvent("OnPlayerMessage");
 }
 
 CGmpServ::~CGmpServ() {
@@ -668,6 +669,7 @@ void CGmpServ::HandleNormalMsg(Packet p){
 	}
 #undef EQ
 	SPDLOG_INFO("{}:{}", players[FindIDOnList(p.id.guid)].name.c_str(), (const char*)(p.data+1));
+        EventManager::Instance().TriggerEvent("OnPlayerMessage", OnPlayerMessageEvent{p.id.guid, (const char*)(p.data + 1)});
 	szMsg.clear();
 }
 

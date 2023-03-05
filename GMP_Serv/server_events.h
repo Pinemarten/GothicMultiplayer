@@ -32,3 +32,19 @@ struct OnClockUpdateEvent {
   std::uint8_t hour;
   std::uint8_t min;
 };
+
+struct OnPlayerMessageEvent {
+  std::uint64_t pid;
+  std::string text;
+};
+
+struct OnPlayerWhisperEvent {
+  std::uint64_t from_id;
+  std::uint64_t to_id;
+  std::string text;
+};
+
+struct OnPlayerChangeClassEvent {
+  std::uint64_t pid;
+  std::uint64_t cid;
+};
