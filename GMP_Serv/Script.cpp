@@ -6,6 +6,7 @@
 // Binds
 #include "Lua/spdlog_bind.h"
 #include "Lua/event_bind.h"
+#include "Lua/function_bind.h"
 
 using namespace std;
 const string directory = "scripts";
@@ -50,6 +51,7 @@ void Script::Init() {
 void Script::BindFunctionsAndVariables() {
   lua::bindings::Bind_spdlog(lua);
   lua::bindings::BindEvents(lua);
+  lua::bindings::BindFunctions(lua);
 }
 
 void Script::LoadScripts(vector<string> scripts) {
