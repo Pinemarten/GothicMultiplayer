@@ -39,6 +39,7 @@ SOFTWARE.
 
 #include <stack>
 #include <httplib.h>
+#include <version.h>
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/basic_file_sink.h>
 #include "HTTPServer.h"
@@ -113,13 +114,20 @@ void InitializeLogger(const Config& config)
 CGmpServ::CGmpServ(int argc, char** argv)
 {
 	InitializeLogger(config_);
-	config_.LogConfigValues();
+	  SPDLOG_INFO("|-----------------------------------|");
+	  SPDLOG_INFO("Gothic Multiplayer Classic {}", GMP_VERSION);
+	  SPDLOG_INFO("Build date: {}", GMP_BUILD_DATE);
+	  SPDLOG_INFO("GMP Team (2011) | GMPC Team (2022)");
+	  SPDLOG_INFO("|-----------------------------------|");
+		config_.LogConfigValues();
+	  SPDLOG_INFO("|-----------------------------------|");
   pSrv = this;
   arg_count = argc;
   arg_vec = argv;
 
 	// Register server-side events.
-	EventManager::Instance().RegisterEvent("OnPlayerConnect");
+  EventManager::Instance().RegisterEvent("OnPlayerConnect");
+  EventManager::Instance().RegisterEvent("OnPlayerMessage");
 }
 
 CGmpServ::~CGmpServ() {
@@ -153,14 +161,17 @@ bool CGmpServ::Init() {
     return false;
   }
 
-  SPDLOG_INFO("GMP server started!");
   LoadBanList();
 
   clock_ = std::make_unique<GothicClock>(config_.Get<GothicClock::Time>("game_time"));
   public_list_http_thread_future_ = std::async(&CGmpServ::AddToPublicListHTTP, this);
   http_thread_future_ = std::async(&CGmpServ::HTTPServerThread, this, port + 1);
   this->last_stand_timer = 0;
-  script = new Script(config_.Get<std::vector<std::string>>("scripts"));
+
+	SPDLOG_INFO("");
+		script = new Script(config_.Get<std::vector<std::string>>("scripts"));
+	SPDLOG_INFO("|-----------------------------------|");
+	SPDLOG_INFO("GMP Classic Server initialized successfully!");
   return true;
 }
 
@@ -659,6 +670,7 @@ void CGmpServ::HandleNormalMsg(Packet p){
 	}
 #undef EQ
 	SPDLOG_INFO("{}:{}", players[FindIDOnList(p.id.guid)].name.c_str(), (const char*)(p.data+1));
+        EventManager::Instance().TriggerEvent("OnPlayerMessage", OnPlayerMessageEvent{p.id.guid, (const char*)(p.data + 1)});
 	szMsg.clear();
 }
 

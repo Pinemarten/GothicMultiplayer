@@ -2,8 +2,6 @@
 /*
 MIT License
 
-Copyright (c) 2023 Gothic Multiplayer Team.
-
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights
@@ -25,26 +23,10 @@ SOFTWARE.
 
 #pragma once
 
-#include <cstdint>
+#include "sol/sol.hpp"
 
-struct OnClockUpdateEvent {
-  std::uint16_t day;
-  std::uint8_t hour;
-  std::uint8_t min;
-};
-
-struct OnPlayerMessageEvent {
-  std::uint64_t pid;
-  std::string text;
-};
-
-struct OnPlayerWhisperEvent {
-  std::uint64_t from_id;
-  std::uint64_t to_id;
-  std::string text;
-};
-
-struct OnPlayerChangeClassEvent {
-  std::uint64_t pid;
-  std::uint64_t cid;
-};
+namespace lua {
+namespace bindings {
+void BindFunctions(sol::state&);
+}
+}  // namespace lua

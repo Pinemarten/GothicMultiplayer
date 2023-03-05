@@ -2,8 +2,6 @@
 /*
 MIT License
 
-Copyright (c) 2023 Gothic Multiplayer Team.
-
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights
@@ -23,28 +21,25 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#pragma once
+#include <spdlog/spdlog.h>
 
-#include <cstdint>
+#include "function_bind.h"
 
-struct OnClockUpdateEvent {
-  std::uint16_t day;
-  std::uint8_t hour;
-  std::uint8_t min;
-};
+#include <fstream>
+using namespace std;
 
-struct OnPlayerMessageEvent {
-  std::uint64_t pid;
-  std::string text;
-};
+// Functions
+int Function_Log(string name, string text) {
+  ofstream logfile;
+  logfile.open(name, std::ios_base::app);
+  if (logfile.is_open()) {
+    logfile << text << "\n";
+    logfile.close();
+  }
+  return 0;
+}
 
-struct OnPlayerWhisperEvent {
-  std::uint64_t from_id;
-  std::uint64_t to_id;
-  std::string text;
-};
-
-struct OnPlayerChangeClassEvent {
-  std::uint64_t pid;
-  std::uint64_t cid;
-};
+// Register Functions
+void lua::bindings::BindFunctions(sol::state& lua) {
+  lua["Log"] = Function_Log;
+}

@@ -34,6 +34,7 @@ set (SERVER_SOURCES
   Script.cpp
   Lua/spdlog_bind.cpp
   Lua/event_bind.cpp
+  Lua/function_bind.cpp
 )
 
 add_executable(GMP_Serv ${SERVER_SOURCES})
