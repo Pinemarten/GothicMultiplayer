@@ -162,15 +162,16 @@ bool CGmpServ::Init() {
   }
 
   LoadBanList();
-	SPDLOG_INFO("");
-		script = new Script(config_.Get<std::vector<std::string>>("scripts"));
-	SPDLOG_INFO("|-----------------------------------|");
-	SPDLOG_INFO("GMP Classic Server initialized successfully!");
 
   clock_ = std::make_unique<GothicClock>(config_.Get<GothicClock::Time>("game_time"));
   public_list_http_thread_future_ = std::async(&CGmpServ::AddToPublicListHTTP, this);
   http_thread_future_ = std::async(&CGmpServ::HTTPServerThread, this, port + 1);
   this->last_stand_timer = 0;
+
+	SPDLOG_INFO("");
+		script = new Script(config_.Get<std::vector<std::string>>("scripts"));
+	SPDLOG_INFO("|-----------------------------------|");
+	SPDLOG_INFO("GMP Classic Server initialized successfully!");
   return true;
 }
 
