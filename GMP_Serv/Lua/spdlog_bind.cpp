@@ -1,38 +1,39 @@
+#include "spdlog_bind.h"
+
+#include <fmt/args.h>
 #include <spdlog/spdlog.h>
 
-#include "spdlog_bind.h"
 #include "event.h"
-
-namespace {
-void spdlog_error(std::string text) {
-  SPDLOG_ERROR(text);
-}
-
-void spdlog_info(std::string text) {
-  SPDLOG_INFO(text);
-}
-
-void spdlog_debug(std::string text) {
-  SPDLOG_DEBUG(text);
-}
-
-void spdlog_critical(std::string text) {
-  SPDLOG_CRITICAL(text);
-}
-
-void spdlog_warn(std::string text) {
-  SPDLOG_WARN(text);
-}
-}  // namespace
 
 namespace lua {
 namespace bindings {
+
+template <void logFunc(const std::string&)>
+void log(std::string text, sol::variadic_args args) {
+  auto store = fmt::dynamic_format_arg_store<fmt::format_context>();
+  for (auto& arg : args) {
+    if (arg.get_type() == sol::type::string) {
+      store.push_back(arg.as<std::string>());
+    } else if (arg.get_type() == sol::type::number) {
+      store.push_back(arg.as<int>());
+    } else if (arg.get_type() == sol::type::boolean) {
+      store.push_back(arg.as<bool>());
+    } else if (arg.get_type() == sol::type::userdata) {
+      store.push_back(arg.as<std::string>());
+    } else {
+      store.push_back(arg.as<std::string>());
+    }
+  }
+  logFunc(fmt::vformat(text, store));
+}
+
 void Bind_spdlog(sol::state& lua) {
-  lua["SPDLOG_ERROR"] = spdlog_error;
-  lua["SPDLOG_INFO"] = spdlog_info;
-  lua["SPDLOG_DEBUG"] = spdlog_debug;
-  lua["SPDLOG_CRITICAL"] = spdlog_critical;
-  lua["SPDLOG_WARN"] = spdlog_warn;
+  lua["LOG_ERROR"] = log<spdlog::error>;
+  lua["LOG_INFO"] = log<spdlog::info>;
+  lua["LOG_DEBUG"] = log<spdlog::debug>;
+  lua["LOG_CRITICAL"] = log<spdlog::critical>;
+  lua["LOG_WARN"] = log<spdlog::warn>;
+  lua["LOG_TRACE"] = log<spdlog::trace>;
 }
 
 }  // namespace bindings
