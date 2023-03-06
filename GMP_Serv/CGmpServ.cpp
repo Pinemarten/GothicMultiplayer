@@ -26,7 +26,6 @@ SOFTWARE.
 #include "CGmpServ.h"
 #include "platform_depend.h"
 #include "CPermissions.h"
-#include "CCompression.h"
 #include "gothic_clock.h"
 #include "znet_server.h"
 #include "server_events.h"

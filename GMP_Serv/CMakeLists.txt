@@ -1,4 +1,3 @@
-
 # MIT License
 
 # Copyright (c) 2023 Gothic Multiplayer.
@@ -21,26 +20,34 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-set (SERVER_SOURCES
-  CClasses.cpp
-  config.cpp
-  gothic_clock.cpp
-  CGmpServ.cpp
-  CPermissions.cpp   
-  crypt.cpp   
-  GMP_Serv.cpp       
-  platform_depend.cpp
-  HTTPServer.cpp
-  Script.cpp
-  Lua/spdlog_bind.cpp
-  Lua/event_bind.cpp
-  Lua/function_bind.cpp
-)
+set(SERVER_SOURCES
+    CClasses.cpp
+    config.cpp
+    gothic_clock.cpp
+    CGmpServ.cpp
+    CPermissions.cpp
+    main.cpp
+    platform_depend.cpp
+    HTTPServer.cpp
+    Script.cpp
+    Lua/spdlog_bind.cpp
+    Lua/event_bind.cpp
+    Lua/function_bind.cpp)
 
 add_executable(GMP_Serv ${SERVER_SOURCES})
-target_link_libraries(GMP_Serv PRIVATE SharedLib spdlog::spdlog fmt::fmt httplib pugixml zNetServerInterface dylib ${LUA_LIBRARIES} sol2)
-target_include_directories(GMP_Serv PRIVATE ${CPP_HTTPLIB_INCLUDE_DIRS} ${LUA_INCLUDE_DIR} sol2)
-
+target_link_libraries(
+  GMP_Serv
+  PRIVATE SharedLib
+          spdlog::spdlog
+          fmt::fmt
+          httplib
+          pugixml
+          zNetServerInterface
+          dylib
+          ${LUA_LIBRARIES}
+          sol2)
+target_include_directories(GMP_Serv PRIVATE ${CPP_HTTPLIB_INCLUDE_DIRS}
+                                            ${LUA_INCLUDE_DIR} sol2)
 
 add_subdirectory(znet)
 add_subdirectory(znet_rak)

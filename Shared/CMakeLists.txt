@@ -24,7 +24,6 @@
 find_package(toml11 CONFIG REQUIRED)
 
 set (SHARED_SOURCES
-  CCompression.cpp
   TomlWrapper.cpp
   event.cpp
 )

@@ -37,7 +37,6 @@ SOFTWARE.
 #include "CActiveAniID.h"
 #include "CIngame.h"
 #include <ctime>
-#include "CCompression.h"
 
 #pragma warning(disable:4996)
 CGmpClient* client=NULL;
@@ -231,7 +230,7 @@ void _declspec(naked) RESETPOS_CRASHFIX()
         test    eax, eax
         je     cont 
 
-//		and BYTE PTR DS:[eax+0x0B8], 252   <- tej wersji coœ visual nie mo¿e przetrawiæ
+//		and BYTE PTR DS:[eax+0x0B8], 252   <- tej wersji coï¿½ visual nie moï¿½e przetrawiï¿½
 		and		[eax+0x0B8], 252
         jmp     RETURN_RESETCRASHFIX1
     cont:
@@ -378,7 +377,7 @@ void _stdcall OnTrigger(sRegs & regs, DWORD & Vob1, DWORD & Vob2)
 	oCSkyControler_Barrier::GetCurrent()->GetBarrier()->RenderLayer(*(zTRenderContext*)RenderContext, 0, lol);
 }*/
 
-// Walnij CreateHook(0x0057B0C0, (DWORD)OnStartAni, 2, true); tam gdzie chcesz ¿eby zacze³o pobieraæ animacje
+// Walnij CreateHook(0x0057B0C0, (DWORD)OnStartAni, 2, true); tam gdzie chcesz ï¿½eby zaczeï¿½o pobieraï¿½ animacje
 /*zSTRING TURN = "TURN";
 void _stdcall OnStartAni(sRegs & regs, DWORD & ModelAni, int arg2)
 {	   
@@ -393,7 +392,7 @@ void _stdcall OnStartAni(sRegs & regs, DWORD & ModelAni, int arg2)
 						if(!memcmp("T_WALKL_2_RUNL", Ani->GetAniName().ToChar(), 14) || !memcmp("T_JUMP_2_RUNL", Ani->GetAniName().ToChar(), 13)) CActiveAniID::GetInstance()->AddAni(266);
 				}
 			}
-			// PRZEKAZANIE ID DO FUNKCJI CZY COŒ
+			// PRZEKAZANIE ID DO FUNKCJI CZY COï¿½
 		}
 	}
 }*/
@@ -455,7 +454,6 @@ void Initialize(void)
 {
 	if(!MultiplayerLaunched){
 		MultiplayerLaunched = true;
-		CCompression *comp=new CCompression();
 		HooksManager * hm = HooksManager::GetInstance();
 		CActiveAniID *ani_ptr=new CActiveAniID();
 		//CreateHook(0x0071E7D0, (DWORD)OnTrigger, 2, true);

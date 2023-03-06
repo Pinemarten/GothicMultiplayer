@@ -31,7 +31,6 @@ SOFTWARE.
 #include "Interface.h"
 #include "CSelectClass.h"
 #include "CChat.h"
-#include "CCompression.h"
 #include <vector>
 #include <list>
 #include <string>

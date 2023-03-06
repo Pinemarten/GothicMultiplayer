@@ -23,22 +23,19 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#include <spdlog/spdlog.h>
+
+#include <chrono>
 #include <cstdlib>
 #include <ctime>
-#include <chrono>
 
-#include "CCompression.h"
 #include "CGmpServ.h"
 
-unsigned char b[1024], c[1024];
-const char *lolo = "Chcialbym zjesc dobry obiad o 15.\0";
-
 int main(int argc, char **argv) {
-  CCompression *comp = new CCompression();
   srand(static_cast<unsigned int>(time(NULL)));
-  CGmpServ serv(argc, argv);  // naszym głównym portem będzie "martwy" port
+  CGmpServ serv(argc, argv);
   if (!serv.Init()) {
-    puts("Server initialization failed!");
+    SPDLOG_ERROR("Server initialization failed!");
     exit(0);
   }
   while (1) {
@@ -49,6 +46,5 @@ int main(int argc, char **argv) {
     serv.RegenerationHPMP();
     std::this_thread::sleep_for(1ms);
   }
-  delete comp;
   return 0;
 }
