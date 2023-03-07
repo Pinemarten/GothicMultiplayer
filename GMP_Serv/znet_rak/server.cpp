@@ -119,8 +119,9 @@ bool RakNetServer::IsBanned(const char* IP) {
   return peer_->IsBanned(IP);
 }
 
-std::string RakNetServer::GetPlayerIp(PlayerId id) {
+const char* RakNetServer::GetPlayerIp(PlayerId id) {
   auto address = peer_->GetSystemAddressFromGuid(RakNet::RakNetGUID(id.guid));
+  // This is safe because RakNet::SystemAddress::ToString() returns a pointer to a static buffer
   return address.ToString(false);
 }
 

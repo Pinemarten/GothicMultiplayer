@@ -902,7 +902,7 @@ void CGmpServ::HandleRMConsole(Packet p){
 			}
 			std::stack<sPlayer*> ip_players;
 			for(size_t i=0; i<players.size(); i++){
-				if(!memcmp(g_net_server->GetPlayerIp(players[i].id).c_str(), p.data+7, p.length-7)){
+				if(!memcmp(g_net_server->GetPlayerIp(players[i].id), p.data+7, p.length-7)){
 					ip_players.push(&players[i]);
 				}
 			}

@@ -53,7 +53,7 @@ public:
   void RemoveFromBanList(const char* IP) override;
   bool IsBanned(const char* IP) override;
 
-  std::string GetPlayerIp(PlayerId id) override;
+  const char* GetPlayerIp(PlayerId id) override;
 
 private:
   RakNet::RakPeerInterface* peer_{nullptr};

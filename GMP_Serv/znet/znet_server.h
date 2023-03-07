@@ -65,7 +65,7 @@ public:
   virtual void RemoveFromBanList(const char* IP) = 0;
   virtual bool IsBanned(const char* IP) = 0;
 
-  virtual std::string GetPlayerIp(PlayerId id) = 0;
+  virtual const char* GetPlayerIp(PlayerId id) = 0;
 
   virtual void AddPacketHandler(PacketHandler& packetHandler) = 0;
   virtual void RemovePacketHandler(PacketHandler& packetHandler) = 0;
