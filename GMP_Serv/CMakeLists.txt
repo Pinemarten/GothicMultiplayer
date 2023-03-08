@@ -45,7 +45,8 @@ target_link_libraries(
           zNetServerInterface
           dylib
           ${LUA_LIBRARIES}
-          sol2)
+          sol2
+          chillout)
 target_include_directories(GMP_Serv PRIVATE ${CPP_HTTPLIB_INCLUDE_DIRS}
                                             ${LUA_INCLUDE_DIR} sol2)
 
