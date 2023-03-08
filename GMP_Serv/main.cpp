@@ -28,11 +28,32 @@ SOFTWARE.
 #include <chrono>
 #include <cstdlib>
 #include <ctime>
+#include <sstream>
 
 #include "CGmpServ.h"
+#include "chillout.h"
+
+namespace {
+void SetupCrashHandler() {
+  static std::stringstream ss;
+
+  auto &chillout = Debug::Chillout::getInstance();
+  chillout.init(L"GMP_Serv", L".");
+
+  chillout.setCrashCallback([&chillout]() {
+    SPDLOG_CRITICAL("Crash detected! Backtrace:");
+    chillout.backtrace();
+    SPDLOG_CRITICAL("{}", ss.str());
+    SPDLOG_CRITICAL("--- End of backtrace ---");
+  });
+  chillout.setBacktraceCallback([](const char *const stackEntry) { ss << stackEntry; });
+}
+}  // namespace
 
 int main(int argc, char **argv) {
+  SetupCrashHandler();
   srand(static_cast<unsigned int>(time(NULL)));
+
   CGmpServ serv(argc, argv);
   if (!serv.Init()) {
     SPDLOG_ERROR("Server initialization failed!");
