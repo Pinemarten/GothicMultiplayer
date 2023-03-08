@@ -43,7 +43,6 @@ SOFTWARE.
 #include <spdlog/sinks/basic_file_sink.h>
 #include "HTTPServer.h"
 
-CGmpServ *pSrv = nullptr;
 Net::NetServer* g_net_server = nullptr;
 
 const char *lobbyAddress="lobby.your-site.com";
@@ -110,23 +109,22 @@ void InitializeLogger(const Config& config)
 }
 } // namespace
 
-CGmpServ::CGmpServ(int argc, char** argv)
-{
+CGmpServ::CGmpServ(int argc, char** argv) {
 	InitializeLogger(config_);
-	  SPDLOG_INFO("|-----------------------------------|");
-	  SPDLOG_INFO("Gothic Multiplayer Classic {}", GMP_VERSION);
-	  SPDLOG_INFO("Build date: {}", GMP_BUILD_DATE);
-	  SPDLOG_INFO("GMP Team (2011) | GMPC Team (2022)");
-	  SPDLOG_INFO("|-----------------------------------|");
-		config_.LogConfigValues();
-	  SPDLOG_INFO("|-----------------------------------|");
-  pSrv = this;
-  arg_count = argc;
-  arg_vec = argv;
+	SPDLOG_INFO("|-----------------------------------|");
+	SPDLOG_INFO("Gothic Multiplayer Classic {}", GMP_VERSION);
+	SPDLOG_INFO("Build date: {}", GMP_BUILD_DATE);
+	SPDLOG_INFO("GMP Team (2011) | GMPC Team (2022)");
+	SPDLOG_INFO("|-----------------------------------|");
+	config_.LogConfigValues();
+	SPDLOG_INFO("|-----------------------------------|");
+	g_server = this;
+	arg_count = argc;
+	arg_vec = argv;
 
 	// Register server-side events.
-  EventManager::Instance().RegisterEvent("OnPlayerConnect");
-  EventManager::Instance().RegisterEvent("OnPlayerMessage");
+	EventManager::Instance().RegisterEvent("OnPlayerConnect");
+	EventManager::Instance().RegisterEvent("OnPlayerMessage");
 }
 
 CGmpServ::~CGmpServ() {
@@ -134,7 +132,7 @@ CGmpServ::~CGmpServ() {
   delete classmgr;
   delete script;
   // server->Shutdown(300);
-  pSrv = nullptr;
+  g_server = nullptr;
 }
 
 bool CGmpServ::Init() {
@@ -209,7 +207,7 @@ bool CGmpServ::HandlePacket(Net::PlayerId playerId, unsigned char* data, std::ui
 			pl.passed_crc_test=0;
 			pl.id=p.id;
 			pl.mute=0;
-			players.push_back(pl);
+			players[p.id.guid] = std::move(pl);
 		}
 		SPDLOG_INFO("ID_NEW_INCOMING_CONNECTION from {} with GUID {}. Now we have {} connected users.", g_net_server->GetPlayerIp(p.id), p.id.guid, players.size());
 		break;
@@ -247,7 +245,7 @@ bool CGmpServ::HandlePacket(Net::PlayerId playerId, unsigned char* data, std::ui
 				g_net_server->Send((const char*)val, 2, MEDIUM_PRIORITY, RELIABLE_ORDERED, 0, p.id);
 			}
 			else{
-				players.erase(players.begin()+FindIDOnList(p.id.guid));
+				players.erase(p.id.guid);
 				g_net_server->AddToBanList(p.id, 3600000);
 			}
 		}
@@ -348,93 +346,82 @@ void CGmpServ::SaveBanList(){
 }
 
 void CGmpServ::DeleteFromPlayerList(Net::PlayerId id) {
-  for (size_t i = 0; i < players.size(); i++) {
-    if (id.guid == players[i].id.guid) {
-      players.erase(players.begin() + i);
-      break;
-    }
-  }
+	players.erase(id.guid);
+}
+
+std::optional<std::reference_wrapper<CGmpServ::sPlayer>> CGmpServ::GetPlayerById(std::uint64_t id)
+{
+	auto it = players.find(id);
+	if (it != players.end())
+		return std::ref(it->second);
+	return std::nullopt;
 }
 
 void CGmpServ::SomeoneJoinGame(Packet p){
-	size_t pos_in_list=FindIDOnList(p.id.guid);
+	auto player_opt = GetPlayerById(p.id.guid);
+	if (!player_opt) {
+		SPDLOG_WARN("Someone tried to join game, but he is not on the player list, ID {}!", p.id.guid);
+		return;
+	}
+	auto& player = player_opt.value().get();
+
 	if(!allow_modification){
-		if(!players[pos_in_list].passed_crc_test){
-			players.erase(players.begin()+pos_in_list); //nie ma szans, usuwamy z listy
+		if(!player.passed_crc_test){
+			players.erase(p.id.guid);
 			g_net_server->AddToBanList(p.id, 3600000);//i dorzucamy banana na 1h
 			return;
 		}
 	}
-	players[pos_in_list].tod=0;
-	players[pos_in_list].char_class=p.data[1];
-	players[pos_in_list].health=classmgr->class_array[p.data[1]].abilities[HP];
-	memcpy(players[pos_in_list].pos, p.data+2, 12);
-	memcpy(players[pos_in_list].nrot, p.data+14, 12);
-	memcpy(&players[pos_in_list].left_hand, p.data+26, 2);
-	memcpy(&players[pos_in_list].right_hand, p.data+28, 2);
-	memcpy(&players[pos_in_list].armor, p.data+30, 2);
-	memcpy(&players[pos_in_list].animation, p.data+32, 2);
-	players[pos_in_list].head=p.data[34];
-	players[pos_in_list].skin=p.data[35];
-	players[pos_in_list].body=p.data[36];
-	players[pos_in_list].walkstyle=p.data[37];
-	players[pos_in_list].name=(const char*)(p.data+38);
-	//TO DO sprawdzenie czy ktoś już nie ma takiej ksywki
-	short matches;
-	do{
-		matches=0;
-		for(size_t i=0; i<players.size(); i++){
-			if(i!=pos_in_list){
-				if(players[i].is_ingame){
-					if(!memcmp(players[pos_in_list].name.c_str(), players[i].name.c_str(), players[pos_in_list].name.length()+1)){
-						matches++;
-						char letter=*players[pos_in_list].name.rbegin();
-						if((letter>='0') && (letter<='8')){
-							letter++;
-							players[pos_in_list].name.erase(players[pos_in_list].name.size()-1);
-							players[pos_in_list].name+=letter;
-						} else players[pos_in_list].name+='0';
-						break;
-					}
-				}
-			}
-		}
-	}while(matches);
+	player.tod=0;
+	player.char_class=p.data[1];
+	player.health=classmgr->class_array[p.data[1]].abilities[HP];
+	memcpy(player.pos, p.data+2, 12);
+	memcpy(player.nrot, p.data+14, 12);
+	memcpy(&player.left_hand, p.data+26, 2);
+	memcpy(&player.right_hand, p.data+28, 2);
+	memcpy(&player.armor, p.data+30, 2);
+	memcpy(&player.animation, p.data+32, 2);
+	player.head=p.data[34];
+	player.skin=p.data[35];
+	player.body=p.data[36];
+	player.walkstyle=p.data[37];
+	player.name=(const char*)(p.data+38);
+
 	unsigned char nick_packet[128];
-	memcpy(nick_packet+1, players[pos_in_list].name.c_str(), players[pos_in_list].name.length()+1);
+	memcpy(nick_packet+1, player.name.c_str(), player.name.length()+1);
 	nick_packet[0]=PT_YOUR_NAME;
-	g_net_server->Send(nick_packet, 2+(int)players[pos_in_list].name.length(), IMMEDIATE_PRIORITY, RELIABLE, 0, p.id);
+	g_net_server->Send(nick_packet, 2+(int)player.name.length(), IMMEDIATE_PRIORITY, RELIABLE, 0, p.id);
 	std::string inform_packet;
 	inform_packet.reserve(1024);
 	char *szTmpPtr=(char*)inform_packet.c_str();
 	szTmpPtr[0]=p.data[0];
 	memcpy((char*)inform_packet.data()+(1+sizeof(uint64_t)), p.data+1, p.length-1);
 	memcpy((char*)inform_packet.data()+1, &p.id.guid, sizeof(uint64_t));
-	//informowanie innych o tym że ktoś dołączył się do gej party
-	memcpy((char*)inform_packet.data()+(38+sizeof(uint64_t)), players[pos_in_list].name.c_str(), players[pos_in_list].name.length());
+
+	// Informing other players about new player
+	memcpy((char*)inform_packet.data()+(38+sizeof(uint64_t)), player.name.c_str(), player.name.length());
 	for(size_t i=0; i<players.size(); i++){
 		if(players[i].is_ingame){
-			g_net_server->Send((unsigned char*)inform_packet.data(), 40+(int)players[pos_in_list].name.length()+sizeof(uint64_t), IMMEDIATE_PRIORITY, RELIABLE, 3, players[i].id);
+			g_net_server->Send((unsigned char*)inform_packet.data(), 40+(int)player.name.length()+sizeof(uint64_t), IMMEDIATE_PRIORITY, RELIABLE, 3, players[i].id);
 		}
 	}
 	//generowanie i słanie pakietów o graczach(max 10 graczy per pakiet)
-	memset((char*)inform_packet.data(), 0, 1024);
 	unsigned char it=0;
 	size_t szIt=1;
-	for(size_t i=0; i<players.size(); i++){
-		if(players[i].is_ingame){
+	for (const auto& [id, existing_player]: players) {
+		if (existing_player.is_ingame){
 			it++;
-			memcpy((char*)inform_packet.data()+szIt, &players[i].id.guid, (sizeof(uint64_t))); szIt+=sizeof(uint64_t);
-			*(char*)(inform_packet.data()+szIt)=players[i].char_class; szIt++;
-			memcpy((char*)inform_packet.data()+szIt, players[i].pos, 12); szIt+=12;
-			memcpy((char*)inform_packet.data()+szIt, &players[i].left_hand, 2); szIt+=2;
-			memcpy((char*)inform_packet.data()+szIt, &players[i].right_hand, 2); szIt+=2;
-			memcpy((char*)inform_packet.data()+szIt, &players[i].armor, 2); szIt+=2;
-			*(char*)(inform_packet.data()+szIt)=players[i].head; szIt++;
-			*(char*)(inform_packet.data()+szIt)=players[i].skin; szIt++;
-			*(char*)(inform_packet.data()+szIt)=players[i].body; szIt++;
-			*(char*)(inform_packet.data()+szIt)=players[i].walkstyle; szIt++;
-			memcpy((char*)inform_packet.data()+szIt, players[i].name.c_str(), players[i].name.length()+1); szIt+=players[i].name.length()+1;
+			memcpy((char*)inform_packet.data()+szIt, &existing_player.id.guid, (sizeof(uint64_t))); szIt+=sizeof(uint64_t);
+			*(char*)(inform_packet.data()+szIt)=existing_player.char_class; szIt++;
+			memcpy((char*)inform_packet.data()+szIt, existing_player.pos, 12); szIt+=12;
+			memcpy((char*)inform_packet.data()+szIt, &existing_player.left_hand, 2); szIt+=2;
+			memcpy((char*)inform_packet.data()+szIt, &existing_player.right_hand, 2); szIt+=2;
+			memcpy((char*)inform_packet.data()+szIt, &existing_player.armor, 2); szIt+=2;
+			*(char*)(inform_packet.data()+szIt)=existing_player.head; szIt++;
+			*(char*)(inform_packet.data()+szIt)=existing_player.skin; szIt++;
+			*(char*)(inform_packet.data()+szIt)=existing_player.body; szIt++;
+			*(char*)(inform_packet.data()+szIt)=existing_player.walkstyle; szIt++;
+			memcpy((char*)inform_packet.data()+szIt, existing_player.name.c_str(), existing_player.name.length()+1); szIt+=existing_player.name.length()+1;
 		}
 		if(it==10){
 			*(unsigned char*)inform_packet.data()=PT_ALL_OTHERS;
@@ -449,7 +436,7 @@ void CGmpServ::SomeoneJoinGame(Packet p){
 		it=0;
 		szIt=1;
 	}
-	players[pos_in_list].is_ingame=1;
+	player.is_ingame=1;
 
 	// join
 	EventManager::Instance().TriggerEvent("OnPlayerConnect", p.id.guid);
@@ -1106,31 +1093,29 @@ void MakeHTTPReq(char *file)
 	cli.Get(file);
 }
 
-void CGmpServ::AddToPublicListHTTP()
-{
+void CGmpServ::AddToPublicListHTTP() {
 	using namespace std::chrono_literals;
 
-  char* szBuff = new char[256];
-  memset(szBuff, 0, 256);
-  while (pSrv)
-  {
-    if (pSrv->IsPublic())
-    {
-      auto server_name = pSrv->config_.Get<std::string>("name");
-      for (size_t i = 0; i <= strlen(server_name.c_str()); i++)
-        if ((*((unsigned char*)server_name.c_str() + i) < 0x20) &&
-            (*((unsigned char*)server_name.c_str() + i) != 0x07))
-          *((unsigned char*)server_name.data() + i) = 0;
-      memset(szBuff, 0, 256);
-      sprintf(
-          szBuff, "%s?sn=%s&port=%d&crt=%u&mx=%d&map=%s", lobbyFile, server_name.c_str(),
-          pSrv->config_.Get<std::int32_t>("port"), static_cast<unsigned int>(pSrv->players.size()),
-          pSrv->config_.Get<std::int32_t>("slots"), pSrv->config_.Get<std::string>("map").c_str());
-      MakeHTTPReq(szBuff);
-    }
-    std::this_thread::sleep_for(5s);
-  }
-  delete[] szBuff;
+	char* szBuff = new char[256];
+	memset(szBuff, 0, 256);
+	while (g_server) {
+					if (g_server->IsPublic()) {
+									auto server_name = g_server->config_.Get<std::string>("name");
+									for (size_t i = 0; i <= strlen(server_name.c_str()); i++)
+													if ((*((unsigned char*)server_name.c_str() + i) < 0x20) &&
+															(*((unsigned char*)server_name.c_str() + i) != 0x07))
+																	*((unsigned char*)server_name.data() + i) = 0;
+									memset(szBuff, 0, 256);
+									sprintf(szBuff, "%s?sn=%s&port=%d&crt=%u&mx=%d&map=%s", lobbyFile, server_name.c_str(),
+													g_server->config_.Get<std::int32_t>("port"),
+													static_cast<unsigned int>(g_server->players.size()),
+													g_server->config_.Get<std::int32_t>("slots"),
+													g_server->config_.Get<std::string>("map").c_str());
+									MakeHTTPReq(szBuff);
+					}
+					std::this_thread::sleep_for(5s);
+	}
+	delete[] szBuff;
 }
 
 void CGmpServ::HandleGameInfo(Packet p){

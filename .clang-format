@@ -7,3 +7,4 @@ AccessModifierOffset: -2
 AllowShortFunctionsOnASingleLine: None
 AllowShortIfStatementsOnASingleLine: Never
 PointerAlignment: Left
+IndentWidth: 2
