@@ -1,4 +1,3 @@
-
 # MIT License
 
 # Copyright (c) 2022 Gothic Multiplayer Team.
@@ -21,9 +20,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-set (ZRAKNET_SOURCES
-  server.cpp
-)
+set(ZRAKNET_SOURCES server.cpp)
 
 add_library(znet_server SHARED ${ZRAKNET_SOURCES})
-target_link_libraries(znet_server PRIVATE RakNet spdlog::spdlog zNetServerInterface)
+target_link_libraries(znet_server PRIVATE RakNet spdlog::spdlog
+                                          zNetServerInterface)

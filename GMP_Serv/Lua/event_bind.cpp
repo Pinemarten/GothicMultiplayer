@@ -45,7 +45,7 @@ struct LuaProxyArgs {
 static std::map<std::string, std::function<void(LuaProxyArgs)>> kLuaEventProxies;
 
 void RegisterProxies() {
-  kLuaEventProxies["OnClockUpdate"] = {[](LuaProxyArgs args) {
+  kLuaEventProxies["onClockUpdate"] = {[](LuaProxyArgs args) {
     OnClockUpdateEvent clock_update_event = std::any_cast<OnClockUpdateEvent>(args.event);
     args.callback(clock_update_event.day, clock_update_event.hour, clock_update_event.min);
   }};

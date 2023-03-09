@@ -38,11 +38,11 @@ SOFTWARE.
 
 #include "TomlWrapper.h"
 
-namespace
-{
+namespace {
 constexpr std::uint32_t kMaxNameLength = 100;
 
-const std::unordered_map<std::string, std::variant<std::string, std::vector<std::string>, std::int32_t, bool, GothicClock::Time>>
+const std::unordered_map<std::string,
+                         std::variant<std::string, std::vector<std::string>, std::int32_t, bool, GothicClock::Time>>
     kDefault_Config_Values = {{"name", std::string("Gothic Multiplayer Server")},
                               {"port", 57005},
                               {"admin_passwd", std::string("")},
@@ -77,35 +77,27 @@ const std::unordered_map<std::string, std::variant<std::string, std::vector<std:
 
 }  // namespace
 
-Config::Config()
-{
+Config::Config() {
   Load();
 }
 
-void Config::Load()
-{
+void Config::Load() {
   values_ = kDefault_Config_Values;
 
   TomlWrapper config;
-  try
-  {
+  try {
     config = TomlWrapper::CreateFromFile("config.toml");
-  }
-  catch (const std::exception& ex)
-  {
+  } catch (const std::exception& ex) {
     SPDLOG_ERROR("Couldn't load config file: {}", ex.what());
     return;
   }
 
-  for (auto& value : values_)
-  {
+  for (auto& value : values_) {
     std::visit(
-        [&config, &value](auto&& arg)
-        {
+        [&config, &value](auto&& arg) {
           using T = std::decay_t<decltype(arg)>;
           auto value_opt = config.GetValue<T>(value.first);
-          if (value_opt)
-          {
+          if (value_opt) {
             value.second = *value_opt;
           }
         },
@@ -114,11 +106,9 @@ void Config::Load()
   ValidateAndFixValues();
 }
 
-void Config::ValidateAndFixValues()
-{
+void Config::ValidateAndFixValues() {
   auto& name = std::get<std::string>(values_.at("name"));
-  if (name.size() > kMaxNameLength)
-  {
+  if (name.size() > kMaxNameLength) {
     name.resize(kMaxNameLength);
     SPDLOG_WARN("Truncated server name to {} since it exceeded the maximum length limit({})", name, kMaxNameLength);
   }
@@ -127,30 +117,23 @@ void Config::ValidateAndFixValues()
   const std::set<spdlog::string_view_t> valid_log_levels = SPDLOG_LEVEL_NAMES;
   auto it_level = valid_log_levels.find(spdlog::string_view_t(log_level));
 
-  if (it_level == valid_log_levels.end())
-  {
+  if (it_level == valid_log_levels.end()) {
     auto& default_log_level = std::get<std::string>(kDefault_Config_Values.at("log_level"));
     SPDLOG_WARN("Invalid log level in config: {}. Setting to default \"{}\"", log_level, default_log_level);
     values_["log_level"] = default_log_level;
   }
 }
 
-void Config::LogConfigValues() const
-{
+void Config::LogConfigValues() const {
   const std::set<std::string> keys_to_ignore = {"admin_passwd"};
 
-  for (auto& value : values_)
-  {
+  for (auto& value : values_) {
     std::visit(
-        [&value, &keys_to_ignore](auto&& arg)
-        {
+        [&value, &keys_to_ignore](auto&& arg) {
           using T = std::decay_t<decltype(arg)>;
-          if (keys_to_ignore.find(value.first) == keys_to_ignore.end())
-          {
-            if constexpr (std::is_same_v<T, std::string>)
-            {
-              if (arg.empty())
-              {
+          if (keys_to_ignore.find(value.first) == keys_to_ignore.end()) {
+            if constexpr (std::is_same_v<T, std::string>) {
+              if (arg.empty()) {
                 return;
               }
             }

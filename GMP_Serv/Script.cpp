@@ -4,9 +4,9 @@
 
 #include "sol/sol.hpp"
 // Binds
-#include "Lua/spdlog_bind.h"
 #include "Lua/event_bind.h"
 #include "Lua/function_bind.h"
+#include "Lua/spdlog_bind.h"
 
 using namespace std;
 const string directory = "scripts";

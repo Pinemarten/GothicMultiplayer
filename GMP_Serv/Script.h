@@ -1,12 +1,15 @@
 #pragma once
-#include "sol/sol.hpp"
 #include <vector>
+
+#include "sol/sol.hpp"
 class Script {
 private:
-	sol::state lua;
+  sol::state lua;
+
 public:
   Script(std::vector<std::string>);
   ~Script();
+
 private:
   void Init();
   void BindFunctionsAndVariables();

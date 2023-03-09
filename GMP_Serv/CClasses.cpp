@@ -23,19 +23,20 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
 #include "CClasses.h"
-#include <pugixml.hpp>
-#include <spdlog/spdlog.h>
-#include <spdlog/sinks/basic_file_sink.h>
 
-CClassManager::CClassManager(){
+#include <spdlog/sinks/basic_file_sink.h>
+#include <spdlog/spdlog.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include <pugixml.hpp>
+
+CClassManager::CClassManager() {
   pugi::xml_document doc;
   pugi::xml_parse_result result = doc.load_file("class.xml");
-  if (!result)
-  {
+  if (!result) {
     SPDLOG_ERROR("Critical error! Could not open file class.xml!");
     return;
   }
@@ -46,8 +47,7 @@ CClassManager::CClassManager(){
 
   SPDLOG_INFO("Numer of classes: {}", this->num_of_classes);
 
-  for (short i = 0; i < this->num_of_classes; i++)
-  {
+  for (short i = 0; i < this->num_of_classes; i++) {
     this->class_array[i].class_id = (unsigned char)i;
     this->class_array[i].name = NULL;
     this->class_array[i].team_name = NULL;
@@ -58,8 +58,7 @@ CClassManager::CClassManager(){
   }
 
   int i = 0;
-  for (auto classNode : doc.child("character").children("class"))
-  {
+  for (auto classNode : doc.child("character").children("class")) {
     this->class_array[i].name = (char *)classNode.child("name").text().get();
     this->class_array[i].team_name = (char *)classNode.child("team").text().get();
     this->class_array[i].description = (char *)classNode.child("description").text().get();
@@ -85,11 +84,9 @@ CClassManager::CClassManager(){
   }
 }
 
-CClassManager::~CClassManager(){
-  if (this->class_array)
-  {
-    for (int i = 0; i < this->num_of_classes; i++)
-    {
+CClassManager::~CClassManager() {
+  if (this->class_array) {
+    for (int i = 0; i < this->num_of_classes; i++) {
       this->class_array[i].class_id = 0;
       if (this->class_array[i].name)
         delete this->class_array[i].name;

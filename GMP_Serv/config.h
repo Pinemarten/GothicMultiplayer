@@ -36,14 +36,12 @@ SOFTWARE.
 
 #include "gothic_clock.h"
 
-class Config
-{
+class Config {
 public:
   Config();
 
   template <typename T>
-  const T& Get(const std::string& key) const
-  {
+  const T& Get(const std::string& key) const {
     const auto& value = values_.at(key);
     assert(std::holds_alternative<T>(value));
 
@@ -56,6 +54,7 @@ protected:
   void ValidateAndFixValues();
   void Load();
 
-  std::unordered_map<std::string, std::variant<std::string, std::vector<std::string>, std::int32_t, bool, GothicClock::Time>>
+  std::unordered_map<std::string,
+                     std::variant<std::string, std::vector<std::string>, std::int32_t, bool, GothicClock::Time>>
       values_;
 };

@@ -42,25 +42,26 @@ SOFTWARE.
 
 #include <vector>
 
-struct SClass{
-	public:
-		unsigned char class_id;
-		char *name;
-		char *description;
-		char *team_name;
-		char *armor;
-		char *prim_wep;
-		char *sec_wep;
-		short abilities[13];
+struct SClass {
+public:
+  unsigned char class_id;
+  char *name;
+  char *description;
+  char *team_name;
+  char *armor;
+  char *prim_wep;
+  char *sec_wep;
+  short abilities[13];
 };
 
-class CClassManager{
-	private:
-		unsigned char num_of_classes;
-	public:
-		SClass *class_array;
-		CClassManager(void);
-		~CClassManager(void);
+class CClassManager {
+private:
+  unsigned char num_of_classes;
+
+public:
+  SClass *class_array;
+  CClassManager(void);
+  ~CClassManager(void);
 };
 
-#endif // CCLASSES_HPP_INCLUDED
+#endif  // CCLASSES_HPP_INCLUDED

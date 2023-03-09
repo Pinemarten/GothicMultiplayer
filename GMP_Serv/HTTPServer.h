@@ -1,15 +1,14 @@
 #pragma once
 
 #include <httplib.h>
-class HTTPServer
-{
+class HTTPServer {
 private:
-	int port;
-	httplib::Server server;
+  int port;
+  httplib::Server server;
+
 public:
-	HTTPServer();
-	~HTTPServer();
+  HTTPServer();
+  ~HTTPServer();
 
-	void Start(int);
+  void Start(int);
 };
-

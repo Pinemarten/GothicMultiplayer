@@ -25,18 +25,16 @@ SOFTWARE.
 
 #pragma once
 
-#include <cstdint>
 #include <fmt/ostream.h>
-#include <memory>
 
+#include <cstdint>
+#include <memory>
 #include <toml.hpp>
 
 // Class responsible for counting Gothic time on the server side.
-class GothicClock
-{
+class GothicClock {
 public:
-  struct Time
-  {
+  struct Time {
     std::uint16_t day_ = 1;
     std::uint8_t hour_ = 8;
     std::uint8_t min_ = 0;
@@ -51,12 +49,12 @@ public:
 
   // Should be called from the main loop.
   void RunClock();
+
 private:
   Time time_;
   std::chrono::time_point<std::chrono::steady_clock> last_update_time_;
 };
 
 std::ostream& operator<<(std::ostream& os, const GothicClock::Time& d);
-template <> struct fmt::formatter<GothicClock::Time> : ostream_formatter
-{
-};
+template <>
+struct fmt::formatter<GothicClock::Time> : ostream_formatter {};

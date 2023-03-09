@@ -1,4 +1,3 @@
-
 # MIT License
 
 # Copyright (c) 2022 Gothic Multiplayer Team.
@@ -20,7 +19,6 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
 
 add_library(zNetServerInterface INTERFACE)
 target_include_directories(zNetServerInterface INTERFACE .)

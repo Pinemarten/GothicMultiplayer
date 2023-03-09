@@ -27,47 +27,49 @@ SOFTWARE.
 #define CPERMISSIONS_H
 
 #include <list>
+
 #include "singleton.h"
 
-struct SModerator{
-	char* nickname;
-	char* passwd;
+struct SModerator {
+  char* nickname;
+  char* passwd;
 };
 
-class CPermissions:public TSingleton<CPermissions>{
+class CPermissions : public TSingleton<CPermissions> {
 private:
-	std::list<SModerator*> mod_list;
+  std::list<SModerator*> mod_list;
 
-	union{
-		short data[12];
-		struct{
-			short say;
-			short kick;
-			short ban;
-			short banip;
-			short unban;
-			short savebans;
-			short mute;
-			short settime;
-			short kill;
-			short loopmsg;
-			short hp_regen;
-			short mp_regen;
-		};
-	};
-	void Load(void);
-	void SetDefaults(void);
+  union {
+    short data[12];
+    struct {
+      short say;
+      short kick;
+      short ban;
+      short banip;
+      short unban;
+      short savebans;
+      short mute;
+      short settime;
+      short kill;
+      short loopmsg;
+      short hp_regen;
+      short mp_regen;
+    };
+  };
+  void Load(void);
+  void SetDefaults(void);
+
 public:
-	CPermissions(void);
-	~CPermissions(void);
+  CPermissions(void);
+  ~CPermissions(void);
 
-	void AddModerator(const char* nickname, const char* password);
-	bool DeleteModerator(const char* nickname);
-	SModerator *GetModerator(const char* nickname);
-	int IsModerator(const char* nickname, const char* password);
-	int IsPermitted(const char* command);
-	bool SetPassword(const char* mod_nick, const char* password);
-	bool SetPassword(SModerator* mod, const char* password);
+  void AddModerator(const char* nickname, const char* password);
+  bool DeleteModerator(const char* nickname);
+  SModerator* GetModerator(const char* nickname);
+  int IsModerator(const char* nickname, const char* password);
+  int IsPermitted(const char* command);
+  bool SetPassword(const char* mod_nick, const char* password);
+  bool SetPassword(SModerator* mod, const char* password);
 };
 
 #endif

@@ -26,25 +26,28 @@ SOFTWARE.
 #include "platform_depend.h"
 
 #ifndef WIN32
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
 
-void System::MakeMeDaemon(bool stdout){
-	pid_t pid, sid;
-	pid=fork();
-	if(pid<0) puts("Can not run as a daemon!\n");
-	if(pid>0) exit(EXIT_SUCCESS);
-	umask(0);
-	sid=setsid();
-	if(sid<0){
-		puts("Can not get session ID!\n");
-	}
-	close(STDIN_FILENO);
-	close(STDERR_FILENO);
-	if(!stdout) close(STDOUT_FILENO);
+void System::MakeMeDaemon(bool stdout) {
+  pid_t pid, sid;
+  pid = fork();
+  if (pid < 0)
+    puts("Can not run as a daemon!\n");
+  if (pid > 0)
+    exit(EXIT_SUCCESS);
+  umask(0);
+  sid = setsid();
+  if (sid < 0) {
+    puts("Can not get session ID!\n");
+  }
+  close(STDIN_FILENO);
+  close(STDERR_FILENO);
+  if (!stdout)
+    close(STDOUT_FILENO);
 }
 #endif

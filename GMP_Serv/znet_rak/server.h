@@ -64,8 +64,8 @@ private:
 
 extern "C" {
 #ifdef _MSC_VER
-  __declspec(dllexport) Net::NetServer* CreateNetServer();
+__declspec(dllexport) Net::NetServer* CreateNetServer();
 #else
-  [[gnu::visibility("default")]] Net::NetServer* CreateNetServer();
+[[gnu::visibility("default")]] Net::NetServer* CreateNetServer();
 #endif
 }

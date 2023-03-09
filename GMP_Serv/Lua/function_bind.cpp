@@ -21,9 +21,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include <spdlog/spdlog.h>
-
 #include "function_bind.h"
+
+#include <spdlog/spdlog.h>
 
 #include <fstream>
 using namespace std;
