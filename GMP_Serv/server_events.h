@@ -26,6 +26,14 @@ SOFTWARE.
 #pragma once
 
 #include <cstdint>
+#include <string>
+
+inline const std::string kEventOnClockUpdateName = "onClockUpdate";
+inline const std::string kEventOnPlayerConnectName = "onPlayerConnect";
+inline const std::string kEventOnPlayerDisconnectName = "onPlayerDisconnect";
+inline const std::string kEventOnPlayerMessageName = "onPlayerMessage";
+inline const std::string kEventOnPlayerWhisperName = "onPlayerWhisper";
+inline const std::string kEventOnPlayerChangeClassName = "onPlayerChangeClass";
 
 struct OnClockUpdateEvent {
   std::uint16_t day;

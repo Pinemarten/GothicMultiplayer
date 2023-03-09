@@ -45,28 +45,27 @@ struct LuaProxyArgs {
 static std::map<std::string, std::function<void(LuaProxyArgs)>> kLuaEventProxies;
 
 void RegisterProxies() {
-  kLuaEventProxies["onClockUpdate"] = {[](LuaProxyArgs args) {
+  kLuaEventProxies[kEventOnClockUpdateName] = {[](LuaProxyArgs args) {
     OnClockUpdateEvent clock_update_event = std::any_cast<OnClockUpdateEvent>(args.event);
     args.callback(clock_update_event.day, clock_update_event.hour, clock_update_event.min);
   }};
-
-  kLuaEventProxies["OnPlayerConnect"] = {[](LuaProxyArgs args) {
+  kLuaEventProxies[kEventOnPlayerConnectName] = {[](LuaProxyArgs args) {
     std::uint64_t player_guid = std::any_cast<std::uint64_t>(args.event);
     args.callback(player_guid);
   }};
-  kLuaEventProxies["OnPlayerDisconnect"] = {[](LuaProxyArgs args) {
+  kLuaEventProxies[kEventOnPlayerDisconnectName] = {[](LuaProxyArgs args) {
     std::uint64_t player_guid = std::any_cast<std::uint64_t>(args.event);
     args.callback(player_guid);
   }};
-  kLuaEventProxies["OnPlayerMessage"] = {[](LuaProxyArgs args) {
+  kLuaEventProxies[kEventOnPlayerMessageName] = {[](LuaProxyArgs args) {
     OnPlayerMessageEvent player_message_event = std::any_cast<OnPlayerMessageEvent>(args.event);
     args.callback(player_message_event.pid, player_message_event.text);
   }};
-  kLuaEventProxies["OnPlayerWhisper"] = {[](LuaProxyArgs args) {
+  kLuaEventProxies[kEventOnPlayerWhisperName] = {[](LuaProxyArgs args) {
     OnPlayerWhisperEvent player_whisper_event = std::any_cast<OnPlayerWhisperEvent>(args.event);
     args.callback(player_whisper_event.from_id, player_whisper_event.to_id, player_whisper_event.text);
   }};
-  kLuaEventProxies["OnPlayerChangeClass"] = {[](LuaProxyArgs args) {
+  kLuaEventProxies[kEventOnPlayerChangeClassName] = {[](LuaProxyArgs args) {
     OnPlayerChangeClassEvent player_changeclass_event = std::any_cast<OnPlayerChangeClassEvent>(args.event);
     args.callback(player_changeclass_event.pid, player_changeclass_event.cid);
   }};

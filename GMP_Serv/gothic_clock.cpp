@@ -37,7 +37,7 @@ constexpr std::chrono::seconds kClockUpdateInterval(4);
 }
 
 GothicClock::GothicClock(Time initial_time) : time_(initial_time) {
-  EventManager::Instance().RegisterEvent("OnClockUpdate");
+  EventManager::Instance().RegisterEvent(kEventOnClockUpdateName);
 }
 
 void GothicClock::RunClock() {
@@ -52,7 +52,8 @@ void GothicClock::RunClock() {
     }
     last_update_time_ = now;
     SPDLOG_TRACE("Gothic clock interval update: {}", time_);
-    EventManager::Instance().TriggerEvent("OnClockUpdate", OnClockUpdateEvent{time_.day_, time_.hour_, time_.min_});
+    EventManager::Instance().TriggerEvent(kEventOnClockUpdateName,
+                                          OnClockUpdateEvent{time_.day_, time_.hour_, time_.min_});
   }
 }
 
