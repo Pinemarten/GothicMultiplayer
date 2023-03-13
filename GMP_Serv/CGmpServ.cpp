@@ -235,9 +235,12 @@ bool CGmpServ::HandlePacket(Net::PlayerId playerId, unsigned char* data, std::ui
       if (!this->allow_modification) {
         auto map_md5 = config_.Get<std::string>("map_md5");
         if ((!memcmp(p.data + 2, map_md5.data(), 16)) && (!p.data[1])) {
-          players[FindIDOnList(p.id.guid)].passed_crc_test = 1;
-          unsigned char val[2] = {PT_CHECKSUM, 0xFF};
-          g_net_server->Send((const char*)val, 2, MEDIUM_PRIORITY, RELIABLE_ORDERED, 0, p.id);
+          auto player = GetPlayerById(p.id.guid);
+          if (player) {
+            player->get().passed_crc_test = 1;
+            unsigned char val[2] = {PT_CHECKSUM, 0xFF};
+            g_net_server->Send((const char*)val, 2, MEDIUM_PRIORITY, RELIABLE_ORDERED, 0, p.id);
+          }
         } else {
           players.erase(p.id.guid);
           g_net_server->AddToBanList(p.id, 3600000);
@@ -458,81 +461,83 @@ size_t CGmpServ::FindIDOnList(uint64_t guid) {
 
 void CGmpServ::HandlePlayerUpdate(Packet p) {
   double rp, x1, y1;  //<- zmienne do sprawdzenia czy dana osoba mieści się w kole o r=5000.0f
-  size_t pos_in_list = FindIDOnList(p.id.guid);
-  size_t forbidenid = 0;
-  forbidenid = ~forbidenid;
-  if (pos_in_list == forbidenid)
+
+  auto player_opt = GetPlayerById(p.id.guid);
+  if (!player_opt.has_value()) {
     return;
-  memcpy(players[pos_in_list].pos, p.data + 1, 12);
-  memcpy(players[pos_in_list].nrot, p.data + 13, 12);
-  memcpy(&players[pos_in_list].left_hand, p.data + 25, 2);
-  memcpy(&players[pos_in_list].right_hand, p.data + 27, 2);
-  memcpy(&players[pos_in_list].armor, p.data + 29, 2);
-  memcpy(&players[pos_in_list].animation, p.data + 31, 2);
-  memcpy(&players[pos_in_list].mana, p.data + 33, 2);
-  players[pos_in_list].figth_pos = p.data[35];
-  players[pos_in_list].spellhand = p.data[36];
-  players[pos_in_list].headstate = p.data[37];
-  memcpy(&players[pos_in_list].rangedeq, p.data + 38, 2);
-  memcpy(&players[pos_in_list].meleeeq, p.data + 40, 2);
+  }
+  auto& updated_player = player_opt.value().get();
+
+  memcpy(updated_player.pos, p.data + 1, 12);
+  memcpy(updated_player.nrot, p.data + 13, 12);
+  memcpy(&updated_player.left_hand, p.data + 25, 2);
+  memcpy(&updated_player.right_hand, p.data + 27, 2);
+  memcpy(&updated_player.armor, p.data + 29, 2);
+  memcpy(&updated_player.animation, p.data + 31, 2);
+  memcpy(&updated_player.mana, p.data + 33, 2);
+  updated_player.figth_pos = p.data[35];
+  updated_player.spellhand = p.data[36];
+  updated_player.headstate = p.data[37];
+  memcpy(&updated_player.rangedeq, p.data + 38, 2);
+  memcpy(&updated_player.meleeeq, p.data + 40, 2);
 
   // generowanie wiadomości do słania
   size_t szIt[2] = {1, 1025};
   unsigned char it[2] = {0, 0};
   std::string msg;
   msg.reserve(2048);
-  for (size_t i = 0; i < players.size(); i++) {
-    if (players[i].is_ingame) {
-      if (i != pos_in_list) {
-        x1 = static_cast<double>(players[pos_in_list].pos[0] - players[i].pos[0]);
-        y1 = static_cast<double>(players[pos_in_list].pos[1] - players[i].pos[1]);
+  for (const auto& [id, existing_player] : players) {
+    if (existing_player.is_ingame) {
+      if (p.id != existing_player.id) {
+        x1 = static_cast<double>(updated_player.pos[0] - existing_player.pos[0]);
+        y1 = static_cast<double>(updated_player.pos[1] - existing_player.pos[1]);
         rp = x1 * x1 + y1 * y1;
         if (rp < 25000000.0) {  // ktoś czający się w pobliżu gracza
           it[0]++;
-          memcpy((char*)msg.data() + szIt[0], &players[i].id.guid, sizeof(uint64_t));
+          memcpy((char*)msg.data() + szIt[0], &existing_player.id.guid, sizeof(uint64_t));
           szIt[0] += sizeof(uint64_t);
-          *(char*)(msg.data() + szIt[0]) = players[i].flags;
+          *(char*)(msg.data() + szIt[0]) = existing_player.flags;
           szIt[0]++;
-          memcpy((char*)msg.data() + szIt[0], players[i].pos, 12);
+          memcpy((char*)msg.data() + szIt[0], existing_player.pos, 12);
           szIt[0] += 12;
-          memcpy((char*)msg.data() + szIt[0], players[i].nrot, 12);
+          memcpy((char*)msg.data() + szIt[0], existing_player.nrot, 12);
           szIt[0] += 12;
-          memcpy((char*)msg.data() + szIt[0], &players[i].left_hand, 2);
+          memcpy((char*)msg.data() + szIt[0], &existing_player.left_hand, 2);
           szIt[0] += 2;
-          memcpy((char*)msg.data() + szIt[0], &players[i].right_hand, 2);
+          memcpy((char*)msg.data() + szIt[0], &existing_player.right_hand, 2);
           szIt[0] += 2;
-          memcpy((char*)msg.data() + szIt[0], &players[i].armor, 2);
+          memcpy((char*)msg.data() + szIt[0], &existing_player.armor, 2);
           szIt[0] += 2;
-          memcpy((char*)msg.data() + szIt[0], &players[i].animation, 2);
+          memcpy((char*)msg.data() + szIt[0], &existing_player.animation, 2);
           szIt[0] += 2;
-          memcpy((char*)msg.data() + szIt[0], &players[i].health, 2);
+          memcpy((char*)msg.data() + szIt[0], &existing_player.health, 2);
           szIt[0] += 2;
-          memcpy((char*)msg.data() + szIt[0], &players[i].mana, 2);
+          memcpy((char*)msg.data() + szIt[0], &existing_player.mana, 2);
           szIt[0] += 2;
-          *(char*)(msg.data() + szIt[0]) = players[i].spellhand;
+          *(char*)(msg.data() + szIt[0]) = existing_player.spellhand;
           szIt[0]++;
-          *(char*)(msg.data() + szIt[0]) = players[i].figth_pos;
+          *(char*)(msg.data() + szIt[0]) = existing_player.figth_pos;
           szIt[0]++;
-          *(char*)(msg.data() + szIt[0]) = players[i].headstate;
+          *(char*)(msg.data() + szIt[0]) = existing_player.headstate;
           szIt[0]++;
-          memcpy((char*)msg.data() + szIt[0], &players[i].rangedeq, 2);
+          memcpy((char*)msg.data() + szIt[0], &existing_player.rangedeq, 2);
           szIt[0] += 2;
-          memcpy((char*)msg.data() + szIt[0], &players[i].meleeeq, 2);
+          memcpy((char*)msg.data() + szIt[0], &existing_player.meleeeq, 2);
           szIt[0] += 2;
         } else {  // ktoś nieistotny
           it[1]++;
-          memcpy((char*)msg.data() + szIt[1], &players[i].id.guid, sizeof(uint64_t));
+          memcpy((char*)msg.data() + szIt[1], &existing_player.id.guid, sizeof(uint64_t));
           szIt[1] += sizeof(uint64_t);
-          memcpy((char*)msg.data() + szIt[1], &players[i].pos[0], 4);
+          memcpy((char*)msg.data() + szIt[1], &existing_player.pos[0], 4);
           szIt[1] += 4;  // float x,y
-          memcpy((char*)msg.data() + szIt[1], &players[i].pos[2], 4);
+          memcpy((char*)msg.data() + szIt[1], &existing_player.pos[2], 4);
           szIt[1] += 4;
         }
       } else {  // to jesteśmy my, starczy tylko info o hp
         it[0]++;
         memcpy((char*)msg.data() + szIt[0], &p.id.guid, sizeof(uint64_t));
         szIt[0] += sizeof(uint64_t);
-        memcpy((char*)msg.data() + szIt[0], &players[pos_in_list].health, 2);
+        memcpy((char*)msg.data() + szIt[0], &updated_player.health, 2);
         szIt[0] += 2;
       }
       if (it[0] == 10) {
@@ -564,30 +569,36 @@ void CGmpServ::HandlePlayerUpdate(Packet p) {
 }
 
 void CGmpServ::MakeHPDiff(Packet p) {
-  size_t forbidenid = 0, pwgd;
   uint64_t player_id;
   short diffed_hp;
-  forbidenid = ~forbidenid;
-  if (forbidenid == FindIDOnList(p.id.guid))
+
+  auto attacker_opt = GetPlayerById(p.id.guid);
+  if (!attacker_opt.has_value())
     return;
-  if (players[FindIDOnList(p.id.guid)].is_ingame) {
+
+  auto& attacker = attacker_opt.value().get();
+
+  if (attacker.is_ingame) {
     memcpy(&player_id, p.data + 1, sizeof(uint64_t));
     memcpy(&diffed_hp, p.data + (1 + sizeof(uint64_t)), 2);
-    pwgd = FindIDOnList(player_id);
-    if ((pwgd == forbidenid) || (pwgd >= players.size()))
+
+    auto victim_opt = GetPlayerById(player_id);
+    if (!victim_opt.has_value())
       return;
-    if ((players[pwgd].health <= 0) || (players[pwgd].tod))
+    auto& victim = victim_opt.value().get();
+
+    if ((victim.health <= 0) || (victim.tod))
       return;  // just ignore
     if (player_id == p.id.guid) {
-      if (players[pwgd].health)
-        players[pwgd].health += diffed_hp;
-      if (players[pwgd].health <= 0) {
-        players[pwgd].health = 0;
-        players[pwgd].tod = time(NULL);
-        SendDeathInfo(players[pwgd].id.guid);
+      if (victim.health)
+        victim.health += diffed_hp;
+      if (victim.health <= 0) {
+        victim.health = 0;
+        victim.tod = time(NULL);
+        SendDeathInfo(victim.id.guid);
       }
-      if (players[pwgd].health > classmgr->class_array[players[pwgd].char_class].abilities[HP])
-        players[pwgd].health = classmgr->class_array[players[pwgd].char_class].abilities[HP];
+      if (victim.health > classmgr->class_array[victim.char_class].abilities[HP])
+        victim.health = classmgr->class_array[victim.char_class].abilities[HP];
     } else {
       if (config_.Get<bool>("be_unconcious_before_dead")) {
         size_t attacker = FindIDOnList(p.id.guid);
@@ -595,55 +606,55 @@ void CGmpServ::MakeHPDiff(Packet p) {
           case 1:
           case 3:
           case 4:  // od tych broni nasz zawodnik na pewno nie padnie
-            if (players[pwgd].flags & PL_UNCONCIOUS) {
-              players[pwgd].flags &= 0xFE;
-              players[pwgd].tod = time(NULL);
-              players[pwgd].health = 0;
-              SendDeathInfo(players[pwgd].id.guid);
+            if (victim.flags & PL_UNCONCIOUS) {
+              victim.flags &= 0xFE;
+              victim.tod = time(NULL);
+              victim.health = 0;
+              SendDeathInfo(victim.id.guid);
             } else {
-              players[pwgd].health += diffed_hp;
-              if (players[pwgd].health <= 1) {
-                players[pwgd].health = 1;
-                players[pwgd].flags |= PL_UNCONCIOUS;
+              victim.health += diffed_hp;
+              if (victim.health <= 1) {
+                victim.health = 1;
+                victim.flags |= PL_UNCONCIOUS;
               }
             }
             break;
           default:
-            if (players[pwgd].health > 0) {
-              players[pwgd].health += diffed_hp;
-              if (players[pwgd].health < 0)
-                players[pwgd].health = 0;
-              if (players[pwgd].health <= 0) {
-                players[pwgd].tod = time(NULL);
-                SendDeathInfo(players[pwgd].id.guid);
+            if (victim.health > 0) {
+              victim.health += diffed_hp;
+              if (victim.health < 0)
+                victim.health = 0;
+              if (victim.health <= 0) {
+                victim.tod = time(NULL);
+                SendDeathInfo(victim.id.guid);
               }
             }
             break;
         }
       } else {
-        players[pwgd].health += diffed_hp;
-        if (players[pwgd].health == 1) {
-          players[pwgd].health = 0;
-          players[pwgd].tod = time(NULL);
-          SendDeathInfo(players[pwgd].id.guid);
+        victim.health += diffed_hp;
+        if (victim.health == 1) {
+          victim.health = 0;
+          victim.tod = time(NULL);
+          SendDeathInfo(victim.id.guid);
         }
-        if ((players[pwgd].health == 0) && (!players[pwgd].tod)) {
-          players[pwgd].tod = time(NULL);
-          SendDeathInfo(players[pwgd].id.guid);
+        if ((victim.health == 0) && (!victim.tod)) {
+          victim.tod = time(NULL);
+          SendDeathInfo(victim.id.guid);
         }
-        if (players[pwgd].health < 0) {
-          players[pwgd].health = 0;
-          players[pwgd].tod = time(NULL);
-          SendDeathInfo(players[pwgd].id.guid);
+        if (victim.health < 0) {
+          victim.health = 0;
+          victim.tod = time(NULL);
+          SendDeathInfo(victim.id.guid);
         }
-        if (players[pwgd].health > classmgr->class_array[players[pwgd].char_class].abilities[HP])
-          players[pwgd].health = classmgr->class_array[players[pwgd].char_class].abilities[HP];
+        if (victim.health > classmgr->class_array[victim.char_class].abilities[HP])
+          victim.health = classmgr->class_array[victim.char_class].abilities[HP];
       }
     }
-  }
-  if ((players[pwgd].health <= 0) && (!players[pwgd].tod)) {
-    players[pwgd].tod = time(NULL);
-    SendDeathInfo(players[pwgd].id.guid);
+    if ((victim.health <= 0) && (!victim.tod)) {
+      victim.tod = time(NULL);
+      SendDeathInfo(victim.id.guid);
+    }
   }
 }
 
@@ -652,577 +663,148 @@ void CGmpServ::HandleVoice(Packet p) {
   std::string data;
   data.reserve(p.length);
   memcpy(data.data(), p.data, p.length);
-  for (size_t i = 0; i < players.size(); i++) {
-    if (players[i].is_ingame && players[i].id.guid != p.id.guid) {
-      g_net_server->Send((unsigned char*)data.data(), p.length, IMMEDIATE_PRIORITY, UNRELIABLE, 5, players[i].id);
+  for (const auto& [id, existing_player] : players) {
+    if (existing_player.is_ingame && existing_player.id.guid != p.id.guid) {
+      g_net_server->Send((unsigned char*)data.data(), p.length, IMMEDIATE_PRIORITY, UNRELIABLE, 5, existing_player.id);
     }
   }
 }
 
 void CGmpServ::HandleNormalMsg(Packet p) {
-  size_t forbiden_id = 0;
   std::string szMsg;
-  forbiden_id = ~forbiden_id;
-  if (FindIDOnList(p.id.guid) == forbiden_id)
+
+  auto player_opt = GetPlayerById(p.id.guid);
+  if (!player_opt.has_value() || !player_opt.value().get().is_ingame || player_opt.value().get().mute)
     return;
-  else if (!players[FindIDOnList(p.id.guid)].is_ingame)
-    return;
-  if (players[FindIDOnList(p.id.guid)].mute)
-    return;
-  size_t stranger = FindIDOnList(p.id.guid);
-  szMsg.reserve(1024);
+
+  szMsg.reserve(p.length + sizeof(uint64_t) + 1);
+
   *((unsigned char*)szMsg.data()) = p.data[0];
-  memcpy((char*)szMsg.data() + sizeof(uint64_t) + 1, p.data + 1, p.length - 1);
-  memcpy((char*)szMsg.data() + 1, (const char*)(&p.id.guid), sizeof(uint64_t));
-  if (!config_.Get<bool>("real_chat"))
-    for (size_t i = 0; i < players.size(); i++) {
-      if (players[i].is_ingame)
-        g_net_server->Send((unsigned char*)szMsg.data(), p.length + sizeof(uint64_t), LOW_PRIORITY, RELIABLE_ORDERED, 5,
-                           players[i].id);
-    }
-#define EQ(x) (players[i].pos[x] - players[stranger].pos[x])
-  else
-    for (size_t i = 0; i < players.size(); i++) {
-      if (players[i].is_ingame) {
-        if ((EQ(0) * EQ(0) + EQ(1) * EQ(1) <= 2000000.0f) && (EQ(0) * EQ(0) + EQ(2) * EQ(2) <= 2000000.0f) &&
-            (EQ(1) * EQ(1) + EQ(2) * EQ(2) <= 2000000.0f)) {
-          g_net_server->Send((unsigned char*)szMsg.data(), p.length + sizeof(uint64_t), LOW_PRIORITY, RELIABLE_ORDERED,
-                             5, players[i].id);
-        }
-      }
-    }
-#undef EQ
-  SPDLOG_INFO("{}:{}", players[FindIDOnList(p.id.guid)].name.c_str(), (const char*)(p.data + 1));
+  memcpy((char*)szMsg.data() + 1, (const char*)(&p.id.guid), sizeof(uint64_t));  // id
+  memcpy((char*)szMsg.data() + sizeof(uint64_t) + 1, p.data + 1, p.length - 1);  // text
+
   EventManager::Instance().TriggerEvent(kEventOnPlayerMessageName,
                                         OnPlayerMessageEvent{p.id.guid, (const char*)(p.data + 1)});
-  szMsg.clear();
+
+  for (const auto& [id, existing_player] : players) {
+    if (existing_player.is_ingame)
+      g_net_server->Send((unsigned char*)szMsg.data(), p.length + sizeof(uint64_t), LOW_PRIORITY, RELIABLE_ORDERED, 5,
+                         existing_player.id);
+  }
+
+  SPDLOG_INFO("{}:{}", players[FindIDOnList(p.id.guid)].name.c_str(), (const char*)(p.data + 1));
 }
 
 void CGmpServ::HandleWhisp(Packet p) {
-  size_t forbiden_id = 0;
-  forbiden_id = ~forbiden_id;
-  if (FindIDOnList(p.id.guid) == forbiden_id)
+  auto player_opt = GetPlayerById(p.id.guid);
+  if (!player_opt.has_value() || !player_opt.value().get().is_ingame)
     return;
-  else if (!players[FindIDOnList(p.id.guid)].is_ingame)
+
+  uint64_t recipient_id;
+  memcpy(&recipient_id, p.data + 1, sizeof(uint64_t));
+
+  auto recipient_opt = GetPlayerById(recipient_id);
+  if (!recipient_opt.has_value())
     return;
-  uint64_t say_to;
-  memcpy(&say_to, p.data + 1, sizeof(uint64_t));
-  if (FindIDOnList(say_to) == forbiden_id)
-    return;
+  auto& recipient = recipient_opt.value().get();
+
   std::string szMsg;
-  szMsg.reserve(1024);
+  szMsg.reserve(p.length + 1 + sizeof(uint64_t));
   *((char*)szMsg.data()) = p.data[0];
-  memcpy((char*)szMsg.data() + 1 + sizeof(uint64_t), p.data + 1, p.length - 1);
-  memcpy((char*)(szMsg.data() + 1), &p.id.guid, sizeof(uint64_t));
+  memcpy((char*)(szMsg.data() + 1), &p.id.guid, sizeof(uint64_t));               // id
+  memcpy((char*)szMsg.data() + 1 + sizeof(uint64_t), p.data + 1, p.length - 1);  // text
+
   g_net_server->Send((unsigned char*)szMsg.data(), p.length + 1 + sizeof(uint64_t), LOW_PRIORITY, RELIABLE_ORDERED, 6,
                      p.id);
   g_net_server->Send((unsigned char*)szMsg.data(), p.length + 1 + sizeof(uint64_t), LOW_PRIORITY, RELIABLE_ORDERED, 6,
-                     players[FindIDOnList(say_to)].id);
-  SPDLOG_INFO("({} WHISPER TO {}) {}", players[FindIDOnList(p.id.guid)].name.c_str(),
-              players[FindIDOnList(say_to)].name.c_str(), (const char*)(p.data + 1 + sizeof(uint64_t)));
-  szMsg.clear();
+                     recipient.id);
+
+  SPDLOG_INFO("({} WHISPERS TO {}) {}", player_opt->get().name, recipient.name,
+              (const char*)(p.data + 1 + sizeof(uint64_t)));
 }
 
-void CGmpServ::HandleCastSpell(Packet p, bool Target) {
-  size_t forbiden_id = 0;
+void CGmpServ::HandleCastSpell(Packet p, bool target) {
+  auto player_opt = GetPlayerById(p.id.guid);
+  if (!player_opt.has_value() || !player_opt.value().get().is_ingame)
+    return;
+
   std::string szMsg;
-  forbiden_id = ~forbiden_id;
-  if (FindIDOnList(p.id.guid) == forbiden_id)
-    return;
-  else if (!players[FindIDOnList(p.id.guid)].is_ingame)
-    return;
-  szMsg.reserve(1024);
-  if (!Target) {
+  szMsg.reserve(p.length + sizeof(uint64_t));
+
+  if (!target) {
     *((unsigned char*)szMsg.data()) = p.data[0];
     *((unsigned char*)(szMsg.data() + sizeof(uint64_t) + 1)) = p.data[1];
     memcpy((char*)szMsg.data() + 1, (const char*)(&p.id.guid), sizeof(uint64_t));
-    for (size_t i = 0; i < players.size(); i++) {
-      if (!memcmp(&players[i].id, &p.id.guid, sizeof(uint64_t)))
-        continue;
-      if (players[i].is_ingame)
-        g_net_server->Send((unsigned char*)szMsg.data(), p.length + sizeof(uint64_t), HIGH_PRIORITY, RELIABLE, 0,
-                           players[i].id);
-    }
   } else {
-    uint64_t TargetId;
-    memcpy(&TargetId, p.data + 1, 8);
-    if (FindIDOnList(TargetId) == forbiden_id)
+    uint64_t target_id;
+    memcpy(&target_id, p.data + 1, 8);
+
+    auto target_opt = GetPlayerById(target_id);
+    if (!target_opt.has_value() || !target_opt.value().get().is_ingame)
       return;
-    else if (!players[FindIDOnList(TargetId)].is_ingame)
-      return;
+
     *((unsigned char*)szMsg.data()) = p.data[0];
     memcpy((char*)szMsg.data() + sizeof(uint64_t) + 1, p.data + 1, 8);
     *((unsigned char*)(szMsg.data() + sizeof(uint64_t) + 9)) = p.data[9];
     memcpy((char*)szMsg.data() + 1, (const char*)(&p.id.guid), sizeof(uint64_t));
-    for (size_t i = 0; i < players.size(); i++) {
-      if (!memcmp(&players[i].id, &p.id.guid, sizeof(uint64_t)))
-        continue;
-      if (players[i].is_ingame)
-        g_net_server->Send((unsigned char*)szMsg.data(), p.length + sizeof(uint64_t), HIGH_PRIORITY, RELIABLE, 0,
-                           players[i].id);
+  }
+  for (const auto& [id, existing_player] : players) {
+    if (existing_player.is_ingame && existing_player.id.guid != p.id.guid) {
+      g_net_server->Send((unsigned char*)szMsg.data(), p.length + sizeof(uint64_t), HIGH_PRIORITY, RELIABLE, 0,
+                         existing_player.id);
     }
   }
-  memset((char*)szMsg.data(), 0, 1024);
-  szMsg.clear();
 }
 
 void CGmpServ::HandleDropItem(Packet p) {
-  size_t forbiden_id = 0;
+  auto player_opt = GetPlayerById(p.id.guid);
+  if (!player_opt.has_value() || !player_opt.value().get().is_ingame)
+    return;
+
   std::string szMsg;
-  forbiden_id = ~forbiden_id;
-  if (FindIDOnList(p.id.guid) == forbiden_id)
-    return;
-  else if (!players[FindIDOnList(p.id.guid)].is_ingame)
-    return;
-  szMsg.reserve(1024);
+  szMsg.reserve(p.length + sizeof(uint64_t));
+
   *((unsigned char*)szMsg.data()) = p.data[0];
   memcpy((char*)szMsg.data() + sizeof(uint64_t) + 1, p.data + 1, 2);
   memcpy((char*)szMsg.data() + sizeof(uint64_t) + 3, p.data + 3, 2);
   memcpy((char*)szMsg.data() + 1, (const char*)(&p.id.guid), sizeof(uint64_t));
-  for (size_t i = 0; i < players.size(); i++) {
-    if (!memcmp(&players[i].id, &p.id.guid, sizeof(uint64_t)))
-      continue;
-    if (players[i].is_ingame)
+
+  for (const auto& [id, existing_player] : players) {
+    if (existing_player.is_ingame && existing_player.id.guid != p.id.guid) {
       g_net_server->Send((unsigned char*)szMsg.data(), p.length + sizeof(uint64_t), HIGH_PRIORITY, RELIABLE, 0,
-                         players[i].id);
+                         existing_player.id);
+    }
   }
   short amount;
   memcpy(&amount, p.data + 3, 2);
-  SPDLOG_INFO("{} DROPPED ITEM. AMOUNT: {}", players[FindIDOnList(p.id.guid)].name, amount);
-  szMsg.clear();
+  SPDLOG_INFO("{} DROPPED ITEM. AMOUNT: {}", player_opt->get().name, amount);
 }
 
 void CGmpServ::HandleTakeItem(Packet p) {
   if (!config_.Get<bool>("allow_dropitems"))
     return;
-  size_t forbiden_id = 0;
+
+  auto player_opt = GetPlayerById(p.id.guid);
+  if (!player_opt.has_value() || !player_opt.value().get().is_ingame)
+    return;
+
   std::string szMsg;
-  forbiden_id = ~forbiden_id;
-  if (FindIDOnList(p.id.guid) == forbiden_id)
-    return;
-  else if (!players[FindIDOnList(p.id.guid)].is_ingame)
-    return;
-  szMsg.reserve(1024);
+  szMsg.reserve(p.length + sizeof(uint64_t));
   *((unsigned char*)szMsg.data()) = p.data[0];
   memcpy((char*)szMsg.data() + sizeof(uint64_t) + 1, p.data + 1, 2);
   memcpy((char*)szMsg.data() + 1, (const char*)(&p.id.guid), sizeof(uint64_t));
-  for (size_t i = 0; i < players.size(); i++) {
-    if (!memcmp(&players[i].id, &p.id.guid, sizeof(uint64_t)))
-      continue;
-    if (players[i].is_ingame)
+
+  for (const auto& [id, existing_player] : players) {
+    if (existing_player.is_ingame && existing_player.id.guid != p.id.guid) {
       g_net_server->Send((unsigned char*)szMsg.data(), p.length + sizeof(uint64_t), HIGH_PRIORITY, RELIABLE, 0,
-                         players[i].id);
+                         existing_player.id);
+    }
   }
-  SPDLOG_INFO("{} TOOK ITEM.", players[FindIDOnList(p.id.guid)].name);
-  szMsg.clear();
+  SPDLOG_INFO("{} TOOK ITEM.", player_opt->get().name);
 }
 
 void CGmpServ::HandleRMConsole(Packet p) {
-  std::string szLog;
-  size_t forbiden_id = 0;
-  szLog.reserve(512);
-  forbiden_id = ~forbiden_id;
-  if (forbiden_id == FindIDOnList(p.id.guid))
-    return;
-  size_t rid = FindIDOnList(p.id.guid);
-  if (!memcmp("passwd ", p.data + 1, 7)) {
-    auto admin_passwd = config_.Get<std::string>("admin_passwd");
-    if (memcmp(p.data + 8, admin_passwd.c_str(), admin_passwd.length() + 1)) {
-      players[rid].admin_passwd++;
-      if (players[rid].admin_passwd > 3) {
-        SendDisconnectionInfo(players[rid].id.guid);
-        g_net_server->AddToBanList(players[rid].id, 1800000);
-        SPDLOG_WARN("[#] Too much failed authorizations(admin permissions). Banned {}@{}.", players[rid].name,
-                    players[rid].id.guid);
-        DeleteFromPlayerList(players[rid].id);
-      }
-      goto eoh;
-    }
-    players[rid].admin_passwd = 0;
-    players[rid].has_admin = 1;
-    *((unsigned char*)szLog.data()) = PT_RCON;
-    memcpy((char*)szLog.data() + 1, AG, strlen(AG) + 1);
-    g_net_server->Send((unsigned char*)szLog.data(), static_cast<int>(2 + strlen(AG)), MEDIUM_PRIORITY, RELIABLE, 9,
-                       p.id);
-  } else if (!memcmp("login ", p.data + 1, 6)) {
-    if (!players[rid].is_ingame) {
-      g_net_server->AddToBanList(p.id, 1800000);
-      DeleteFromPlayerList(players[rid].id);
-    } else {
-      char cmd[16];
-      char nickname[32];
-      char password[64];
-      if (sscanf((const char*)p.data + 1, "%s%s%s", cmd, nickname, password) == 3) {
-        switch (CPermissions::GetInstance()->IsModerator(nickname, password)) {
-          case 1:
-            players[rid].moderator_passwd = 0;
-            players[rid].moderator = CPermissions::GetInstance()->GetModerator(nickname);
-            *((unsigned char*)szLog.data()) = PT_RCON;
-            memcpy((char*)szLog.data() + 1, AG, strlen(AG) + 1);
-            g_net_server->Send((unsigned char*)szLog.data(), static_cast<int>(2 + strlen(AG)), MEDIUM_PRIORITY,
-                               RELIABLE, 9, p.id);
-          case 0:  // lol
-            break;
-          case -1:
-            players[rid].moderator_passwd++;
-            if (players[rid].moderator_passwd > 3) {
-              SendDisconnectionInfo(players[rid].id.guid);
-              g_net_server->AddToBanList(players[rid].id, 1800000);
-              SPDLOG_WARN("[#] Too much failed authoraztions(moderator permissions). Banned {}@{}.", players[rid].name,
-                          players[rid].id.guid);
-              DeleteFromPlayerList(players[rid].id);
-            }
-            break;
-        }
-      }
-    }
-  } else if ((players[rid].has_admin) || (players[rid].moderator)) {
-    // jeśli jest adminem/moderatorem to przetwarzaj
-    // TO DO
-    if (!memcmp(p.data + 1, SAY, strlen(SAY))) {
-      if (!players[rid].has_admin)
-        if (!CPermissions::GetInstance()->IsPermitted(SAY))
-          goto eoh;
-      SPDLOG_INFO("{}@{} say {}", (const char*)((players[rid].has_admin) ? "ADMIN" : players[rid].moderator->nickname),
-                  p.id.guid, (const char*)p.data + 5);
-      *((unsigned char*)szLog.data()) = PT_SRVMSG;
-      memcpy((char*)szLog.data() + 1, p.data + 5, p.length - 5);
-      for (size_t i = 0; i < players.size(); i++) {
-        if (players[i].is_ingame)
-          g_net_server->Send((unsigned char*)szLog.data(), p.length - 4, MEDIUM_PRIORITY, RELIABLE, 9, players[i].id);
-      }
-      *((unsigned char*)szLog.data()) = PT_RCON;
-      memcpy((char*)szLog.data() + 1, OK, 4);
-      g_net_server->Send((unsigned char*)szLog.data(), 5, MEDIUM_PRIORITY, RELIABLE, 9, p.id);
-    } else if (!memcmp(p.data + 1, KICK, strlen(KICK))) {
-      if (!players[rid].has_admin)
-        if (!CPermissions::GetInstance()->IsPermitted(KICK))
-          goto eoh;
-      size_t kid = forbiden_id;
-      for (size_t i = 0; i < players.size(); i++) {
-        if (players[i].is_ingame) {
-          if (!memcmp(players[i].name.c_str(), p.data + 6, p.length - 6)) {
-            if (!players[i].has_admin)
-              kid = i;
-            break;
-          }
-        }
-      }
-      if (kid == forbiden_id) {
-        *((unsigned char*)szLog.data()) = PT_RCON;
-        memcpy((char*)szLog.data() + 1, PDE, strlen(PDE) + 1);
-        g_net_server->Send((unsigned char*)szLog.data(), static_cast<int>(2 + strlen(PDE)), MEDIUM_PRIORITY, RELIABLE,
-                           9, p.id);
-        goto eoh;
-      }
-      SendDisconnectionInfo(players[kid].id.guid);
-      SPDLOG_INFO("{}@{} kick {}", (const char*)((players[rid].has_admin) ? "ADMIN" : players[rid].moderator->nickname),
-                  p.id.guid, players[kid].name.c_str());
-      g_net_server->AddToBanList(players[kid].id, 5000);
-      DeleteFromPlayerList(players[kid].id);
-      *((unsigned char*)szLog.data()) = PT_RCON;
-      memcpy((char*)szLog.data() + 1, OK, strlen(OK) + 1);
-      g_net_server->Send((unsigned char*)szLog.data(), static_cast<int>(2 + strlen(OK)), MEDIUM_PRIORITY, RELIABLE, 9,
-                         p.id);
-    } else if (!memcmp(p.data + 1, BAN, strlen(BAN))) {
-      if (!players[rid].has_admin)
-        if (!CPermissions::GetInstance()->IsPermitted(BAN))
-          goto eoh;
-      size_t bid = forbiden_id;
-      for (size_t i = 0; i < players.size(); i++) {
-        if (players[i].is_ingame) {
-          if (!memcmp(players[i].name.c_str(), p.data + 5, p.length - 5)) {
-            if ((!players[i].has_admin) && (!players[i].moderator))
-              bid = i;
-            break;
-          }
-        }
-      }
-      if (bid == forbiden_id) {
-        *((unsigned char*)szLog.data()) = PT_RCON;
-        memcpy((char*)szLog.data() + 1, PDE, strlen(PDE) + 1);
-        g_net_server->Send((unsigned char*)szLog.data(), static_cast<int>(2 + strlen(PDE)), MEDIUM_PRIORITY, RELIABLE,
-                           9, p.id);
-        goto eoh;
-      }
-      SendDisconnectionInfo(players[bid].id.guid);
-      SPDLOG_WARN("{}@{} ban {}@{}",
-                  (const char*)((players[rid].has_admin) ? "ADMIN" : players[rid].moderator->nickname), p.id.guid,
-                  players[bid].name.c_str(), players[bid].id.guid);
-      g_net_server->AddToBanList(players[bid].id, 0);
-      ban_list.push_back(g_net_server->GetPlayerIp(players[bid].id));
-      DeleteFromPlayerList(players[bid].id);
-      *((unsigned char*)szLog.data()) = PT_RCON;
-      memcpy((char*)szLog.data() + 1, OK, strlen(OK) + 1);
-      g_net_server->Send((unsigned char*)szLog.data(), static_cast<int>(2 + strlen(OK)), MEDIUM_PRIORITY, RELIABLE, 9,
-                         p.id);
-    } else if (!memcmp(p.data + 1, BAN_IP, strlen(BAN_IP))) {
-      if (!players[rid].has_admin)
-        if (!CPermissions::GetInstance()->IsPermitted(BAN_IP))
-          goto eoh;
-      if (g_net_server->IsBanned((char*)p.data + 7)) {
-        *((unsigned char*)szLog.data()) = PT_RCON;
-        memcpy((char*)szLog.data() + 1, IPISBANNED, strlen(IPISBANNED) + 1);
-        g_net_server->Send((unsigned char*)szLog.data(), static_cast<int>(2 + strlen(IPISBANNED)), MEDIUM_PRIORITY,
-                           RELIABLE, 9, p.id);
-        goto eoh;
-      }
-      std::stack<sPlayer*> ip_players;
-      for (size_t i = 0; i < players.size(); i++) {
-        if (!memcmp(g_net_server->GetPlayerIp(players[i].id), p.data + 7, p.length - 7)) {
-          ip_players.push(&players[i]);
-        }
-      }
-      if (!ip_players.empty()) {
-        do {
-          SendDisconnectionInfo(ip_players.top()->id.guid);
-          SPDLOG_WARN("{}@{} banned because of IP by {}@{}", ip_players.top()->name, (char*)p.data + 7,
-                      (const char*)((players[rid].has_admin) ? "ADMIN" : players[rid].moderator->nickname), p.id.guid);
-          DeleteFromPlayerList(ip_players.top()->id);
-          ip_players.pop();
-        } while (!ip_players.empty());
-      }
-      g_net_server->AddToBanList((char*)p.data + 7, 0);
-      ban_list.push_back((char*)p.data + 7);
-      SPDLOG_WARN("{}@{} ban ip: {}",
-                  (const char*)((players[rid].has_admin) ? "ADMIN" : players[rid].moderator->nickname), p.id.guid,
-                  (char*)p.data + 7);
-      *((unsigned char*)szLog.data()) = PT_RCON;
-      memcpy((char*)szLog.data() + 1, OK, strlen(OK) + 1);
-      g_net_server->Send((unsigned char*)szLog.data(), static_cast<int>(2 + strlen(OK)), MEDIUM_PRIORITY, RELIABLE, 9,
-                         p.id);
-    } else if (!memcmp(p.data + 1, UNBAN, strlen(UNBAN))) {
-      if (!players[rid].has_admin)
-        if (!CPermissions::GetInstance()->IsPermitted(UNBAN))
-          goto eoh;
-      if (g_net_server->IsBanned((char*)p.data + 7)) {
-        SPDLOG_WARN("{}@{} unbanned following IP: {}",
-                    (const char*)((players[rid].has_admin) ? "ADMIN" : players[rid].moderator->nickname), p.id.guid,
-                    (char*)p.data + 7);
-        g_net_server->RemoveFromBanList((char*)p.data + 7);
-      } else {
-        *((unsigned char*)szLog.data()) = PT_RCON;
-        memcpy((char*)szLog.data() + 1, IPNOTBANNED, strlen(IPNOTBANNED) + 1);
-        g_net_server->Send((unsigned char*)szLog.data(), static_cast<int>(2 + strlen(IPNOTBANNED)), MEDIUM_PRIORITY,
-                           RELIABLE, 9, p.id);
-      }
-    } else if (!memcmp(p.data + 1, SAVEBANS, strlen(SAVEBANS) - 1)) {
-      if (!players[rid].has_admin)
-        if (!CPermissions::GetInstance()->IsPermitted(SAVEBANS))
-          goto eoh;
-      SaveBanList();
-      sprintf((char*)szLog.data(), "%s@%s saved ban list!",
-              (const char*)((players[rid].has_admin) ? "ADMIN" : players[rid].moderator->nickname), p.id);
-      *((unsigned char*)szLog.data()) = PT_RCON;
-      memcpy((char*)szLog.data() + 1, OK, strlen(OK) + 1);
-      g_net_server->Send((unsigned char*)szLog.data(), static_cast<int>(2 + strlen(OK)), MEDIUM_PRIORITY, RELIABLE, 9,
-                         p.id);
-    } else if (!memcmp(p.data + 1, MUTE, strlen(MUTE))) {
-      if (!players[rid].has_admin)
-        if (!CPermissions::GetInstance()->IsPermitted(MUTE))
-          goto eoh;
-      size_t mid = forbiden_id;
-      for (size_t i = 0; i < players.size(); i++) {
-        if (players[i].is_ingame) {
-          if (!memcmp(players[i].name.c_str(), p.data + 6, p.length - 6)) {
-            mid = i;
-            break;
-          }
-        }
-      }
-      if (mid == forbiden_id) {
-        *((unsigned char*)szLog.data()) = PT_RCON;
-        memcpy((char*)szLog.data() + 1, PDE, strlen(PDE) + 1);
-        g_net_server->Send((unsigned char*)szLog.data(), static_cast<int>(2 + strlen(PDE)), MEDIUM_PRIORITY, RELIABLE,
-                           9, p.id);
-      } else {
-        players[mid].mute = ~players[mid].mute;
-        *((unsigned char*)szLog.data()) = PT_RCON;
-        memcpy((char*)szLog.data() + 1, OK, strlen(OK) + 1);
-        g_net_server->Send((unsigned char*)szLog.data(), static_cast<int>(2 + strlen(OK)), MEDIUM_PRIORITY, RELIABLE, 9,
-                           p.id);
-      }
-    } else if (!memcmp(p.data + 1, SET_TIME, strlen(SET_TIME))) {
-      if (!players[rid].has_admin)
-        if (!CPermissions::GetInstance()->IsPermitted(SET_TIME))
-          goto eoh;
-      char buffer[16];
-      unsigned short h, m;
-      if (sscanf((char*)p.data + 1, "%s%hu%hu", buffer, &h, &m) == 3) {
-        GothicClock::Time new_time;
-        new_time.hour_ = static_cast<unsigned char>(h);
-        new_time.min_ = static_cast<unsigned char>(m);
-        new_time.day_++;
-        if (new_time.day_ > 30000)
-          new_time.day_ = 1;
-        for (size_t i = 0; i < players.size(); i++) {
-          if (players[i].is_ingame) {
-            *((unsigned char*)szLog.data()) = PT_GAME_INFO;
-            memcpy((char*)szLog.data() + 1, &new_time.day_, 4);
-            *((unsigned char*)szLog.data() + 5) = (unsigned char)config_.Get<std::int32_t>("game_mode");
-            *((unsigned char*)szLog.data() + 6) = 0;
-            if (config_.Get<bool>("quick_pots"))
-              *((unsigned char*)szLog.data() + 6) |= QUICK_POTS;
-            if (config_.Get<bool>("allow_dropitems"))
-              *((unsigned char*)szLog.data() + 6) |= DROP_ITEMS;
-            g_net_server->Send((unsigned char*)szLog.data(), 7, IMMEDIATE_PRIORITY, RELIABLE, 9, players[i].id);
-          }
-        }
-        clock_->UpdateTime(new_time);
-        *((unsigned char*)szLog.data()) = PT_RCON;
-        memcpy((char*)szLog.data() + 1, OK, strlen(OK) + 1);
-        g_net_server->Send((unsigned char*)szLog.data(), static_cast<int>(2 + strlen(OK)), MEDIUM_PRIORITY, RELIABLE, 9,
-                           p.id);
-      } else {
-        *((unsigned char*)szLog.data()) = PT_RCON;
-        memcpy((char*)szLog.data() + 1, INVALIDPARAMETER, strlen(INVALIDPARAMETER) + 1);
-        g_net_server->Send((unsigned char*)szLog.data(), static_cast<int>(2 + strlen(INVALIDPARAMETER)),
-                           MEDIUM_PRIORITY, RELIABLE, 9, p.id);
-      }
-    } else if (!memcmp(p.data + 1, KILL, strlen(KILL))) {
-      if (!players[rid].has_admin)
-        if (!CPermissions::GetInstance()->IsPermitted(KILL))
-          goto eoh;
-      sPlayer* n00b = FindPlayer((const char*)p.data + 1 + strlen(KILL));
-      if (n00b) {
-        n00b->health = 0;
-        n00b->tod = time(NULL);
-        int r = rand() % MAX_KILL_TXT;
-        *((unsigned char*)szLog.data()) = PT_RCON;
-        memcpy((char*)szLog.data() + 1, KILLED[r], strlen(KILLED[r]) + 1);
-        g_net_server->Send((unsigned char*)szLog.data(), static_cast<int>(2 + strlen(KILLED[r]) + 1), MEDIUM_PRIORITY,
-                           RELIABLE, 13, p.id);
-        SendDeathInfo(n00b->id.guid);
-        SPDLOG_WARN("{}@{} killed {}@{}",
-                    (const char*)((players[rid].has_admin) ? "ADMIN" : players[rid].moderator->nickname), p.id.guid,
-                    n00b->name, n00b->id.guid);
-      } else {
-        *((unsigned char*)szLog.data()) = PT_RCON;
-        memcpy((char*)szLog.data() + 1, PDE, strlen(PDE) + 1);
-        g_net_server->Send((unsigned char*)szLog.data(), static_cast<int>(2 + strlen(PDE)), MEDIUM_PRIORITY, RELIABLE,
-                           13, p.id);
-      }
-    } else if (!memcmp(p.data + 1, LOOP_MSG, strlen(LOOP_MSG))) {
-      if (!players[rid].has_admin)
-        if (!CPermissions::GetInstance()->IsPermitted(LOOP_MSG))
-          goto eoh;
-      if (!loop_msg.empty())
-        loop_msg.clear();
-      loop_msg = ((char*)p.data + strlen(LOOP_MSG) + 1);
-      *((unsigned char*)szLog.data()) = PT_RCON;
-      memcpy((char*)szLog.data() + 1, OK, strlen(OK) + 1);
-      g_net_server->Send((unsigned char*)szLog.data(), static_cast<int>(2 + strlen(OK)), MEDIUM_PRIORITY, RELIABLE, 13,
-                         p.id);
-      SPDLOG_WARN("{}@{} changed loop message to: {}",
-                  (const char*)((players[rid].has_admin) ? "ADMIN" : players[rid].moderator->nickname), p.id.guid,
-                  loop_msg);
-    } else if (!memcmp(p.data + 1, MOD_ADD, strlen(MOD_ADD))) {
-      if (!players[rid].has_admin)
-        goto eoh;
-      char b[16];
-      char n[128];
-      if (sscanf((const char*)p.data + 1, "%s%s", b, n) != 2) {
-        *((unsigned char*)szLog.data()) = PT_RCON;
-        memcpy((char*)szLog.data() + 1, INVALIDPARAMETER, strlen(INVALIDPARAMETER) + 1);
-        g_net_server->Send((unsigned char*)szLog.data(), static_cast<int>(2 + strlen(INVALIDPARAMETER)),
-                           MEDIUM_PRIORITY, RELIABLE, 13, p.id);
-        goto eoh;
-      }
-      CPermissions::GetInstance()->AddModerator(n, "\x7");
-      *((unsigned char*)szLog.data()) = PT_RCON;
-      memcpy((char*)szLog.data() + 1, OK, strlen(OK) + 1);
-      g_net_server->Send((unsigned char*)szLog.data(), static_cast<int>(2 + strlen(OK)), MEDIUM_PRIORITY, RELIABLE, 13,
-                         p.id);
-      SPDLOG_WARN("ADMIN@{} added moderator: {}", p.id.guid, n);
-    } else if (!memcmp(p.data + 1, MOD_DEL, strlen(MOD_DEL))) {
-      if (!players[rid].has_admin)
-        goto eoh;
-      char b[16];
-      char n[128];
-      if (sscanf((const char*)p.data + 1, "%s%s", b, n) != 2) {
-        *((unsigned char*)szLog.data()) = PT_RCON;
-        memcpy((char*)szLog.data() + 1, INVALIDPARAMETER, strlen(INVALIDPARAMETER) + 1);
-        g_net_server->Send((unsigned char*)szLog.data(), static_cast<int>(2 + strlen(INVALIDPARAMETER)),
-                           MEDIUM_PRIORITY, RELIABLE, 13, p.id);
-        goto eoh;
-      }
-      CPermissions::GetInstance()->DeleteModerator(n);
-      *((unsigned char*)szLog.data()) = PT_RCON;
-      memcpy((char*)szLog.data() + 1, OK, strlen(OK) + 1);
-      g_net_server->Send((unsigned char*)szLog.data(), static_cast<int>(2 + strlen(OK)), MEDIUM_PRIORITY, RELIABLE, 13,
-                         p.id);
-      SPDLOG_WARN("ADMIN@{} deleted moderator: {}", p.id.guid, n);
-    } else if (!memcmp(p.data + 1, MOD_SET, strlen(MOD_SET))) {
-      if (!players[rid].has_admin)
-        goto eoh;
-      char b[16];
-      char n[128];
-      char pass[128];
-      if (sscanf((const char*)p.data + 1, "%s%s%s", b, n, pass) != 3) {
-        *((unsigned char*)szLog.data()) = PT_RCON;
-        memcpy((char*)szLog.data() + 1, INVALIDPARAMETER, strlen(INVALIDPARAMETER) + 1);
-        g_net_server->Send((unsigned char*)szLog.data(), static_cast<int>(2 + strlen(INVALIDPARAMETER)),
-                           MEDIUM_PRIORITY, RELIABLE, 13, p.id);
-        goto eoh;
-      }
-      if (CPermissions::GetInstance()->SetPassword(n, pass)) {
-        *((unsigned char*)szLog.data()) = PT_RCON;
-        memcpy((char*)szLog.data() + 1, OK, strlen(OK) + 1);
-        g_net_server->Send((unsigned char*)szLog.data(), static_cast<int>(2 + strlen(OK)), MEDIUM_PRIORITY, RELIABLE,
-                           13, p.id);
-        SPDLOG_WARN("ADMIN@{} changed moderator {} password to {}", p.id.guid, n, pass);
-      } else {
-        *((unsigned char*)szLog.data()) = PT_RCON;
-        memcpy((char*)szLog.data() + 1, PDE, strlen(PDE) + 1);
-        g_net_server->Send((unsigned char*)szLog.data(), static_cast<int>(2 + strlen(PDE)), MEDIUM_PRIORITY, RELIABLE,
-                           13, p.id);
-        goto eoh;
-      }
-    } else if (!memcmp(p.data + 1, HP_REGEN, strlen(HP_REGEN))) {
-      if (!players[rid].has_admin)
-        if (!CPermissions::GetInstance()->IsPermitted(HP_REGEN))
-          goto eoh;
-      auto hp_regeneration = config_.Get<std::int32_t>("hp_regeneration");
-      if (sscanf((const char*)p.data + 1 + strlen(HP_REGEN), "%d", &hp_regeneration) != 1) {
-        goto eoh;
-      }
-      *((unsigned char*)szLog.data()) = PT_RCON;
-      memcpy((char*)szLog.data() + 1, OK, strlen(OK) + 1);
-      g_net_server->Send((unsigned char*)szLog.data(), static_cast<int>(2 + strlen(OK)), MEDIUM_PRIORITY, RELIABLE, 13,
-                         p.id);
-      SPDLOG_WARN("{}@{} changed hp regeneration: {}",
-                  (const char*)((players[rid].has_admin) ? "ADMIN" : players[rid].moderator->nickname), p.id.guid,
-                  hp_regeneration);
-      goto eoh;
-      // sprintf((char*)szLog.data()+1, "AD
-    } else if (!memcmp(p.data + 1, MP_REGEN, strlen(MP_REGEN))) {
-      if (!players[rid].has_admin)
-        if (!CPermissions::GetInstance()->IsPermitted(MP_REGEN))
-          goto eoh;
-      auto mp_regeneration = config_.Get<std::int32_t>("mp_regeneration");
-      if (sscanf((const char*)p.data + 1 + strlen(MP_REGEN), "%d", &mp_regeneration) != 1)
-        goto eoh;
-      *((unsigned char*)szLog.data()) = PT_RCON;
-      memcpy((char*)szLog.data() + 1, OK, strlen(OK) + 1);
-      g_net_server->Send((unsigned char*)szLog.data(), static_cast<int>(2 + strlen(OK)), MEDIUM_PRIORITY, RELIABLE, 13,
-                         p.id);
-      SPDLOG_WARN("{}@{} changed mp regeneration: {}",
-                  (const char*)((players[rid].has_admin) ? "ADMIN" : players[rid].moderator->nickname), p.id.guid,
-                  mp_regeneration);
-      for (size_t i = 0; i < players.size(); i++)
-        if (players[i].is_ingame)
-          SendGameInfo(players[i].id);
-      goto eoh;
-    } else {
-      // cool story, bro!
-      *((unsigned char*)szLog.data()) = PT_RCON;
-      memcpy((char*)szLog.data() + 1, WTF, strlen(WTF) + 1);
-      g_net_server->Send((unsigned char*)szLog.data(), static_cast<int>(2 + strlen(WTF)), MEDIUM_PRIORITY, RELIABLE, 13,
-                         p.id);
-    }
-  }
-eoh:
-  szLog.clear();
+  // Intentionally left blank. This can be implemented in the scripts.
 }
 
 void MakeHTTPReq(char* file) {

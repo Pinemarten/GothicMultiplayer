@@ -34,6 +34,14 @@ namespace Net {
 
 struct PlayerId {
   std::uint64_t guid;
+
+  bool operator==(const PlayerId& other) const {
+    return guid == other.guid;
+  }
+
+  bool operator!=(const PlayerId& other) const {
+    return (*this == other) == false;
+  }
 };
 
 class PacketHandler {

@@ -106,7 +106,7 @@ private:
   void DeleteFromPlayerList(Net::PlayerId guid);
   sPlayer* FindPlayer(const char* nickname);
   void LoadBanList(void);
-  void HandleCastSpell(Packet p, bool Target);
+  void HandleCastSpell(Packet p, bool target);
   void HandleDropItem(Packet p);
   void HandleTakeItem(Packet p);
   void HandleVoice(Packet p);
