@@ -122,7 +122,6 @@ private:
   void SendDeathInfo(uint64_t deadman);
   void SendRespawnInfo(uint64_t luckyguy);
   void SendGameInfo(Net::PlayerId guid);
-  size_t FindIDOnList(uint64_t guid);
 
   std::vector<std::string> ban_list;
   CClassManager* classmgr;

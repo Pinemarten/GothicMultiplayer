@@ -449,16 +449,6 @@ void CGmpServ::SomeoneJoinGame(Packet p) {
   EventManager::Instance().TriggerEvent(kEventOnPlayerConnectName, p.id.guid);
 }
 
-size_t CGmpServ::FindIDOnList(uint64_t guid) {
-  for (size_t i = 0; i < players.size(); i++) {
-    if (guid == players[i].id.guid)
-      return i;
-  }
-  size_t ret = 0;
-  ret = ~ret;
-  return ret;
-}
-
 void CGmpServ::HandlePlayerUpdate(Packet p) {
   double rp, x1, y1;  //<- zmienne do sprawdzenia czy dana osoba mieści się w kole o r=5000.0f
 
@@ -601,8 +591,7 @@ void CGmpServ::MakeHPDiff(Packet p) {
         victim.health = classmgr->class_array[victim.char_class].abilities[HP];
     } else {
       if (config_.Get<bool>("be_unconcious_before_dead")) {
-        size_t attacker = FindIDOnList(p.id.guid);
-        switch (players[attacker].figth_pos) {
+        switch (attacker.figth_pos) {
           case 1:
           case 3:
           case 4:  // od tych broni nasz zawodnik na pewno nie padnie
@@ -692,7 +681,7 @@ void CGmpServ::HandleNormalMsg(Packet p) {
                          existing_player.id);
   }
 
-  SPDLOG_INFO("{}:{}", players[FindIDOnList(p.id.guid)].name.c_str(), (const char*)(p.data + 1));
+  SPDLOG_INFO("{}:{}", player_opt->get().name, (const char*)(p.data + 1));
 }
 
 void CGmpServ::HandleWhisp(Packet p) {
