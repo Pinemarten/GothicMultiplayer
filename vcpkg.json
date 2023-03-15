@@ -34,9 +34,13 @@
       "name": "lua",
       "version>=": "5.4.4"
     },
-	{
+    {
       "name": "sol2",
       "version>=": "3.3.0"
+    },
+    {
+      "name": "gtest",
+      "version>=": "1.12.1"
     }
   ],
   "builtin-baseline": "f3a39f1aaffe48b1190df69aab3a8657f91b632a"

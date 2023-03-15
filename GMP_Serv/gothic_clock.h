@@ -31,7 +31,7 @@ SOFTWARE.
 #include <memory>
 #include <toml.hpp>
 
-// Class responsible for counting Gothic time on the server side.
+// This class is responsible for simulation of Gothic-like clock.
 class GothicClock {
 public:
   struct Time {

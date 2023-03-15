@@ -30,7 +30,7 @@ SOFTWARE.
 #include <ctime>
 #include <sstream>
 
-#include "CGmpServ.h"
+#include "game_server.h"
 #include "chillout.h"
 
 namespace {
@@ -38,7 +38,7 @@ void SetupCrashHandler() {
   static std::stringstream ss;
 
   auto &chillout = Debug::Chillout::getInstance();
-  chillout.init(L"GMP_Serv", L".");
+  chillout.init(L"gmp_server", L".");
 
   chillout.setCrashCallback([&chillout]() {
     SPDLOG_CRITICAL("Crash detected! Backtrace:");
@@ -54,7 +54,7 @@ int main(int argc, char **argv) {
   SetupCrashHandler();
   srand(static_cast<unsigned int>(time(NULL)));
 
-  CGmpServ serv(argc, argv);
+  GameServer serv;
   if (!serv.Init()) {
     SPDLOG_ERROR("Server initialization failed!");
     exit(0);

@@ -23,7 +23,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include "CGmpServ.h"
+#include "game_server.h"
 
 #include <httplib.h>
 #include <spdlog/sinks/basic_file_sink.h>
@@ -76,6 +76,7 @@ const char* IPISBANNED = "Following IP is already banned!";
 const char* INVALIDPARAMETER = "Invalid command parameter!";
 #define MAX_KILL_TXT 3
 const char* KILLED[MAX_KILL_TXT] = {"K.O.", "R.I.P.", "FATALITY"};
+std::atomic<bool> g_is_server_running = true;
 
 using namespace Net;
 
@@ -107,7 +108,7 @@ void InitializeLogger(const Config& config) {
 }
 }  // namespace
 
-CGmpServ::CGmpServ(int argc, char** argv) {
+GameServer::GameServer() {
   InitializeLogger(config_);
   SPDLOG_INFO("|-----------------------------------|");
   SPDLOG_INFO("Gothic Multiplayer Classic {}", GMP_VERSION);
@@ -117,23 +118,22 @@ CGmpServ::CGmpServ(int argc, char** argv) {
   config_.LogConfigValues();
   SPDLOG_INFO("|-----------------------------------|");
   g_server = this;
-  arg_count = argc;
-  arg_vec = argv;
 
   // Register server-side events.
   EventManager::Instance().RegisterEvent(kEventOnPlayerConnectName);
   EventManager::Instance().RegisterEvent(kEventOnPlayerMessageName);
 }
 
-CGmpServ::~CGmpServ() {
+GameServer::~GameServer() {
+  g_is_server_running = false;
+  delete script;
   g_net_server->RemovePacketHandler(*this);
   delete classmgr;
-  delete script;
   // server->Shutdown(300);
   g_server = nullptr;
 }
 
-bool CGmpServ::Init() {
+bool GameServer::Init() {
   LoadNetworkLibrary();
   g_net_server->AddPacketHandler(*this);
 #ifndef WIN32
@@ -157,10 +157,12 @@ bool CGmpServ::Init() {
   }
 
   LoadBanList();
+  g_is_server_running = true;
 
   clock_ = std::make_unique<GothicClock>(config_.Get<GothicClock::Time>("game_time"));
-  public_list_http_thread_future_ = std::async(&CGmpServ::AddToPublicListHTTP, this);
-  http_thread_future_ = std::async(&CGmpServ::HTTPServerThread, this, port + 1);
+  public_list_http_thread_future_ = std::async(&GameServer::AddToPublicListHTTP, this);
+  http_server_ = std::make_unique<HTTPServer>();
+  http_thread_future_ = std::async(&GameServer::HTTPServerThread, this, port + 1);
   this->last_stand_timer = 0;
 
   SPDLOG_INFO("");
@@ -170,17 +172,16 @@ bool CGmpServ::Init() {
   return true;
 }
 
-void CGmpServ::HTTPServerThread(std::int32_t port) {
-  auto httpServer = std::make_unique<HTTPServer>();
-  httpServer->Start(port);
+void GameServer::HTTPServerThread(std::int32_t port) {
+  http_server_->Start(port);
 }
 
-void CGmpServ::Run() {
+void GameServer::Run() {
   g_net_server->Pulse();
   clock_->RunClock();
 }
 
-bool CGmpServ::HandlePacket(Net::PlayerId playerId, unsigned char* data, std::uint32_t size) {
+bool GameServer::HandlePacket(Net::PlayerId playerId, unsigned char* data, std::uint32_t size) {
   Packet p{data, size, playerId};
 
   unsigned char packetIdentifier = GetPacketIdentifier(p);
@@ -287,19 +288,19 @@ bool CGmpServ::HandlePacket(Net::PlayerId playerId, unsigned char* data, std::ui
   return true;
 }
 
-bool CGmpServ::Receive() {
+bool GameServer::Receive() {
   g_net_server->Pulse();
   return true;
 }
 
-unsigned char CGmpServ::GetPacketIdentifier(const Packet& p) {
+unsigned char GameServer::GetPacketIdentifier(const Packet& p) {
   if ((unsigned char)p.data[0] == ID_TIMESTAMP) {
     return (unsigned char)p.data[1 + sizeof(std::uint32_t)];
   } else
     return (unsigned char)p.data[0];
 }
 
-void CGmpServ::LoadBanList() {
+void GameServer::LoadBanList() {
   std::string szTmp;
   szTmp.reserve(32);
   std::ifstream ifs("bans.txt");
@@ -326,7 +327,7 @@ void CGmpServ::LoadBanList() {
   SPDLOG_INFO("Active bans loaded.");
 }
 
-void CGmpServ::SaveBanList() {
+void GameServer::SaveBanList() {
   if (!this->ban_list.empty()) {
     std::ofstream ofs("bans.txt");
     if (!ofs.is_open()) {
@@ -341,18 +342,18 @@ void CGmpServ::SaveBanList() {
   SPDLOG_INFO("Bans written to bans.txt.");
 }
 
-void CGmpServ::DeleteFromPlayerList(Net::PlayerId id) {
+void GameServer::DeleteFromPlayerList(Net::PlayerId id) {
   players.erase(id.guid);
 }
 
-std::optional<std::reference_wrapper<CGmpServ::sPlayer>> CGmpServ::GetPlayerById(std::uint64_t id) {
+std::optional<std::reference_wrapper<GameServer::sPlayer>> GameServer::GetPlayerById(std::uint64_t id) {
   auto it = players.find(id);
   if (it != players.end())
     return std::ref(it->second);
   return std::nullopt;
 }
 
-void CGmpServ::SomeoneJoinGame(Packet p) {
+void GameServer::SomeoneJoinGame(Packet p) {
   auto player_opt = GetPlayerById(p.id.guid);
   if (!player_opt) {
     SPDLOG_WARN("Someone tried to join game, but he is not on the player list, ID {}!", p.id.guid);
@@ -449,7 +450,7 @@ void CGmpServ::SomeoneJoinGame(Packet p) {
   EventManager::Instance().TriggerEvent(kEventOnPlayerConnectName, p.id.guid);
 }
 
-void CGmpServ::HandlePlayerUpdate(Packet p) {
+void GameServer::HandlePlayerUpdate(Packet p) {
   double rp, x1, y1;  //<- zmienne do sprawdzenia czy dana osoba mieści się w kole o r=5000.0f
 
   auto player_opt = GetPlayerById(p.id.guid);
@@ -558,7 +559,7 @@ void CGmpServ::HandlePlayerUpdate(Packet p) {
   }
 }
 
-void CGmpServ::MakeHPDiff(Packet p) {
+void GameServer::MakeHPDiff(Packet p) {
   uint64_t player_id;
   short diffed_hp;
 
@@ -647,7 +648,7 @@ void CGmpServ::MakeHPDiff(Packet p) {
   }
 }
 
-void CGmpServ::HandleVoice(Packet p) {
+void GameServer::HandleVoice(Packet p) {
   // TODO: no need to resend player id right now, it won't be needed until we add 3d chat
   std::string data;
   data.reserve(p.length);
@@ -659,7 +660,7 @@ void CGmpServ::HandleVoice(Packet p) {
   }
 }
 
-void CGmpServ::HandleNormalMsg(Packet p) {
+void GameServer::HandleNormalMsg(Packet p) {
   std::string szMsg;
 
   auto player_opt = GetPlayerById(p.id.guid);
@@ -684,7 +685,7 @@ void CGmpServ::HandleNormalMsg(Packet p) {
   SPDLOG_INFO("{}:{}", player_opt->get().name, (const char*)(p.data + 1));
 }
 
-void CGmpServ::HandleWhisp(Packet p) {
+void GameServer::HandleWhisp(Packet p) {
   auto player_opt = GetPlayerById(p.id.guid);
   if (!player_opt.has_value() || !player_opt.value().get().is_ingame)
     return;
@@ -712,7 +713,7 @@ void CGmpServ::HandleWhisp(Packet p) {
               (const char*)(p.data + 1 + sizeof(uint64_t)));
 }
 
-void CGmpServ::HandleCastSpell(Packet p, bool target) {
+void GameServer::HandleCastSpell(Packet p, bool target) {
   auto player_opt = GetPlayerById(p.id.guid);
   if (!player_opt.has_value() || !player_opt.value().get().is_ingame)
     return;
@@ -745,7 +746,7 @@ void CGmpServ::HandleCastSpell(Packet p, bool target) {
   }
 }
 
-void CGmpServ::HandleDropItem(Packet p) {
+void GameServer::HandleDropItem(Packet p) {
   auto player_opt = GetPlayerById(p.id.guid);
   if (!player_opt.has_value() || !player_opt.value().get().is_ingame)
     return;
@@ -769,7 +770,7 @@ void CGmpServ::HandleDropItem(Packet p) {
   SPDLOG_INFO("{} DROPPED ITEM. AMOUNT: {}", player_opt->get().name, amount);
 }
 
-void CGmpServ::HandleTakeItem(Packet p) {
+void GameServer::HandleTakeItem(Packet p) {
   if (!config_.Get<bool>("allow_dropitems"))
     return;
 
@@ -792,7 +793,7 @@ void CGmpServ::HandleTakeItem(Packet p) {
   SPDLOG_INFO("{} TOOK ITEM.", player_opt->get().name);
 }
 
-void CGmpServ::HandleRMConsole(Packet p) {
+void GameServer::HandleRMConsole(Packet p) {
   // Intentionally left blank. This can be implemented in the scripts.
 }
 
@@ -803,12 +804,12 @@ void MakeHTTPReq(char* file) {
   cli.Get(file);
 }
 
-void CGmpServ::AddToPublicListHTTP() {
+void GameServer::AddToPublicListHTTP() {
   using namespace std::chrono_literals;
 
   char* szBuff = new char[256];
   memset(szBuff, 0, 256);
-  while (g_server) {
+  while (g_is_server_running) {
     if (g_server->IsPublic()) {
       auto server_name = g_server->config_.Get<std::string>("name");
       for (size_t i = 0; i <= strlen(server_name.c_str()); i++)
@@ -825,12 +826,12 @@ void CGmpServ::AddToPublicListHTTP() {
   delete[] szBuff;
 }
 
-void CGmpServ::HandleGameInfo(Packet p) {
+void GameServer::HandleGameInfo(Packet p) {
   SendGameInfo(p.id);
 }
 
-// void CGmpServ::HandleGameInfo(Packet p){
-void CGmpServ::SendGameInfo(Net::PlayerId who) {
+// void GameServer::HandleGameInfo(Packet p){
+void GameServer::SendGameInfo(Net::PlayerId who) {
   std::string szData;
   int len = 7;
   szData.reserve(64);
@@ -856,7 +857,7 @@ void CGmpServ::SendGameInfo(Net::PlayerId who) {
   szData.clear();
 }
 
-void CGmpServ::HandleMapNameReq(Packet p) {
+void GameServer::HandleMapNameReq(Packet p) {
   std::string szData;
   szData.reserve(256);
   *((unsigned char*)szData.data()) = PT_MAP_NAME;
@@ -866,7 +867,7 @@ void CGmpServ::HandleMapNameReq(Packet p) {
                      p.id);
   szData.clear();
 }
-void CGmpServ::SendDisconnectionInfo(uint64_t disconnected_id) {
+void GameServer::SendDisconnectionInfo(uint64_t disconnected_id) {
   std::string szData;
   szData.reserve(32);
   *((unsigned char*)szData.data()) = PT_LEFT_GAME;
@@ -880,11 +881,11 @@ void CGmpServ::SendDisconnectionInfo(uint64_t disconnected_id) {
   szData.clear();
 }
 
-bool CGmpServ::IsPublic() {
+bool GameServer::IsPublic() {
   return (config_.Get<bool>("public")) ? true : false;
 }
 
-void CGmpServ::DoRespawns() {
+void GameServer::DoRespawns() {
   auto respawn_time = config_.Get<std::int32_t>("respawn_time_seconds");
   if (respawn_time > 0) {
     if (respawn_time & 0x80000000) {
@@ -967,7 +968,7 @@ void CGmpServ::DoRespawns() {
   }
 }
 
-void CGmpServ::SendSpamMessage() {
+void GameServer::SendSpamMessage() {
   auto loop_time = config_.Get<std::int32_t>("message_of_the_day_interval_seconds");
   if (loop_time > 0) {
     if (spam_time < time(NULL)) {
@@ -988,7 +989,7 @@ void CGmpServ::SendSpamMessage() {
   }
 }
 
-void CGmpServ::SendDeathInfo(uint64_t deadman) {
+void GameServer::SendDeathInfo(uint64_t deadman) {
   unsigned char buffer[9];
   buffer[0] = PT_DODIE;
   memcpy(buffer + 1, &deadman, 8);
@@ -998,7 +999,7 @@ void CGmpServ::SendDeathInfo(uint64_t deadman) {
   }
 }
 
-void CGmpServ::SendRespawnInfo(uint64_t luckyguy) {
+void GameServer::SendRespawnInfo(uint64_t luckyguy) {
   unsigned char buffer[9];
   buffer[0] = PT_RESPAWN;
   memcpy(buffer + 1, &luckyguy, 8);
@@ -1008,7 +1009,7 @@ void CGmpServ::SendRespawnInfo(uint64_t luckyguy) {
   }
 }
 
-CGmpServ::sPlayer* CGmpServ::FindPlayer(const char* nickname) {
+GameServer::sPlayer* GameServer::FindPlayer(const char* nickname) {
   sPlayer* ret = NULL;
   for (size_t i = 0; i < players.size(); i++) {
     if (players[i].is_ingame) {
@@ -1021,7 +1022,7 @@ CGmpServ::sPlayer* CGmpServ::FindPlayer(const char* nickname) {
   return ret;
 }
 
-void CGmpServ::RegenerationHPMP() {  // hp is server side
+void GameServer::RegenerationHPMP() {  // hp is server side
   auto hp_regeneration = (short)config_.Get<std::int32_t>("hp_regeneration");
   if (!(hp_regeneration))
     return;

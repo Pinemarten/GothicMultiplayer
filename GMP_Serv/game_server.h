@@ -48,6 +48,7 @@ SOFTWARE.
 
 class CLog;
 class GothicClock;
+class HTTPServer;
 
 enum CONFIG_FLAGS {
   QUICK_POTS = 0x01,
@@ -63,7 +64,7 @@ struct Packet {
   Net::PlayerId id;
 };
 
-class CGmpServ : public Net::PacketHandler {
+class GameServer : public Net::PacketHandler {
 public:
   enum PL_FLAGS {
     PL_UNCONCIOUS = 0x01,  // 00000001
@@ -85,9 +86,9 @@ public:
   };
 
 public:
-  CGmpServ(int argc, char** argv);
+  GameServer();
+  ~GameServer();
 
-  ~CGmpServ();
   void AddToPublicListHTTP();
   bool Receive();
   bool HandlePacket(Net::PlayerId playerId, unsigned char* data, std::uint32_t size);
@@ -131,8 +132,6 @@ private:
 
   unsigned char GetPacketIdentifier(const Packet& p);
   int serverPort;
-  int arg_count;
-  char** arg_vec;
   unsigned short maxConnections;
   time_t spam_time;
   std::unordered_map<std::uint64_t, sPlayer> players;
@@ -141,7 +140,8 @@ private:
   Config config_;
   std::unique_ptr<GothicClock> clock_;
   std::future<void> http_thread_future_;
+  std::unique_ptr<HTTPServer> http_server_;
   std::future<void> public_list_http_thread_future_;
 };
 
-inline CGmpServ* g_server = nullptr;
+inline GameServer* g_server = nullptr;

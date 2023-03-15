@@ -24,9 +24,8 @@ set(SERVER_SOURCES
     CClasses.cpp
     config.cpp
     gothic_clock.cpp
-    CGmpServ.cpp
+    game_server.cpp
     CPermissions.cpp
-    main.cpp
     platform_depend.cpp
     HTTPServer.cpp
     Script.cpp
@@ -34,21 +33,25 @@ set(SERVER_SOURCES
     Lua/event_bind.cpp
     Lua/function_bind.cpp)
 
-add_executable(GMP_Serv ${SERVER_SOURCES})
+add_library(ServerLib STATIC ${SERVER_SOURCES})
 target_link_libraries(
-  GMP_Serv
+  ServerLib
   PRIVATE SharedLib
           spdlog::spdlog
           fmt::fmt
           httplib
           pugixml
-          zNetServerInterface
           dylib
           ${LUA_LIBRARIES}
           sol2
-          chillout)
-target_include_directories(GMP_Serv PRIVATE ${CPP_HTTPLIB_INCLUDE_DIRS}
-                                            ${LUA_INCLUDE_DIR} sol2)
+  PUBLIC common zNetServerInterface)
+target_include_directories(
+  ServerLib
+  PRIVATE ${CPP_HTTPLIB_INCLUDE_DIRS} ${LUA_INCLUDE_DIR} sol2
+  PUBLIC .)
+
+add_executable(gmp_server main.cpp)
+target_link_libraries(gmp_server PRIVATE ServerLib chillout spdlog::spdlog)
 
 add_subdirectory(znet)
 add_subdirectory(znet_rak)

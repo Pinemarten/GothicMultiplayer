@@ -11,8 +11,6 @@ else()
   set(SOURCES ${SOURCES} posix/posixcrashhandler.h posix/posixcrashhandler.cpp)
 endif()
 
-message("Debug flags are: ${CMAKE_CXX_FLAGS_DEBUG}")
-
 add_library(chillout SHARED STATIC ${SOURCES})
 target_include_directories(chillout PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 

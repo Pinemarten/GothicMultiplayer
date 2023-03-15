@@ -59,7 +59,7 @@ private:
   unsigned char num_of_classes;
 
 public:
-  SClass *class_array;
+  SClass *class_array = nullptr;
   CClassManager(void);
   ~CClassManager(void);
 };
