@@ -46,7 +46,7 @@ SOFTWARE.
 
 Net::NetServer* g_net_server = nullptr;
 
-const char* lobbyAddress = "lobby.your-site.com";
+const char* lobbyAddress = "http://lobby.your-site.com";
 const char* lobbyFile = "add.php";
 
 extern const char* SAY;
@@ -159,9 +159,11 @@ bool GameServer::Init() {
   g_is_server_running = true;
 
   clock_ = std::make_unique<GothicClock>(config_.Get<GothicClock::Time>("game_time"));
-  public_list_http_thread_future_ = std::async(&GameServer::AddToPublicListHTTP, this);
+  if (IsPublic()) {
+    public_list_http_thread_future_ = std::async(&GameServer::AddToPublicListHTTP, this);
+  }
   http_server_ = std::make_unique<HTTPServer>();
-  http_thread_future_ = std::async(&GameServer::HTTPServerThread, this, port + 1);
+  http_server_->Start(port);
   this->last_stand_timer = 0;
 
   SPDLOG_INFO("");
@@ -169,10 +171,6 @@ bool GameServer::Init() {
   SPDLOG_INFO("|-----------------------------------|");
   SPDLOG_INFO("GMP Classic Server initialized successfully!");
   return true;
-}
-
-void GameServer::HTTPServerThread(std::int32_t port) {
-  http_server_->Start(port);
 }
 
 void GameServer::Run() {
@@ -798,9 +796,7 @@ void GameServer::HandleRMConsole(Packet p) {
 }
 
 void MakeHTTPReq(char* file) {
-  char listAddr[512] = {};
-  sprintf(listAddr, "http://%s", lobbyAddress);
-  httplib::Client cli(listAddr);
+  httplib::Client cli(lobbyAddress);
   cli.Get(file);
 }
 
@@ -808,20 +804,25 @@ void GameServer::AddToPublicListHTTP() {
   using namespace std::chrono_literals;
 
   char* szBuff = new char[256];
-  memset(szBuff, 0, 256);
+  auto last_update = std::chrono::system_clock::now();
   while (g_is_server_running) {
     if (g_server->IsPublic()) {
-      auto server_name = g_server->config_.Get<std::string>("name");
-      for (size_t i = 0; i <= strlen(server_name.c_str()); i++)
-        if ((*((unsigned char*)server_name.c_str() + i) < 0x20) && (*((unsigned char*)server_name.c_str() + i) != 0x07))
-          *((unsigned char*)server_name.data() + i) = 0;
-      memset(szBuff, 0, 256);
-      sprintf(szBuff, "%s?sn=%s&port=%d&crt=%u&mx=%d&map=%s", lobbyFile, server_name.c_str(),
-              g_server->config_.Get<std::int32_t>("port"), static_cast<unsigned int>(g_server->players.size()),
-              g_server->config_.Get<std::int32_t>("slots"), g_server->config_.Get<std::string>("map").c_str());
-      MakeHTTPReq(szBuff);
+      if (std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now() - last_update).count() >=
+          5) {
+        last_update = std::chrono::system_clock::now();
+        auto server_name = g_server->config_.Get<std::string>("name");
+        for (size_t i = 0; i <= strlen(server_name.c_str()); i++)
+          if ((*((unsigned char*)server_name.c_str() + i) < 0x20) &&
+              (*((unsigned char*)server_name.c_str() + i) != 0x07))
+            *((unsigned char*)server_name.data() + i) = 0;
+        memset(szBuff, 0, 256);
+        sprintf(szBuff, "%s?sn=%s&port=%d&crt=%u&mx=%d&map=%s", lobbyFile, server_name.c_str(),
+                g_server->config_.Get<std::int32_t>("port"), static_cast<unsigned int>(g_server->players.size()),
+                g_server->config_.Get<std::int32_t>("slots"), g_server->config_.Get<std::string>("map").c_str());
+        MakeHTTPReq(szBuff);
+      }
     }
-    std::this_thread::sleep_for(5s);
+    std::this_thread::sleep_for(100ms);
   }
   delete[] szBuff;
 }

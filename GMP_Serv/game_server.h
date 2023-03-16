@@ -95,7 +95,6 @@ public:
   std::optional<std::reference_wrapper<sPlayer>> GetPlayerById(std::uint64_t id);
 
 private:
-  void HTTPServerThread(std::int32_t port);
   void DeleteFromPlayerList(Net::PlayerId guid);
   sPlayer* FindPlayer(const char* nickname);
   void LoadBanList(void);
@@ -131,7 +130,6 @@ private:
   std::string loop_msg;
   Config config_;
   std::unique_ptr<GothicClock> clock_;
-  std::future<void> http_thread_future_;
   std::unique_ptr<HTTPServer> http_server_;
   std::future<void> public_list_http_thread_future_;
 };
