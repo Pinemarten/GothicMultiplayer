@@ -35,7 +35,6 @@ SOFTWARE.
 #include <stack>
 #include <string>
 
-#include "CPermissions.h"
 #include "HTTPServer.h"
 #include "event.h"
 #include "git.h"
@@ -60,8 +59,7 @@ extern const char* MUTE;
 extern const char* SET_TIME;
 extern const char* KILL;
 extern const char* LOOP_MSG;
-extern const char* HP_REGEN;
-extern const char* MP_REGEN;
+
 // admin only
 const char* MOD_ADD = "modadd ";
 const char* MOD_SET = "modset ";  // ustawia hasło dla określonego moderatora
@@ -144,8 +142,6 @@ bool GameServer::Init() {
     System::MakeMeDaemon(false);
   }
 #endif
-  CPermissions* perms = new CPermissions();
-  perms = NULL;
   this->spam_time = time(NULL) + 10;
   character_definition_manager_ = std::make_unique<CharacterDefinitionManager>();
 
@@ -198,7 +194,6 @@ bool GameServer::HandlePacket(Net::PlayerId playerId, unsigned char* data, std::
     {
       sPlayer pl;
       pl.has_admin = 0;
-      pl.moderator = NULL;
       pl.moderator_passwd = 0;
       pl.admin_passwd = 0;
       pl.is_ingame = 0;
@@ -852,14 +847,7 @@ void GameServer::SendGameInfo(Net::PlayerId who) {
     *((unsigned char*)szData.data() + 6) |= DROP_ITEMS;
   if (config_.Get<bool>("hide_map"))
     *((unsigned char*)szData.data() + 6) |= HIDE_MAP;
-  auto mp_regeneration = (short)config_.Get<std::int32_t>("mp_regeneration");
-  if (mp_regeneration > 0) {
-    *((unsigned char*)szData.data() + 6) |= MANA_REGENERATION;
-    memcpy((char*)szData.data() + len, &mp_regeneration, 2);
-    len += 2;
-  }
   g_net_server->Send((unsigned char*)szData.data(), len, MEDIUM_PRIORITY, RELIABLE, 9, who);
-  szData.clear();
 }
 
 void GameServer::HandleMapNameReq(Packet p) {

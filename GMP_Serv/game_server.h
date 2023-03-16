@@ -37,7 +37,6 @@ SOFTWARE.
 #include <unordered_map>
 #include <vector>
 
-#include "CPermissions.h"
 #include "Script.h"
 #include "character_definition.h"
 #include "config.h"
@@ -50,12 +49,7 @@ class CLog;
 class GothicClock;
 class HTTPServer;
 
-enum CONFIG_FLAGS {
-  QUICK_POTS = 0x01,
-  DROP_ITEMS = 0x02,
-  HIDE_MAP = 0x04,
-  MANA_REGENERATION = 0x08,
-};
+enum CONFIG_FLAGS { QUICK_POTS = 0x01, DROP_ITEMS = 0x02, HIDE_MAP = 0x04 };
 
 struct Packet {
   // Not owning.
@@ -76,7 +70,6 @@ public:
     std::string name;
     unsigned char char_class, flags, head, skin, body, walkstyle, figth_pos, spellhand, headstate, has_admin,
         admin_passwd, moderator_passwd, is_ingame, passed_crc_test, mute;
-    SModerator* moderator;
     short health, mana;
     float pos[3];
     float nrot[3];

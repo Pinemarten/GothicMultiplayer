@@ -25,7 +25,6 @@ set(SERVER_SOURCES
     config.cpp
     gothic_clock.cpp
     game_server.cpp
-    CPermissions.cpp
     platform_depend.cpp
     HTTPServer.cpp
     Script.cpp
