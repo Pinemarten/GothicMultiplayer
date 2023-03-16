@@ -91,7 +91,6 @@ public:
   bool IsPublic(void);
   void DoRespawns(void);
   void SendSpamMessage(void);
-  void RegenerationHPMP(void);
 
   std::optional<std::reference_wrapper<sPlayer>> GetPlayerById(std::uint64_t id);
 

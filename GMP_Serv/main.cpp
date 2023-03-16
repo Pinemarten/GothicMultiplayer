@@ -64,7 +64,6 @@ int main(int argc, char **argv) {
     serv.Run();
     serv.DoRespawns();
     serv.SendSpamMessage();
-    serv.RegenerationHPMP();
     std::this_thread::sleep_for(1ms);
   }
   return 0;

@@ -1017,25 +1017,3 @@ GameServer::sPlayer* GameServer::FindPlayer(const char* nickname) {
   }
   return ret;
 }
-
-void GameServer::RegenerationHPMP() {  // hp is server side
-  auto hp_regeneration = (short)config_.Get<std::int32_t>("hp_regeneration");
-  if (!(hp_regeneration))
-    return;
-  if (regen_time == time(NULL))
-    return;
-  regen_time = time(NULL);
-  for (size_t i = 0; i < this->players.size(); i++) {
-    if ((players[i].is_ingame) && (players[i].health > 0)) {
-      players[i].health += hp_regeneration;
-      if (players[i].health >
-          character_definition_manager_->GetCharacterDefinition(players[i].char_class).abilities[HP]) {
-        players[i].health = character_definition_manager_->GetCharacterDefinition(players[i].char_class).abilities[HP];
-      }
-      if (players[i].health <= 0) {
-        players[i].tod = time(NULL);
-        SendDeathInfo(players[i].id.guid);
-      }
-    }
-  }
-}
