@@ -37,9 +37,9 @@ SOFTWARE.
 #include <unordered_map>
 #include <vector>
 
-#include "CClasses.h"
 #include "CPermissions.h"
 #include "Script.h"
+#include "character_definition.h"
 #include "config.h"
 #include "znet_server.h"
 
@@ -125,7 +125,7 @@ private:
   void SendGameInfo(Net::PlayerId guid);
 
   std::vector<std::string> ban_list;
-  CClassManager* classmgr;
+  std::unique_ptr<CharacterDefinitionManager> character_definition_manager_;
   Script* script;
   time_t last_stand_timer;
   time_t regen_time;

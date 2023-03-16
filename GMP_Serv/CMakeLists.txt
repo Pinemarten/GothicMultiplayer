@@ -21,7 +21,7 @@
 # SOFTWARE.
 
 set(SERVER_SOURCES
-    CClasses.cpp
+    character_definition.cpp
     config.cpp
     gothic_clock.cpp
     game_server.cpp

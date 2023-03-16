@@ -23,8 +23,11 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#ifndef CCLASSES_HPP_INCLUDED
-#define CCLASSES_HPP_INCLUDED
+#pragma once
+
+#include <cstdint>
+#include <string>
+#include <unordered_map>
 
 #define STR 0
 #define DEX 1
@@ -40,28 +43,26 @@ SOFTWARE.
 #define ACROBATICS 11
 #define PICKPOCKET 12
 
-#include <vector>
-
-struct SClass {
-public:
-  unsigned char class_id;
-  char *name;
-  char *description;
-  char *team_name;
-  char *armor;
-  char *prim_wep;
-  char *sec_wep;
+struct CharacterDefinition {
+  std::uint32_t id;
+  std::string name;
+  std::string description;
+  std::string team_name;
+  std::string armor;
+  std::string prim_wep;
+  std::string sec_wep;
   short abilities[13];
 };
 
-class CClassManager {
-private:
-  unsigned char num_of_classes;
-
+class CharacterDefinitionManager {
 public:
-  SClass *class_array = nullptr;
-  CClassManager(void);
-  ~CClassManager(void);
-};
+  CharacterDefinitionManager();
 
-#endif  // CCLASSES_HPP_INCLUDED
+  const CharacterDefinition& GetCharacterDefinition(std::uint32_t id) const {
+    return character_definitions_.at(id);
+  }
+  
+private:
+  std::uint32_t id_counter_ = 0;
+  std::unordered_map<std::uint32_t, CharacterDefinition> character_definitions_;
+};

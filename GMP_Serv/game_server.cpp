@@ -128,7 +128,6 @@ GameServer::~GameServer() {
   g_is_server_running = false;
   delete script;
   g_net_server->RemovePacketHandler(*this);
-  delete classmgr;
   // server->Shutdown(300);
   g_server = nullptr;
 }
@@ -144,7 +143,7 @@ bool GameServer::Init() {
   CPermissions* perms = new CPermissions();
   perms = NULL;
   this->spam_time = time(NULL) + 10;
-  this->classmgr = new CClassManager;
+  character_definition_manager_ = std::make_unique<CharacterDefinitionManager>();
 
   auto slots = config_.Get<std::int32_t>("slots");
   allow_modification = config_.Get<bool>("allow_modification");
@@ -370,7 +369,7 @@ void GameServer::SomeoneJoinGame(Packet p) {
   }
   player.tod = 0;
   player.char_class = p.data[1];
-  player.health = classmgr->class_array[p.data[1]].abilities[HP];
+  player.health = character_definition_manager_->GetCharacterDefinition(p.data[1]).abilities[HP];
   memcpy(player.pos, p.data + 2, 12);
   memcpy(player.nrot, p.data + 14, 12);
   memcpy(&player.left_hand, p.data + 26, 2);
@@ -588,8 +587,9 @@ void GameServer::MakeHPDiff(Packet p) {
         victim.tod = time(NULL);
         SendDeathInfo(victim.id.guid);
       }
-      if (victim.health > classmgr->class_array[victim.char_class].abilities[HP])
-        victim.health = classmgr->class_array[victim.char_class].abilities[HP];
+      if (victim.health > character_definition_manager_->GetCharacterDefinition(victim.char_class).abilities[HP]) {
+        victim.health = character_definition_manager_->GetCharacterDefinition(victim.char_class).abilities[HP];
+      }
     } else {
       if (config_.Get<bool>("be_unconcious_before_dead")) {
         switch (attacker.figth_pos) {
@@ -637,8 +637,9 @@ void GameServer::MakeHPDiff(Packet p) {
           victim.tod = time(NULL);
           SendDeathInfo(victim.id.guid);
         }
-        if (victim.health > classmgr->class_array[victim.char_class].abilities[HP])
-          victim.health = classmgr->class_array[victim.char_class].abilities[HP];
+        if (victim.health > character_definition_manager_->GetCharacterDefinition(victim.char_class).abilities[HP]) {
+          victim.health = character_definition_manager_->GetCharacterDefinition(victim.char_class).abilities[HP];
+        }
       }
     }
     if ((victim.health <= 0) && (!victim.tod)) {
@@ -893,7 +894,7 @@ void GameServer::DoRespawns() {
       switch (config_.Get<std::int32_t>("game_mode")) {
         case 1:  // TDM
           if ((!last_stand_timer) && (players.size())) {
-            const char* living_team = NULL;
+            std::string living_team;
             size_t living_players = 0, total_ingame = 0;
             for (size_t i = 0; i < players.size(); i++) {
               if (players[i].is_ingame)
@@ -902,11 +903,11 @@ void GameServer::DoRespawns() {
             for (size_t i = 0; i < players.size(); i++) {
               if ((players[i].is_ingame) && (!players[i].tod)) {
                 living_players++;
-                if (!living_team)
-                  living_team = classmgr->class_array[players[i].char_class].team_name;
-                else {
-                  if (memcmp(living_team, classmgr->class_array[players[i].char_class].team_name,
-                             strlen(living_team) + 1))
+                if (living_team.empty()) {
+                  living_team = character_definition_manager_->GetCharacterDefinition(players[i].char_class).team_name;
+                } else {
+                  if (living_team !=
+                      character_definition_manager_->GetCharacterDefinition(players[i].char_class).team_name)
                     return;
                 }
               }
@@ -919,7 +920,8 @@ void GameServer::DoRespawns() {
               for (size_t i = 0; i < players.size(); i++) {
                 if ((players[i].is_ingame) && (players[i].tod)) {
                   players[i].tod = 0;
-                  players[i].health = classmgr->class_array[players[i].char_class].abilities[HP];
+                  players[i].health =
+                      character_definition_manager_->GetCharacterDefinition(players[i].char_class).abilities[HP];
                   SendRespawnInfo(players[i].id.guid);
                 }
               }
@@ -944,7 +946,8 @@ void GameServer::DoRespawns() {
               if ((players[i].is_ingame) && (players[i].tod)) {
                 players[i].flags = 0;
                 players[i].tod = 0;
-                players[i].health = classmgr->class_array[players[i].char_class].abilities[HP];
+                players[i].health =
+                    character_definition_manager_->GetCharacterDefinition(players[i].char_class).abilities[HP];
                 SendRespawnInfo(players[i].id.guid);
               }
             }
@@ -959,7 +962,8 @@ void GameServer::DoRespawns() {
           if (players[i].tod + respawn_time < time(NULL)) {
             players[i].flags = 0;
             players[i].tod = 0;
-            players[i].health = classmgr->class_array[players[i].char_class].abilities[HP];
+            players[i].health =
+                character_definition_manager_->GetCharacterDefinition(players[i].char_class).abilities[HP];
             SendRespawnInfo(players[i].id.guid);
           }
         }
@@ -1032,8 +1036,10 @@ void GameServer::RegenerationHPMP() {  // hp is server side
   for (size_t i = 0; i < this->players.size(); i++) {
     if ((players[i].is_ingame) && (players[i].health > 0)) {
       players[i].health += hp_regeneration;
-      if (players[i].health > classmgr->class_array[players[i].char_class].abilities[HP])
-        players[i].health = classmgr->class_array[players[i].char_class].abilities[HP];
+      if (players[i].health >
+          character_definition_manager_->GetCharacterDefinition(players[i].char_class).abilities[HP]) {
+        players[i].health = character_definition_manager_->GetCharacterDefinition(players[i].char_class).abilities[HP];
+      }
       if (players[i].health <= 0) {
         players[i].tod = time(NULL);
         SendDeathInfo(players[i].id.guid);
