@@ -44,6 +44,7 @@ target_link_libraries(
           dylib
           ${LUA_LIBRARIES}
           sol2
+          cmake_git_version_tracking
   PUBLIC common zNetServerInterface)
 target_include_directories(
   ServerLib

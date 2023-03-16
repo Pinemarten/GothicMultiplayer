@@ -40,7 +40,6 @@ SOFTWARE.
 #include "patch.h"
 #include "mod.h"
 #include "CWatch.h"
-#include "version.h"
 #include "interface.h"
 #include <urlmon.h>
 #include "git.h"

@@ -29,7 +29,6 @@ SOFTWARE.
 namespace Patch
 {	
 	void NoStartupLogo();
-	void SetVersion(const char * ver);
 	void SetWndName(const char * name);
 	void InitNewSplash();
 	void DisableStartupScript();

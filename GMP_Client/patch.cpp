@@ -38,11 +38,6 @@ void Patch::NoStartupLogo()
 	
 }
 
-void Patch::SetVersion(const char * ver)
-{
-	memcpy((void*)0x89DA98, ver, 11);
-}
-
 void Patch::SetWndName(const char * name)
 {
 	*(DWORD *)(0x89D9AC) = (DWORD)name;
@@ -216,7 +211,7 @@ void Patch::DisableCheat(){
 	const static char *GUARDIAN_4="You just keep on trying till you run out of cake.\0";
 	const static char *GUARDIAN_5="and the science gets done and you make a neat gun.\0";
 	const static char *GUARDIAN_6="For the people who are still alive!\0";
-	memcpy((void*)0x8915B0, "Can't unleash force\0", 20);	//string wyœwietlany przy wpisaniu Marvina(musi byæ mniejszy lub równy 23)
+	memcpy((void*)0x8915B0, "Can't unleash force\0", 20);	//string wyï¿½wietlany przy wpisaniu Marvina(musi byï¿½ mniejszy lub rï¿½wny 23)
 	WriteMemory(0x434498, (PBYTE)"\0", 1);	//blokada testmode
 	EraseMemory(0x433247,0x90, 5);	//blokada "guardiana"
 	EraseMemory(0x433DB2,0x90, 10); //blokada "southpark"

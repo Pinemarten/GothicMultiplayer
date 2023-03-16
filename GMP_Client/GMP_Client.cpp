@@ -34,7 +34,6 @@ SOFTWARE.
 #include "common.h"
 #include "ocgame.hpp"
 #include "patch.h"
-#include "version.h"
 #include "Network.h"
 #include "zcoption.hpp"
 
@@ -113,7 +112,6 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
     CallPatch(0x004FE096, (DWORD)&HookwinResizeMainWindow, 0);
 
     Patch::SetWndName("Gothic Multiplayer");
-    Patch::SetVersion(GMP_VERSION);
     Patch::InitNewSplash();
     Patch::DisablePlayBink();
     Patch::DisableStartupScript();

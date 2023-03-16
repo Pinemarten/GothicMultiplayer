@@ -28,7 +28,6 @@ SOFTWARE.
 #include <httplib.h>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/spdlog.h>
-#include <version.h>
 
 #include <dylib.hpp>
 #include <fstream>
@@ -39,6 +38,7 @@ SOFTWARE.
 #include "CPermissions.h"
 #include "HTTPServer.h"
 #include "event.h"
+#include "git.h"
 #include "gothic_clock.h"
 #include "net_enums.h"
 #include "platform_depend.h"
@@ -111,8 +111,12 @@ void InitializeLogger(const Config& config) {
 GameServer::GameServer() {
   InitializeLogger(config_);
   SPDLOG_INFO("|-----------------------------------|");
-  SPDLOG_INFO("Gothic Multiplayer Classic {}", GMP_VERSION);
-  SPDLOG_INFO("Build date: {}", GMP_BUILD_DATE);
+  if (git_IsPopulated()) {
+    SPDLOG_INFO("Gothic Multiplayer Classic {}", git_Describe());
+    SPDLOG_INFO("Commit date: {}", git_CommitDate());
+  } else {
+    SPDLOG_INFO("Gothic Multiplayer Classic");
+  }
   SPDLOG_INFO("GMP Team (2011) | GMPC Team (2022)");
   SPDLOG_INFO("|-----------------------------------|");
   config_.LogConfigValues();
