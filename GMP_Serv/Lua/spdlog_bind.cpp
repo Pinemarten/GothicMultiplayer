@@ -3,7 +3,7 @@
 #include <fmt/args.h>
 #include <spdlog/spdlog.h>
 
-#include "event.h"
+#include "shared/event.h"
 
 namespace lua {
 namespace bindings {
