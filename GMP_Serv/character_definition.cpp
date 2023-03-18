@@ -26,12 +26,12 @@ SOFTWARE.
 #include "character_definition.h"
 
 #include <spdlog/spdlog.h>
-#include <string>
-#include <fstream>
 
 #include <filesystem>
+#include <fstream>
 #include <nlohmann/json.hpp>
 #include <pugixml.hpp>
+#include <string>
 
 namespace {
 std::string ToLower(std::string& str) {
@@ -40,11 +40,11 @@ std::string ToLower(std::string& str) {
 }
 }  // namespace
 
-void CharacterDefinitionManager::Load(const std::string& definition_file_path) {
+bool CharacterDefinitionManager::Load(const std::string& definition_file_path) {
   std::filesystem::path file_path(definition_file_path);
   if (!std::filesystem::exists(file_path)) {
     SPDLOG_WARN("File '{}' not found. No character definitions loaded.", definition_file_path);
-    return;
+    return false;
   }
   std::string extension = ToLower(file_path.extension().string());
 
@@ -54,7 +54,9 @@ void CharacterDefinitionManager::Load(const std::string& definition_file_path) {
     ParseJSON(definition_file_path);
   } else {
     SPDLOG_WARN("Unsupported file format '{}'. No character definitions loaded.", extension);
+    return false;
   }
+  return true;
 }
 
 void CharacterDefinitionManager::ParseXML(const std::string& path) {

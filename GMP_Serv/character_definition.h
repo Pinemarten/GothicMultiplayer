@@ -52,7 +52,7 @@ public:
   CharacterDefinitionManager& operator=(const CharacterDefinitionManager&) = delete;
   CharacterDefinitionManager& operator=(CharacterDefinitionManager&&) = delete;
 
-  void Load(const std::string& definition_file_path);
+  bool Load(const std::string& definition_file_path);
   const CharacterDefinition& GetCharacterDefinition(std::uint32_t id) const {
     return character_definitions_.at(id);
   }

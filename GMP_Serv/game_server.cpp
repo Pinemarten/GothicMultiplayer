@@ -36,12 +36,13 @@ SOFTWARE.
 #include <string>
 
 #include "HTTPServer.h"
-#include "event.h"
 #include "git.h"
 #include "gothic_clock.h"
 #include "net_enums.h"
 #include "platform_depend.h"
 #include "server_events.h"
+#include "shared/event.h"
+#include "shared/math.h"
 #include "znet_server.h"
 
 Net::NetServer* g_net_server = nullptr;
@@ -453,7 +454,7 @@ void GameServer::SomeoneJoinGame(Packet p) {
 }
 
 void GameServer::HandlePlayerUpdate(Packet p) {
-  double rp, x1, y1;  //<- zmienne do sprawdzenia czy dana osoba mieści się w kole o r=5000.0f
+  constexpr double kRadiusSquared = 5000.0 * 5000.0;
 
   auto player_opt = GetPlayerById(p.id.guid);
   if (!player_opt.has_value()) {
@@ -482,10 +483,7 @@ void GameServer::HandlePlayerUpdate(Packet p) {
   for (const auto& [id, existing_player] : players) {
     if (existing_player.is_ingame) {
       if (p.id != existing_player.id) {
-        x1 = static_cast<double>(updated_player.pos[0] - existing_player.pos[0]);
-        y1 = static_cast<double>(updated_player.pos[1] - existing_player.pos[1]);
-        rp = x1 * x1 + y1 * y1;
-        if (rp < 25000000.0) {  // ktoś czający się w pobliżu gracza
+        if (IsWithinRadius(updated_player.pos, existing_player.pos, kRadiusSquared)) {
           it[0]++;
           memcpy((char*)msg.data() + szIt[0], &existing_player.id.guid, sizeof(uint64_t));
           szIt[0] += sizeof(uint64_t);

@@ -1,4 +1,3 @@
-
 # MIT License
 
 # Copyright (c) 2022 Gothic Multiplayer Team (pampi, skejt23, mecio)
@@ -23,11 +22,8 @@
 
 find_package(toml11 CONFIG REQUIRED)
 
-set (SHARED_SOURCES
-  TomlWrapper.cpp
-  event.cpp
-)
+set(SHARED_SOURCES toml_wrapper.cpp event.cpp math.cpp)
 
 add_library(SharedLib STATIC ${SHARED_SOURCES})
-target_link_libraries(SharedLib PUBLIC ZLIB::ZLIB common toml11::toml11)
-target_include_directories(SharedLib PUBLIC .)
+target_link_libraries(SharedLib PUBLIC common toml11::toml11)
+target_include_directories(SharedLib PUBLIC include)

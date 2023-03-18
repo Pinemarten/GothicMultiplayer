@@ -2,7 +2,7 @@
 /*
 MIT License
 
-Copyright (c) 2022 Gothic Multiplayer Team (pampi, skejt23, mecio)
+Copyright (c) 2023 Gothic Multiplayer Team.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -23,23 +23,11 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include "TomlWrapper.h"
+#include "shared/math.h"
 
-#include <fstream>
-#include <stdexcept>
-
-TomlWrapper TomlWrapper::CreateFromFile(const std::string& filePath)
-{
-	TomlWrapper val;
-  val.data_ = toml::parse(filePath);
-	return val;
-}
-
-void TomlWrapper::Serialize(const std::string& filePath)
-{
-  if (!data_.is_uninitialized())
-  {
-    std::ofstream ofs(filePath, std::ios_base::out);
-    ofs << data_;
-  }
+bool IsWithinRadius(const float pos1[3], const float pos2[3], double radiusSquared) {
+  double x1 = static_cast<double>(pos1[0] - pos2[0]);
+  double y1 = static_cast<double>(pos1[1] - pos2[1]);
+  double rp = x1 * x1 + y1 * y1;
+  return rp < radiusSquared;
 }

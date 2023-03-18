@@ -29,8 +29,8 @@ SOFTWARE.
 #include <string>
 
 #include "../server_events.h"
-#include "event.h"
 #include "lua.h"
+#include "shared/event.h"
 
 namespace lua {
 namespace bindings {

@@ -2,7 +2,7 @@
 /*
 MIT License
 
-Copyright (c) 2023 Gothic Multiplayer Team (pampi, skejt23, mecio)
+Copyright (c) 2022 Gothic Multiplayer Team (pampi, skejt23, mecio)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -23,47 +23,20 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#pragma once
+#include "shared/toml_wrapper.h"
 
-#include "shared/event.h"
+#include <fstream>
+#include <stdexcept>
 
-#include <string>
-
-bool EventManager::RegisterEvent(const std::string& eventName) {
-  if (EventExists(eventName)) {
-    return false;
-  }
-
-  events_[eventName];
-  return true;
+TomlWrapper TomlWrapper::CreateFromFile(const std::string& filePath) {
+  TomlWrapper val;
+  val.data_ = toml::parse(filePath);
+  return val;
 }
 
-bool EventManager::UnregisterEvent(const std::string& eventName) {
-  if (!EventExists(eventName)) {
-    return false;
+void TomlWrapper::Serialize(const std::string& filePath) {
+  if (!data_.is_uninitialized()) {
+    std::ofstream ofs(filePath, std::ios_base::out);
+    ofs << data_;
   }
-
-  events_.erase(eventName);
-  return true;
-}
-
-bool EventManager::EventExists(const std::string& eventName) {
-  return events_.find(eventName) != events_.end();
-}
-
-bool EventManager::TriggerEvent(const std::string& eventName) {
-  if (!EventExists(eventName)) {
-    return false;
-  }
-
-  for (auto& callback : events_[eventName]) {
-    callback(std::nullopt);
-  }
-
-  return true;
-}
-
-EventManager& EventManager::Instance() {
-  static EventManager instance;
-  return instance;
 }

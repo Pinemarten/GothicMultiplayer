@@ -29,8 +29,8 @@ SOFTWARE.
 
 #include <chrono>
 
-#include "event.h"
 #include "server_events.h"
+#include "shared/event.h"
 
 namespace {
 constexpr std::chrono::seconds kClockUpdateInterval(4);

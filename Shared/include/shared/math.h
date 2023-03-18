@@ -2,7 +2,7 @@
 /*
 MIT License
 
-Copyright (c) 2023 Gothic Multiplayer Team (pampi, skejt23, mecio)
+Copyright (c) 2023 Gothic Multiplayer Team.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -25,45 +25,11 @@ SOFTWARE.
 
 #pragma once
 
-#include "shared/event.h"
-
-#include <string>
-
-bool EventManager::RegisterEvent(const std::string& eventName) {
-  if (EventExists(eventName)) {
-    return false;
-  }
-
-  events_[eventName];
-  return true;
-}
-
-bool EventManager::UnregisterEvent(const std::string& eventName) {
-  if (!EventExists(eventName)) {
-    return false;
-  }
-
-  events_.erase(eventName);
-  return true;
-}
-
-bool EventManager::EventExists(const std::string& eventName) {
-  return events_.find(eventName) != events_.end();
-}
-
-bool EventManager::TriggerEvent(const std::string& eventName) {
-  if (!EventExists(eventName)) {
-    return false;
-  }
-
-  for (auto& callback : events_[eventName]) {
-    callback(std::nullopt);
-  }
-
-  return true;
-}
-
-EventManager& EventManager::Instance() {
-  static EventManager instance;
-  return instance;
-}
+/**
+ * @brief Checks if two positions are within a given radius.
+ * @param pos1 The first position.
+ * @param pos2 The second position.
+ * @param radiusSquared The squared radius.
+ * @return True if the two positions are within the given radius, false otherwise.
+ */
+bool IsWithinRadius(const float pos1[3], const float pos2[3], double radiusSquared);
