@@ -144,6 +144,12 @@ bool GameServer::Init() {
 #endif
   this->spam_time = time(NULL) + 10;
   character_definition_manager_ = std::make_unique<CharacterDefinitionManager>();
+  auto character_definitions_file = config_.Get<std::string>("character_definitions_file");
+  if (!character_definitions_file.empty()) {
+    character_definition_manager_->Load(character_definitions_file);
+  } else {
+    SPDLOG_WARN("Character definitions file not specified. No character definitions will be loaded.");
+  }
 
   auto slots = config_.Get<std::int32_t>("slots");
   allow_modification = config_.Get<bool>("allow_modification");

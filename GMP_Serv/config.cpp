@@ -65,6 +65,7 @@ const std::unordered_map<std::string,
                               {"log_level", std::string("info")},
                               {"game_time", GothicClock::Time{1u, 8u, 0u}},  // 8:00
                               {"scripts", std::vector<std::string>{std::string("main.lua")}},
+                              {"character_definitions_file", std::string("")},
 #ifndef WIN32
                               {"daemon", true}
 #else

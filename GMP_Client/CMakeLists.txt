@@ -33,7 +33,6 @@ set(CLIENT_SOURCES
     CAnimMenu.cpp
     CChat.cpp
     CConfig.cpp
-    CFollowNpc.cpp
     CGmpClient.cpp
     CHeroClass.cpp
     CIngame.cpp

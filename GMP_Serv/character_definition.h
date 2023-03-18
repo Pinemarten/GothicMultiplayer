@@ -29,19 +29,7 @@ SOFTWARE.
 #include <string>
 #include <unordered_map>
 
-#define STR 0
-#define DEX 1
-#define MP 2
-#define HP 3
-#define WEP1H 4
-#define WEP2H 5
-#define BOW 6
-#define XBOW 7
-#define MLVL 8
-#define SNEAK 9
-#define LOCKPICKING 10
-#define ACROBATICS 11
-#define PICKPOCKET 12
+enum Attribute { STR = 0, DEX, MP, HP, WEP1H, WEP2H, BOW, XBOW, MLVL, SNEAK, LOCKPICKING, ACROBATICS, PICKPOCKET };
 
 struct CharacterDefinition {
   std::uint32_t id;
@@ -56,13 +44,23 @@ struct CharacterDefinition {
 
 class CharacterDefinitionManager {
 public:
-  CharacterDefinitionManager();
+  CharacterDefinitionManager() = default;
+  CharacterDefinitionManager(const CharacterDefinitionManager&) = delete;
+  CharacterDefinitionManager(CharacterDefinitionManager&&) = delete;
+  ~CharacterDefinitionManager() = default;
 
+  CharacterDefinitionManager& operator=(const CharacterDefinitionManager&) = delete;
+  CharacterDefinitionManager& operator=(CharacterDefinitionManager&&) = delete;
+
+  void Load(const std::string& definition_file_path);
   const CharacterDefinition& GetCharacterDefinition(std::uint32_t id) const {
     return character_definitions_.at(id);
   }
-  
+
 private:
   std::uint32_t id_counter_ = 0;
   std::unordered_map<std::uint32_t, CharacterDefinition> character_definitions_;
+
+  void ParseXML(const std::string& path);
+  void ParseJSON(const std::string& path);
 };

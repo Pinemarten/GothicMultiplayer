@@ -41,8 +41,6 @@ SOFTWARE.
 #include "VoicePlayback.h"
 #include "WorldBuilder\load.h"
 
-#define WARN(x) MessageBoxA(NULL, x, x, 0)
-
 enum FILE_REQ { CLASS_FILE = 1, SPAWN_FILE = 2, WB_FILE = 3, NULL_SIZE = 255 };
 
 struct MD5Sum {
@@ -61,6 +59,8 @@ class CGmpClient : public CSyncFuncs {
 public:
   CGmpClient(const char* ip, CLanguage* ptr);
   ~CGmpClient(void);
+
+
   void HandleNetwork(void);
   bool IsConnected(void);
   bool Connect(void);
@@ -108,7 +108,6 @@ public:
 private:
   int clientPort;
   std::string clientHost;
-  BYTE tmp8[2];
   time_t last_mp_regen;
 
   std::string GetServerAddresForHTTPDownloader();
