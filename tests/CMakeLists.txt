@@ -33,4 +33,4 @@ add_executable(ConnectionTest ${SOURCES})
 target_link_libraries(ConnectionTest PRIVATE ServerLib GTest::gtest
                                              GTest::gtest_main)
 
-add_test(NAME ConnectionTest COMMAND ConnectionTest)
+add_test(NAME ConnectionTest COMMAND ConnectionTest TIMEOUT 1)

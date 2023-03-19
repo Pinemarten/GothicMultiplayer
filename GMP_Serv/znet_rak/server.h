@@ -35,6 +35,8 @@ namespace Net {
 
 class RakNetServer : public NetServer {
 public:
+  ~RakNetServer() override;
+
   bool Start(std::uint32_t port, std::uint32_t slots) override;
 
   void Pulse() override;
@@ -65,7 +67,9 @@ private:
 extern "C" {
 #ifdef _MSC_VER
 __declspec(dllexport) Net::NetServer* CreateNetServer();
+__declspec(dllexport) void DestroyNetServer(Net::NetServer* net_server);
 #else
 [[gnu::visibility("default")]] Net::NetServer* CreateNetServer();
+[[gnu::visibility("default")]] void DestroyNetServer(Net::NetServer* net_server);
 #endif
 }

@@ -65,6 +65,13 @@ namespace {
 }
 }  // namespace
 
+RakNetServer::~RakNetServer() {
+  if (peer_ != nullptr) {
+    peer_->Shutdown(500);
+    RakNet::RakPeerInterface::DestroyInstance(peer_);
+  }
+}
+
 bool RakNetServer::Start(std::uint32_t port, std::uint32_t slots) {
   if (peer_ != nullptr) {
     return false;
@@ -138,4 +145,9 @@ void RakNetServer::AddToBanList(PlayerId id, std::uint32_t milliseconds) {
 
 Net::NetServer* CreateNetServer() {
   return new Net::RakNetServer;
+}
+
+void DestroyNetServer(Net::NetServer* net_server) {
+  delete net_server;
+  net_server = nullptr;
 }

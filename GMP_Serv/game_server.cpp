@@ -76,6 +76,7 @@ const char* INVALIDPARAMETER = "Invalid command parameter!";
 #define MAX_KILL_TXT 3
 const char* KILLED[MAX_KILL_TXT] = {"K.O.", "R.I.P.", "FATALITY"};
 std::atomic<bool> g_is_server_running = true;
+void (*g_destroy_net_server_func)(Net::NetServer*) = nullptr;
 
 using namespace Net;
 
@@ -85,6 +86,7 @@ void LoadNetworkLibrary() {
   try {
     static dylib lib("znet_server");
     auto create_net_server_func = lib.get_function<Net::NetServer*()>("CreateNetServer");
+    g_destroy_net_server_func = lib.get_function<void(Net::NetServer*)>("DestroyNetServer");
     g_net_server = create_net_server_func();
   } catch (std::exception& ex) {
     SPDLOG_ERROR("LoadNetworkLibrary error: {}", ex.what());
@@ -133,6 +135,7 @@ GameServer::~GameServer() {
   g_net_server->RemovePacketHandler(*this);
   // server->Shutdown(300);
   g_server = nullptr;
+  g_destroy_net_server_func(g_net_server);
 }
 
 bool GameServer::Init() {
