@@ -33,7 +33,7 @@ SOFTWARE.
 #include "net_enums.h"
 #include "znet_client.h"
 
-class CGmpClient;
+class GameClient;
 
 struct Packet {
   unsigned char* data = nullptr;
@@ -45,7 +45,7 @@ public:
   bool connection_lost_ = false;
   std::uint8_t error;
 
-  Network(CGmpClient*);
+  Network(GameClient*);
   ~Network() override;
 
   bool Connect(std::string hostAddress, int hostPort);
@@ -72,9 +72,9 @@ private:
   void AddPacketHandlers();
   bool HandlePacket(unsigned char* data, std::uint32_t size) override;
 
-  CGmpClient* client_;  // swaghetti
+  GameClient* client_;  // swaghetti
   uint64_t playerID;
-  std::map<int, std::function<void(CGmpClient*, Packet packet)> > packetHandlers;
+  std::map<int, std::function<void(GameClient*, Packet packet)> > packetHandlers;
   std::string serverIp_;
   std::uint32_t serverPort_{0};
 };

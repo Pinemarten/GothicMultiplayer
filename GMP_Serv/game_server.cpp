@@ -25,6 +25,8 @@ SOFTWARE.
 
 #include "game_server.h"
 
+#include <bitsery/ext/value_range.h>
+#include <bitsery/traits/vector.h>
 #include <httplib.h>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/spdlog.h>
@@ -32,6 +34,8 @@ SOFTWARE.
 #include <dylib.hpp>
 #include <fstream>
 #include <future>
+#include <gsl/gsl-lite.hpp>
+#include <iterator>
 #include <stack>
 #include <string>
 
@@ -39,6 +43,7 @@ SOFTWARE.
 #include "git.h"
 #include "gothic_clock.h"
 #include "net_enums.h"
+#include "packets.h"
 #include "platform_depend.h"
 #include "server_events.h"
 #include "shared/event.h"
@@ -82,6 +87,14 @@ using namespace Net;
 
 namespace {
 
+template <typename Packet, typename TContainer = std::vector<std::uint8_t>>
+void SerializeAndSend(const Packet& packet, Net::PacketPriority priority, Net::PacketReliability reliable, Net::PlayerId id,
+                      std::uint32_t channel = 0) {
+  TContainer buffer;
+  auto written_size = bitsery::quickSerialization<bitsery::OutputBufferAdapter<TContainer>>(buffer, packet);
+  g_net_server->Send(buffer.data(), written_size, priority, reliable, channel, id);
+}
+
 void LoadNetworkLibrary() {
   try {
     static dylib lib("znet_server");
@@ -100,8 +113,7 @@ void InitializeLogger(const Config& config) {
   }
 
   auto log_file = config.Get<std::string>("log_file");
-  spdlog::default_logger()->sinks().push_back(
-      std::make_shared<spdlog::sinks::basic_file_sink_mt>(std::move(log_file), false));
+  spdlog::default_logger()->sinks().push_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>(std::move(log_file), false));
 
   auto log_level = config.Get<std::string>("log_level");
   spdlog::set_level(spdlog::level::from_str(log_level));
@@ -180,23 +192,97 @@ bool GameServer::Init() {
   script = new Script(config_.Get<std::vector<std::string>>("scripts"));
   SPDLOG_INFO("|-----------------------------------|");
   SPDLOG_INFO("GMP Classic Server initialized successfully!");
+  last_update_time_ = std::chrono::steady_clock::now();
   return true;
 }
 
 void GameServer::Run() {
+  constexpr double kRadius = 5000.0;
+
   g_net_server->Pulse();
   clock_->RunClock();
+
+  // Send updates to all players.
+  auto now = std::chrono::steady_clock::now();
+  if (now - last_update_time_ > std::chrono::milliseconds(config_.Get<std::int32_t>("tick_rate_ms"))) {
+    last_update_time_ = now;
+
+    // Consists of two player IDs.
+    using PlayersKey = std::pair<uint64_t, uint64_t>;
+    struct PlayersKeyHash {
+      std::size_t operator()(const PlayersKey& key) const {
+        std::hash<uint64_t> hasher;
+        return hasher(key.first) ^ (hasher(key.second) << 1);
+      }
+    };
+
+    struct PlayersKeyEqual {
+      bool operator()(const PlayersKey& lhs, const PlayersKey& rhs) const {
+        return lhs.first == rhs.first && lhs.second == rhs.second;
+      }
+    };
+
+    std::unordered_map<PlayersKey, float, PlayersKeyHash, PlayersKeyEqual> distances;
+    for (const auto& [player_id_a, player_a] : players_) {
+      if (player_a.is_ingame) {
+        for (const auto& [player_id_b, player_b] : players_) {
+          if (player_b.is_ingame) {
+            // Make sure that ids in the key are always in the same order.
+            PlayersKey key{std::min(player_id_a, player_id_b), std::max(player_id_a, player_id_b)};
+            auto it = distances.find(key);
+            if (it == distances.end()) {
+              distances[key] = glm::distance(player_a.state.position, player_b.state.position);
+            }
+          }
+        }
+      }
+    }
+
+    for (const auto& [players, distance] : distances) {
+      const auto& player_a = players_[players.first];
+      const auto& player_b = players_[players.second];
+
+      if (distance < kRadius) {
+        PlayerStateUpdatePacket player_a_update_packet;
+        player_a_update_packet.packet_type = PT_ACTUAL_STATISTICS;
+        player_a_update_packet.player_id = player_a.id.guid;
+        player_a_update_packet.state = player_a.state;
+
+        PlayerStateUpdatePacket player_b_update_packet;
+        player_b_update_packet.packet_type = PT_ACTUAL_STATISTICS;
+        player_b_update_packet.player_id = player_b.id.guid;
+        player_b_update_packet.state = player_b.state;
+
+        SerializeAndSend(player_a_update_packet, IMMEDIATE_PRIORITY, UNRELIABLE, player_b.id);
+        SerializeAndSend(player_b_update_packet, IMMEDIATE_PRIORITY, UNRELIABLE, player_a.id);
+      } else {
+        PlayerPositionUpdatePacket player_a_update_packet;
+        player_a_update_packet.packet_type = PT_MAP_ONLY;
+        player_a_update_packet.player_id = player_a.id.guid;
+        player_a_update_packet.position = player_a.state.position;
+
+        PlayerPositionUpdatePacket player_b_update_packet;
+        player_b_update_packet.packet_type = PT_MAP_ONLY;
+        player_b_update_packet.player_id = player_b.id.guid;
+        player_b_update_packet.position = player_b.state.position;
+
+        SerializeAndSend(player_a_update_packet, IMMEDIATE_PRIORITY, UNRELIABLE, player_b.id);
+        SerializeAndSend(player_b_update_packet, IMMEDIATE_PRIORITY, UNRELIABLE, player_a.id);
+      }
+    }
+  }
 }
 
 bool GameServer::HandlePacket(Net::PlayerId playerId, unsigned char* data, std::uint32_t size) {
   Packet p{data, size, playerId};
 
   unsigned char packetIdentifier = GetPacketIdentifier(p);
+  SPDLOG_INFO("Packet identifier: {}", packetIdentifier);
   switch (packetIdentifier) {
     case ID_DISCONNECTION_NOTIFICATION:
       SendDisconnectionInfo(p.id.guid);
       DeleteFromPlayerList(p.id);
-      SPDLOG_INFO("{} disconnected. Still connected {} users.", g_net_server->GetPlayerIp(p.id), players.size());
+      SPDLOG_INFO("{} disconnected. Still connected {} users.", g_net_server->GetPlayerIp(p.id), players_.size());
       break;
     case ID_NEW_INCOMING_CONNECTION:  // nadchodzące połączenie zaakceptowane | można dodać guid gracza do listy graczy;
     {
@@ -208,10 +294,10 @@ bool GameServer::HandlePacket(Net::PlayerId playerId, unsigned char* data, std::
       pl.passed_crc_test = 0;
       pl.id = p.id;
       pl.mute = 0;
-      players[p.id.guid] = std::move(pl);
+      players_[p.id.guid] = std::move(pl);
     }
-      SPDLOG_INFO("ID_NEW_INCOMING_CONNECTION from {} with GUID {}. Now we have {} connected users.",
-                  g_net_server->GetPlayerIp(p.id), p.id.guid, players.size());
+      SPDLOG_INFO("ID_NEW_INCOMING_CONNECTION from {} with GUID {}. Now we have {} connected users.", g_net_server->GetPlayerIp(p.id), p.id.guid,
+                  players_.size());
       break;
     case ID_INCOMPATIBLE_PROTOCOL_VERSION:
       SPDLOG_WARN("ID_INCOMPATIBLE_PROTOCOL_VERSION");
@@ -219,8 +305,7 @@ bool GameServer::HandlePacket(Net::PlayerId playerId, unsigned char* data, std::
     case ID_CONNECTION_LOST:
       SendDisconnectionInfo(p.id.guid);
       DeleteFromPlayerList(p.id);
-      SPDLOG_WARN("Connection lost from {}. Still connected {} users.", g_net_server->GetPlayerIp(p.id),
-                  players.size());
+      SPDLOG_WARN("Connection lost from {}. Still connected {} users.", g_net_server->GetPlayerIp(p.id), players_.size());
       break;
     case PT_REQUEST_FILE_LENGTH:
     case PT_REQUEST_FILE_PART:
@@ -237,22 +322,6 @@ bool GameServer::HandlePacket(Net::PlayerId playerId, unsigned char* data, std::
       break;
     case PT_ACTUAL_STATISTICS:  // dostarcza nam informacji o sobie
       HandlePlayerUpdate(p);
-      break;
-    case PT_CHECKSUM:
-      if (!this->allow_modification) {
-        auto map_md5 = config_.Get<std::string>("map_md5");
-        if ((!memcmp(p.data + 2, map_md5.data(), 16)) && (!p.data[1])) {
-          auto player = GetPlayerById(p.id.guid);
-          if (player) {
-            player->get().passed_crc_test = 1;
-            unsigned char val[2] = {PT_CHECKSUM, 0xFF};
-            g_net_server->Send((const char*)val, 2, MEDIUM_PRIORITY, RELIABLE_ORDERED, 0, p.id);
-          }
-        } else {
-          players.erase(p.id.guid);
-          g_net_server->AddToBanList(p.id, 3600000);
-        }
-      }
       break;
     case PT_HP_DIFF:
       MakeHPDiff(p);
@@ -275,7 +344,7 @@ bool GameServer::HandlePacket(Net::PlayerId playerId, unsigned char* data, std::
     case PT_WHISPER:
       HandleWhisp(p);
       break;
-    case PT_RCON:
+    case PT_COMMAND:
       HandleRMConsole(p);
       break;
     case PT_GAME_INFO:  // na razie tylko czas
@@ -349,12 +418,12 @@ void GameServer::SaveBanList() {
 }
 
 void GameServer::DeleteFromPlayerList(Net::PlayerId id) {
-  players.erase(id.guid);
+  players_.erase(id.guid);
 }
 
 std::optional<std::reference_wrapper<GameServer::sPlayer>> GameServer::GetPlayerById(std::uint64_t id) {
-  auto it = players.find(id);
-  if (it != players.end())
+  auto it = players_.find(id);
+  if (it != players_.end())
     return std::ref(it->second);
   return std::nullopt;
 }
@@ -369,87 +438,72 @@ void GameServer::SomeoneJoinGame(Packet p) {
 
   if (!allow_modification) {
     if (!player.passed_crc_test) {
-      players.erase(p.id.guid);
+      players_.erase(p.id.guid);
       g_net_server->AddToBanList(p.id, 3600000);  // i dorzucamy banana na 1h
       return;
     }
   }
-  player.tod = 0;
-  player.char_class = p.data[1];
-  player.health = character_definition_manager_->GetCharacterDefinition(p.data[1]).abilities[HP];
-  memcpy(player.pos, p.data + 2, 12);
-  memcpy(player.nrot, p.data + 14, 12);
-  memcpy(&player.left_hand, p.data + 26, 2);
-  memcpy(&player.right_hand, p.data + 28, 2);
-  memcpy(&player.armor, p.data + 30, 2);
-  memcpy(&player.animation, p.data + 32, 2);
-  player.head = p.data[34];
-  player.skin = p.data[35];
-  player.body = p.data[36];
-  player.walkstyle = p.data[37];
-  player.name = (const char*)(p.data + 38);
 
-  unsigned char nick_packet[128];
-  memcpy(nick_packet + 1, player.name.c_str(), player.name.length() + 1);
-  nick_packet[0] = PT_YOUR_NAME;
-  g_net_server->Send(nick_packet, 2 + (int)player.name.length(), IMMEDIATE_PRIORITY, RELIABLE, 0, p.id);
-  std::string inform_packet;
-  inform_packet.reserve(1024);
-  char* szTmpPtr = (char*)inform_packet.c_str();
-  szTmpPtr[0] = p.data[0];
-  memcpy((char*)inform_packet.data() + (1 + sizeof(uint64_t)), p.data + 1, p.length - 1);
-  memcpy((char*)inform_packet.data() + 1, &p.id.guid, sizeof(uint64_t));
+  JoinGamePacket packet;
+  using InputAdapter = bitsery::InputBufferAdapter<unsigned char*>;
+  auto state = bitsery::quickDeserialization<InputAdapter>({p.data, p.length}, packet);
+  SPDLOG_TRACE("{} from {}", packet, p.id.guid);
+
+  player.tod = 0;
+  player.char_class = packet.selected_class;
+  player.health = character_definition_manager_->GetCharacterDefinition(packet.selected_class).abilities[HP];
+
+  player.state.position = packet.position;
+  player.state.nrot = packet.normal;
+  player.state.left_hand_item_instance = packet.left_hand_item_instance;
+  player.state.right_hand_item_instance = packet.right_hand_item_instance;
+  player.state.equipped_armor_instance = packet.equipped_armor_instance;
+  player.state.animation = packet.animation;
+  player.head = packet.head_model;
+  player.skin = packet.skin_texture;
+  player.body = packet.face_texture;
+  player.walkstyle = packet.walk_style;
+  player.name = packet.player_name;
+
+  // Update the packet we received with his ID, so we can send it to others.
+  packet.player_id = p.id.guid;
+
+  std::vector<ExistingPlayerPacket> existing_players;
+  existing_players.reserve(players_.size());
 
   // Informing other players about new player
-  memcpy((char*)inform_packet.data() + (38 + sizeof(uint64_t)), player.name.c_str(), player.name.length());
-  for (size_t i = 0; i < players.size(); i++) {
-    if (players[i].is_ingame) {
-      g_net_server->Send((unsigned char*)inform_packet.data(), 40 + (int)player.name.length() + sizeof(uint64_t),
-                         IMMEDIATE_PRIORITY, RELIABLE, 3, players[i].id);
+  for (const auto& [id, existing_player] : players_) {
+    if (existing_player.id.guid != p.id.guid) {
+      if (existing_player.is_ingame) {
+        SerializeAndSend(packet, IMMEDIATE_PRIORITY, RELIABLE, existing_player.id);
+      }
+
+      ExistingPlayerPacket player_packet;
+      player_packet.packet_type = PT_ALL_OTHERS;
+      player_packet.player_id = existing_player.id.guid;
+      player_packet.selected_class = existing_player.char_class;
+      player_packet.position = existing_player.state.position;
+      player_packet.left_hand_item_instance = existing_player.state.left_hand_item_instance;
+      player_packet.right_hand_item_instance = existing_player.state.right_hand_item_instance;
+      player_packet.equipped_armor_instance = existing_player.state.equipped_armor_instance;
+      player_packet.head_model = existing_player.head;
+      player_packet.skin_texture = existing_player.skin;
+      player_packet.face_texture = existing_player.body;
+      player_packet.walk_style = existing_player.walkstyle;
+      player_packet.player_name = existing_player.name;
+      existing_players.push_back(std::move(player_packet));
     }
   }
-  // generowanie i słanie pakietów o graczach(max 10 graczy per pakiet)
-  unsigned char it = 0;
-  size_t szIt = 1;
-  for (const auto& [id, existing_player] : players) {
-    if (existing_player.is_ingame) {
-      it++;
-      memcpy((char*)inform_packet.data() + szIt, &existing_player.id.guid, (sizeof(uint64_t)));
-      szIt += sizeof(uint64_t);
-      *(char*)(inform_packet.data() + szIt) = existing_player.char_class;
-      szIt++;
-      memcpy((char*)inform_packet.data() + szIt, existing_player.pos, 12);
-      szIt += 12;
-      memcpy((char*)inform_packet.data() + szIt, &existing_player.left_hand, 2);
-      szIt += 2;
-      memcpy((char*)inform_packet.data() + szIt, &existing_player.right_hand, 2);
-      szIt += 2;
-      memcpy((char*)inform_packet.data() + szIt, &existing_player.armor, 2);
-      szIt += 2;
-      *(char*)(inform_packet.data() + szIt) = existing_player.head;
-      szIt++;
-      *(char*)(inform_packet.data() + szIt) = existing_player.skin;
-      szIt++;
-      *(char*)(inform_packet.data() + szIt) = existing_player.body;
-      szIt++;
-      *(char*)(inform_packet.data() + szIt) = existing_player.walkstyle;
-      szIt++;
-      memcpy((char*)inform_packet.data() + szIt, existing_player.name.c_str(), existing_player.name.length() + 1);
-      szIt += existing_player.name.length() + 1;
-    }
-    if (it == 10) {
-      *(unsigned char*)inform_packet.data() = PT_ALL_OTHERS;
-      g_net_server->Send((unsigned char*)inform_packet.data(), (int)szIt, IMMEDIATE_PRIORITY, RELIABLE, 2, p.id);
-      it = 0;
-      szIt = 1;
-    }
-  }
-  if (it > 0) {
-    *(unsigned char*)(inform_packet.data()) = PT_ALL_OTHERS;
-    g_net_server->Send((unsigned char*)inform_packet.data(), (int)szIt, IMMEDIATE_PRIORITY, RELIABLE, 2, p.id);
-    it = 0;
-    szIt = 1;
-  }
+
+  // Previously, we were splitting this into mulitple packets. Find out if this is still necessary.
+  std::vector<std::uint8_t> buffer;
+  bitsery::OutputBufferAdapter<std::vector<std::uint8_t>> adapter(buffer);
+  auto serializer = bitsery::Serializer<bitsery::OutputBufferAdapter<std::vector<std::uint8_t>>>(std::move(adapter));
+  serializer.container(existing_players, 400);
+  serializer.adapter().flush();
+  auto written_size = serializer.adapter().writtenBytesCount();
+  g_net_server->Send(buffer.data(), written_size, IMMEDIATE_PRIORITY, RELIABLE, 0, p.id);
+
   player.is_ingame = 1;
 
   // join
@@ -465,101 +519,13 @@ void GameServer::HandlePlayerUpdate(Packet p) {
   }
   auto& updated_player = player_opt.value().get();
 
-  memcpy(updated_player.pos, p.data + 1, 12);
-  memcpy(updated_player.nrot, p.data + 13, 12);
-  memcpy(&updated_player.left_hand, p.data + 25, 2);
-  memcpy(&updated_player.right_hand, p.data + 27, 2);
-  memcpy(&updated_player.armor, p.data + 29, 2);
-  memcpy(&updated_player.animation, p.data + 31, 2);
-  memcpy(&updated_player.mana, p.data + 33, 2);
-  updated_player.figth_pos = p.data[35];
-  updated_player.spellhand = p.data[36];
-  updated_player.headstate = p.data[37];
-  memcpy(&updated_player.rangedeq, p.data + 38, 2);
-  memcpy(&updated_player.meleeeq, p.data + 40, 2);
+  PlayerStateUpdatePacket packet;
+  using InputAdapter = bitsery::InputBufferAdapter<unsigned char*>;
+  auto state = bitsery::quickDeserialization<InputAdapter>({p.data, p.length}, packet);
 
-  // generowanie wiadomości do słania
-  size_t szIt[2] = {1, 1025};
-  unsigned char it[2] = {0, 0};
-  std::string msg;
-  msg.reserve(2048);
-  for (const auto& [id, existing_player] : players) {
-    if (existing_player.is_ingame) {
-      if (p.id != existing_player.id) {
-        if (IsWithinRadius(updated_player.pos, existing_player.pos, kRadiusSquared)) {
-          it[0]++;
-          memcpy((char*)msg.data() + szIt[0], &existing_player.id.guid, sizeof(uint64_t));
-          szIt[0] += sizeof(uint64_t);
-          *(char*)(msg.data() + szIt[0]) = existing_player.flags;
-          szIt[0]++;
-          memcpy((char*)msg.data() + szIt[0], existing_player.pos, 12);
-          szIt[0] += 12;
-          memcpy((char*)msg.data() + szIt[0], existing_player.nrot, 12);
-          szIt[0] += 12;
-          memcpy((char*)msg.data() + szIt[0], &existing_player.left_hand, 2);
-          szIt[0] += 2;
-          memcpy((char*)msg.data() + szIt[0], &existing_player.right_hand, 2);
-          szIt[0] += 2;
-          memcpy((char*)msg.data() + szIt[0], &existing_player.armor, 2);
-          szIt[0] += 2;
-          memcpy((char*)msg.data() + szIt[0], &existing_player.animation, 2);
-          szIt[0] += 2;
-          memcpy((char*)msg.data() + szIt[0], &existing_player.health, 2);
-          szIt[0] += 2;
-          memcpy((char*)msg.data() + szIt[0], &existing_player.mana, 2);
-          szIt[0] += 2;
-          *(char*)(msg.data() + szIt[0]) = existing_player.spellhand;
-          szIt[0]++;
-          *(char*)(msg.data() + szIt[0]) = existing_player.figth_pos;
-          szIt[0]++;
-          *(char*)(msg.data() + szIt[0]) = existing_player.headstate;
-          szIt[0]++;
-          memcpy((char*)msg.data() + szIt[0], &existing_player.rangedeq, 2);
-          szIt[0] += 2;
-          memcpy((char*)msg.data() + szIt[0], &existing_player.meleeeq, 2);
-          szIt[0] += 2;
-        } else {  // ktoś nieistotny
-          it[1]++;
-          memcpy((char*)msg.data() + szIt[1], &existing_player.id.guid, sizeof(uint64_t));
-          szIt[1] += sizeof(uint64_t);
-          memcpy((char*)msg.data() + szIt[1], &existing_player.pos[0], 4);
-          szIt[1] += 4;  // float x,y
-          memcpy((char*)msg.data() + szIt[1], &existing_player.pos[2], 4);
-          szIt[1] += 4;
-        }
-      } else {  // to jesteśmy my, starczy tylko info o hp
-        it[0]++;
-        memcpy((char*)msg.data() + szIt[0], &p.id.guid, sizeof(uint64_t));
-        szIt[0] += sizeof(uint64_t);
-        memcpy((char*)msg.data() + szIt[0], &updated_player.health, 2);
-        szIt[0] += 2;
-      }
-      if (it[0] == 10) {
-        *(unsigned char*)(msg.data()) = PT_ACTUAL_STATISTICS;
-        g_net_server->Send((unsigned char*)msg.data(), (int)szIt[0], IMMEDIATE_PRIORITY, UNRELIABLE, 0, p.id);
-        it[0] = 0;
-        szIt[0] = 1;
-      }
-      if (it[1] == 60) {
-        *(unsigned char*)(msg.data() + 1024) = PT_MAP_ONLY;
-        g_net_server->Send((unsigned char*)msg.data() + 1024, (int)szIt[1] - 1024, IMMEDIATE_PRIORITY, UNRELIABLE, 0,
-                           p.id);
-        it[1] = 0;
-        szIt[1] = 1025;
-      }
-    }
-  }
-  if (it[0] > 0) {
-    *(unsigned char*)(msg.data()) = PT_ACTUAL_STATISTICS;
-    g_net_server->Send((unsigned char*)msg.data(), (int)szIt[0], IMMEDIATE_PRIORITY, UNRELIABLE, 0, p.id);
-    it[0] = 0;
-  }
-  if (it[1] > 0) {
-    *(unsigned char*)(msg.data() + 1024) = PT_MAP_ONLY;
-    g_net_server->Send((unsigned char*)msg.data() + 1024, (int)szIt[1] - 1024, IMMEDIATE_PRIORITY, UNRELIABLE, 32,
-                       p.id);
-    it[1] = 0;
-  }
+  updated_player.state = packet.state;
+
+  // Lua event on player update?
 }
 
 void GameServer::MakeHPDiff(Packet p) {
@@ -658,7 +624,7 @@ void GameServer::HandleVoice(Packet p) {
   std::string data;
   data.reserve(p.length);
   memcpy(data.data(), p.data, p.length);
-  for (const auto& [id, existing_player] : players) {
+  for (const auto& [id, existing_player] : players_) {
     if (existing_player.is_ingame && existing_player.id.guid != p.id.guid) {
       g_net_server->Send((unsigned char*)data.data(), p.length, IMMEDIATE_PRIORITY, UNRELIABLE, 5, existing_player.id);
     }
@@ -666,28 +632,24 @@ void GameServer::HandleVoice(Packet p) {
 }
 
 void GameServer::HandleNormalMsg(Packet p) {
-  std::string szMsg;
-
   auto player_opt = GetPlayerById(p.id.guid);
   if (!player_opt.has_value() || !player_opt.value().get().is_ingame || player_opt.value().get().mute)
     return;
 
-  szMsg.reserve(p.length + sizeof(uint64_t) + 1);
+  MessagePacket packet;
+  using InputAdapter = bitsery::InputBufferAdapter<unsigned char*>;
+  auto state = bitsery::quickDeserialization<InputAdapter>({p.data, p.length}, packet);
 
-  *((unsigned char*)szMsg.data()) = p.data[0];
-  memcpy((char*)szMsg.data() + 1, (const char*)(&p.id.guid), sizeof(uint64_t));  // id
-  memcpy((char*)szMsg.data() + sizeof(uint64_t) + 1, p.data + 1, p.length - 1);  // text
+  EventManager::Instance().TriggerEvent(kEventOnPlayerMessageName, OnPlayerMessageEvent{p.id.guid, packet.message});
 
-  EventManager::Instance().TriggerEvent(kEventOnPlayerMessageName,
-                                        OnPlayerMessageEvent{p.id.guid, (const char*)(p.data + 1)});
-
-  for (const auto& [id, existing_player] : players) {
-    if (existing_player.is_ingame)
-      g_net_server->Send((unsigned char*)szMsg.data(), p.length + sizeof(uint64_t), LOW_PRIORITY, RELIABLE_ORDERED, 5,
-                         existing_player.id);
+  packet.sender = p.id.guid;
+  for (const auto& [id, existing_player] : players_) {
+    if (existing_player.is_ingame) {
+      SerializeAndSend(packet, LOW_PRIORITY, RELIABLE_ORDERED, existing_player.id);
+    }
   }
 
-  SPDLOG_INFO("{}:{}", player_opt->get().name, (const char*)(p.data + 1));
+  SPDLOG_INFO("{}", packet);
 }
 
 void GameServer::HandleWhisp(Packet p) {
@@ -695,27 +657,25 @@ void GameServer::HandleWhisp(Packet p) {
   if (!player_opt.has_value() || !player_opt.value().get().is_ingame)
     return;
 
-  uint64_t recipient_id;
-  memcpy(&recipient_id, p.data + 1, sizeof(uint64_t));
+  MessagePacket packet;
+  using InputAdapter = bitsery::InputBufferAdapter<unsigned char*>;
+  auto state = bitsery::quickDeserialization<InputAdapter>({p.data, p.length}, packet);
 
-  auto recipient_opt = GetPlayerById(recipient_id);
+  if (!packet.recipient.has_value()) {
+    SPDLOG_ERROR("No recipient in whisper packet!");
+    return;
+  }
+
+  auto recipient_opt = GetPlayerById(*packet.recipient);
   if (!recipient_opt.has_value())
     return;
   auto& recipient = recipient_opt.value().get();
+  packet.sender = p.id.guid;
 
-  std::string szMsg;
-  szMsg.reserve(p.length + 1 + sizeof(uint64_t));
-  *((char*)szMsg.data()) = p.data[0];
-  memcpy((char*)(szMsg.data() + 1), &p.id.guid, sizeof(uint64_t));               // id
-  memcpy((char*)szMsg.data() + 1 + sizeof(uint64_t), p.data + 1, p.length - 1);  // text
+  SerializeAndSend(packet, LOW_PRIORITY, RELIABLE_ORDERED, p.id);
+  SerializeAndSend(packet, LOW_PRIORITY, RELIABLE_ORDERED, recipient.id);
 
-  g_net_server->Send((unsigned char*)szMsg.data(), p.length + 1 + sizeof(uint64_t), LOW_PRIORITY, RELIABLE_ORDERED, 6,
-                     p.id);
-  g_net_server->Send((unsigned char*)szMsg.data(), p.length + 1 + sizeof(uint64_t), LOW_PRIORITY, RELIABLE_ORDERED, 6,
-                     recipient.id);
-
-  SPDLOG_INFO("({} WHISPERS TO {}) {}", player_opt->get().name, recipient.name,
-              (const char*)(p.data + 1 + sizeof(uint64_t)));
+  SPDLOG_INFO("({} WHISPERS TO {}) {}", player_opt->get().name, recipient.name, (const char*)(p.data + 1 + sizeof(uint64_t)));
 }
 
 void GameServer::HandleCastSpell(Packet p, bool target) {
@@ -723,30 +683,25 @@ void GameServer::HandleCastSpell(Packet p, bool target) {
   if (!player_opt.has_value() || !player_opt.value().get().is_ingame)
     return;
 
-  std::string szMsg;
-  szMsg.reserve(p.length + sizeof(uint64_t));
+  CastSpellPacket packet;
+  using InputAdapter = bitsery::InputBufferAdapter<unsigned char*>;
+  auto state = bitsery::quickDeserialization<InputAdapter>({p.data, p.length}, packet);
+  packet.caster_id = p.id.guid;
 
-  if (!target) {
-    *((unsigned char*)szMsg.data()) = p.data[0];
-    *((unsigned char*)(szMsg.data() + sizeof(uint64_t) + 1)) = p.data[1];
-    memcpy((char*)szMsg.data() + 1, (const char*)(&p.id.guid), sizeof(uint64_t));
-  } else {
-    uint64_t target_id;
-    memcpy(&target_id, p.data + 1, 8);
-
-    auto target_opt = GetPlayerById(target_id);
-    if (!target_opt.has_value() || !target_opt.value().get().is_ingame)
+  if (target) {
+    if (!packet.target_id.has_value()) {
+      SPDLOG_ERROR("No target in cast spell packet!");
       return;
+    }
 
-    *((unsigned char*)szMsg.data()) = p.data[0];
-    memcpy((char*)szMsg.data() + sizeof(uint64_t) + 1, p.data + 1, 8);
-    *((unsigned char*)(szMsg.data() + sizeof(uint64_t) + 9)) = p.data[9];
-    memcpy((char*)szMsg.data() + 1, (const char*)(&p.id.guid), sizeof(uint64_t));
+    auto target_opt = GetPlayerById(*packet.target_id);
+    if (!target_opt.has_value() || !target_opt.value().get().is_ingame) {
+      return;
+    }
   }
-  for (const auto& [id, existing_player] : players) {
+  for (const auto& [id, existing_player] : players_) {
     if (existing_player.is_ingame && existing_player.id.guid != p.id.guid) {
-      g_net_server->Send((unsigned char*)szMsg.data(), p.length + sizeof(uint64_t), HIGH_PRIORITY, RELIABLE, 0,
-                         existing_player.id);
+      SerializeAndSend(packet, HIGH_PRIORITY, RELIABLE, existing_player.id);
     }
   }
 }
@@ -756,23 +711,17 @@ void GameServer::HandleDropItem(Packet p) {
   if (!player_opt.has_value() || !player_opt.value().get().is_ingame)
     return;
 
-  std::string szMsg;
-  szMsg.reserve(p.length + sizeof(uint64_t));
+  DropItemPacket packet;
+  using InputAdapter = bitsery::InputBufferAdapter<unsigned char*>;
+  auto state = bitsery::quickDeserialization<InputAdapter>({p.data, p.length}, packet);
+  packet.player_id = p.id.guid;
 
-  *((unsigned char*)szMsg.data()) = p.data[0];
-  memcpy((char*)szMsg.data() + sizeof(uint64_t) + 1, p.data + 1, 2);
-  memcpy((char*)szMsg.data() + sizeof(uint64_t) + 3, p.data + 3, 2);
-  memcpy((char*)szMsg.data() + 1, (const char*)(&p.id.guid), sizeof(uint64_t));
-
-  for (const auto& [id, existing_player] : players) {
+  for (const auto& [id, existing_player] : players_) {
     if (existing_player.is_ingame && existing_player.id.guid != p.id.guid) {
-      g_net_server->Send((unsigned char*)szMsg.data(), p.length + sizeof(uint64_t), HIGH_PRIORITY, RELIABLE, 0,
-                         existing_player.id);
+      SerializeAndSend(packet, HIGH_PRIORITY, RELIABLE, existing_player.id);
     }
   }
-  short amount;
-  memcpy(&amount, p.data + 3, 2);
-  SPDLOG_INFO("{} DROPPED ITEM. AMOUNT: {}", player_opt->get().name, amount);
+  SPDLOG_INFO("{} DROPPED ITEM. AMOUNT: {}", player_opt->get().name, packet.item_amount);
 }
 
 void GameServer::HandleTakeItem(Packet p) {
@@ -783,16 +732,14 @@ void GameServer::HandleTakeItem(Packet p) {
   if (!player_opt.has_value() || !player_opt.value().get().is_ingame)
     return;
 
-  std::string szMsg;
-  szMsg.reserve(p.length + sizeof(uint64_t));
-  *((unsigned char*)szMsg.data()) = p.data[0];
-  memcpy((char*)szMsg.data() + sizeof(uint64_t) + 1, p.data + 1, 2);
-  memcpy((char*)szMsg.data() + 1, (const char*)(&p.id.guid), sizeof(uint64_t));
+  TakeItemPacket packet;
+  using InputAdapter = bitsery::InputBufferAdapter<unsigned char*>;
+  auto state = bitsery::quickDeserialization<InputAdapter>({p.data, p.length}, packet);
+  packet.player_id = p.id.guid;
 
-  for (const auto& [id, existing_player] : players) {
+  for (const auto& [id, existing_player] : players_) {
     if (existing_player.is_ingame && existing_player.id.guid != p.id.guid) {
-      g_net_server->Send((unsigned char*)szMsg.data(), p.length + sizeof(uint64_t), HIGH_PRIORITY, RELIABLE, 0,
-                         existing_player.id);
+      SerializeAndSend(packet, HIGH_PRIORITY, RELIABLE, existing_player.id);
     }
   }
   SPDLOG_INFO("{} TOOK ITEM.", player_opt->get().name);
@@ -802,7 +749,7 @@ void GameServer::HandleRMConsole(Packet p) {
   // Intentionally left blank. This can be implemented in the scripts.
 }
 
-void MakeHTTPReq(char* file) {
+void MakeHTTPReq(const std::string& file) {
   httplib::Client cli(lobbyAddress);
   cli.Get(file);
 }
@@ -810,28 +757,23 @@ void MakeHTTPReq(char* file) {
 void GameServer::AddToPublicListHTTP() {
   using namespace std::chrono_literals;
 
-  char* szBuff = new char[256];
   auto last_update = std::chrono::system_clock::now();
   while (g_is_server_running) {
     if (g_server->IsPublic()) {
-      if (std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now() - last_update).count() >=
-          5) {
+      if (std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now() - last_update).count() >= 5) {
         last_update = std::chrono::system_clock::now();
         auto server_name = g_server->config_.Get<std::string>("name");
         for (size_t i = 0; i <= strlen(server_name.c_str()); i++)
-          if ((*((unsigned char*)server_name.c_str() + i) < 0x20) &&
-              (*((unsigned char*)server_name.c_str() + i) != 0x07))
+          if ((*((unsigned char*)server_name.c_str() + i) < 0x20) && (*((unsigned char*)server_name.c_str() + i) != 0x07))
             *((unsigned char*)server_name.data() + i) = 0;
-        memset(szBuff, 0, 256);
-        sprintf(szBuff, "%s?sn=%s&port=%d&crt=%u&mx=%d&map=%s", lobbyFile, server_name.c_str(),
-                g_server->config_.Get<std::int32_t>("port"), static_cast<unsigned int>(g_server->players.size()),
-                g_server->config_.Get<std::int32_t>("slots"), g_server->config_.Get<std::string>("map").c_str());
-        MakeHTTPReq(szBuff);
+        std::string buffer = fmt::format("{}?sn={}&port={}&crt={}&mx={}&map={}", lobbyFile, server_name, g_server->config_.Get<std::int32_t>("port"),
+                                         static_cast<unsigned int>(g_server->players_.size()), g_server->config_.Get<std::int32_t>("slots"),
+                                         g_server->config_.Get<std::string>("map"));
+        MakeHTTPReq(buffer);
       }
     }
     std::this_thread::sleep_for(100ms);
   }
-  delete[] szBuff;
 }
 
 void GameServer::HandleGameInfo(Packet p) {
@@ -840,136 +782,46 @@ void GameServer::HandleGameInfo(Packet p) {
 
 // void GameServer::HandleGameInfo(Packet p){
 void GameServer::SendGameInfo(Net::PlayerId who) {
-  std::string szData;
-  int len = 7;
-  szData.reserve(64);
-  *((unsigned char*)szData.data()) = PT_GAME_INFO;
-  GothicClock::Time game_time = clock_->GetTime();
-  memcpy((char*)szData.data() + 1, &game_time, 4);
-  *((unsigned char*)szData.data() + 5) = (unsigned char)config_.Get<std::int32_t>("game_mode");
-  ;
-  *((unsigned char*)szData.data() + 6) = 0;
-  if (config_.Get<bool>("quick_pots"))
-    *((unsigned char*)szData.data() + 6) |= QUICK_POTS;
-  if (config_.Get<bool>("allow_dropitems"))
-    *((unsigned char*)szData.data() + 6) |= DROP_ITEMS;
-  if (config_.Get<bool>("hide_map"))
-    *((unsigned char*)szData.data() + 6) |= HIDE_MAP;
-  g_net_server->Send((unsigned char*)szData.data(), len, MEDIUM_PRIORITY, RELIABLE, 9, who);
+  GameInfoPacket packet;
+  packet.packet_type = PT_GAME_INFO;
+  GothicClock::TimeUnion game_time = clock_->GetTime();
+  packet.raw_game_time = game_time.raw;
+
+  packet.game_mode = config_.Get<std::int32_t>("game_mode");
+  if (config_.Get<bool>("quick_pots")) {
+    packet.flags |= QUICK_POTS;
+  }
+  if (config_.Get<bool>("allow_dropitems")) {
+    packet.flags |= DROP_ITEMS;
+  }
+  if (config_.Get<bool>("hide_map")) {
+    packet.flags |= HIDE_MAP;
+  }
+
+  SerializeAndSend(packet, MEDIUM_PRIORITY, RELIABLE, who, 9);
 }
 
 void GameServer::HandleMapNameReq(Packet p) {
-  std::string szData;
-  szData.reserve(256);
-  *((unsigned char*)szData.data()) = PT_MAP_NAME;
-  auto map = config_.Get<std::string>("map");
-  memcpy((char*)szData.data() + 1, map.c_str(), strlen(map.data()) + 1);
-  g_net_server->Send((char*)szData.data(), static_cast<int>(2 + strlen(map.data())), MEDIUM_PRIORITY, RELIABLE, 9,
-                     p.id);
-  szData.clear();
+  MapNamePacket packet;
+  packet.packet_type = PT_MAP_NAME;
+  packet.map_name = config_.Get<std::string>("map");
+  SerializeAndSend(packet, MEDIUM_PRIORITY, RELIABLE, p.id, 9);
 }
+
 void GameServer::SendDisconnectionInfo(uint64_t disconnected_id) {
-  std::string szData;
-  szData.reserve(32);
-  *((unsigned char*)szData.data()) = PT_LEFT_GAME;
-  memcpy((char*)szData.data() + 1, &disconnected_id, sizeof(uint64_t));
-  for (size_t i = 0; i < players.size(); i++) {
-    if (players[i].is_ingame)
-      if (players[i].id.guid != disconnected_id) {
-        g_net_server->Send(szData.data(), 1 + sizeof(uint64_t), IMMEDIATE_PRIORITY, RELIABLE, 8, players[i].id);
-      }
+  DisconnectionInfoPacket packet;
+  packet.disconnected_id = disconnected_id;
+  packet.packet_type = PT_LEFT_GAME;
+
+  for (const auto& [id, existing_player] : players_) {
+    if (existing_player.is_ingame && existing_player.id.guid != disconnected_id) {
+      SerializeAndSend(packet, IMMEDIATE_PRIORITY, RELIABLE, existing_player.id);
+    }
   }
-  szData.clear();
 }
 
 bool GameServer::IsPublic() {
   return (config_.Get<bool>("public")) ? true : false;
-}
-
-void GameServer::DoRespawns() {
-  auto respawn_time = config_.Get<std::int32_t>("respawn_time_seconds");
-  if (respawn_time > 0) {
-    if (respawn_time & 0x80000000) {
-      // last stand
-      switch (config_.Get<std::int32_t>("game_mode")) {
-        case 1:  // TDM
-          if ((!last_stand_timer) && (players.size())) {
-            std::string living_team;
-            size_t living_players = 0, total_ingame = 0;
-            for (size_t i = 0; i < players.size(); i++) {
-              if (players[i].is_ingame)
-                total_ingame++;
-            }
-            for (size_t i = 0; i < players.size(); i++) {
-              if ((players[i].is_ingame) && (!players[i].tod)) {
-                living_players++;
-                if (living_team.empty()) {
-                  living_team = character_definition_manager_->GetCharacterDefinition(players[i].char_class).team_name;
-                } else {
-                  if (living_team !=
-                      character_definition_manager_->GetCharacterDefinition(players[i].char_class).team_name)
-                    return;
-                }
-              }
-            }
-            if ((!total_ingame) || (living_players == total_ingame))
-              return;
-            last_stand_timer = time(NULL) + 8;
-          } else {
-            if ((last_stand_timer <= time(NULL)) && (players.size())) {
-              for (size_t i = 0; i < players.size(); i++) {
-                if ((players[i].is_ingame) && (players[i].tod)) {
-                  players[i].tod = 0;
-                  players[i].health =
-                      character_definition_manager_->GetCharacterDefinition(players[i].char_class).abilities[HP];
-                  SendRespawnInfo(players[i].id.guid);
-                }
-              }
-              last_stand_timer = 0;
-            }
-          }
-          break;
-        default: {
-          size_t living_players = 0;
-          for (size_t i = 0; i < players.size(); i++) {
-            if ((players[i].is_ingame) && (!players[i].tod))
-              living_players++;
-          }
-          if (living_players > 1)
-            last_stand_timer = 0;
-          if ((living_players <= 1) && (!last_stand_timer)) {
-            last_stand_timer = time(NULL) + 4;
-          }
-          if ((living_players <= 1) &&
-              (last_stand_timer <= time(NULL))) {  // do resurrection; http://www.youtube.com/watch?v=J5t0iLqqgiI&t=55s
-            for (size_t i = 0; i < players.size(); i++) {
-              if ((players[i].is_ingame) && (players[i].tod)) {
-                players[i].flags = 0;
-                players[i].tod = 0;
-                players[i].health =
-                    character_definition_manager_->GetCharacterDefinition(players[i].char_class).abilities[HP];
-                SendRespawnInfo(players[i].id.guid);
-              }
-            }
-            last_stand_timer = 0;
-          }
-        } break;
-      }
-    } else {
-      // timed respawn
-      for (size_t i = 0; i < players.size(); i++) {
-        if ((players[i].is_ingame) && (players[i].tod)) {
-          if (players[i].tod + respawn_time < time(NULL)) {
-            players[i].flags = 0;
-            players[i].tod = 0;
-            players[i].health =
-                character_definition_manager_->GetCharacterDefinition(players[i].char_class).abilities[HP];
-            SendRespawnInfo(players[i].id.guid);
-          }
-        }
-      }
-    }
-  }
 }
 
 void GameServer::SendSpamMessage() {
@@ -977,51 +829,41 @@ void GameServer::SendSpamMessage() {
   if (loop_time > 0) {
     if (spam_time < time(NULL)) {
       spam_time = time(NULL) + loop_time;
-      if (players.size()) {
-        std::string szData;
-        szData.reserve(512);
-        *((unsigned char*)szData.data()) = PT_SRVMSG;
-        memcpy((char*)szData.data() + 1, loop_msg.c_str(), loop_msg.length() + 1);
-        for (size_t i = 0; i < players.size(); i++) {
-          if (players[i].is_ingame)
-            g_net_server->Send(szData.data(), static_cast<int>(loop_msg.length() + 2), MEDIUM_PRIORITY, UNRELIABLE, 11,
-                               players[i].id);
+      if (!players_.empty()) {
+        MessagePacket packet;
+        packet.packet_type = PT_SRVMSG;
+        packet.message = loop_msg;
+
+        for (const auto& [id, existing_player] : players_) {
+          if (existing_player.is_ingame) {
+            SerializeAndSend(packet, MEDIUM_PRIORITY, UNRELIABLE, existing_player.id, 11);
+          }
         }
-        szData.clear();
       }
     }
   }
 }
 
 void GameServer::SendDeathInfo(uint64_t deadman) {
-  unsigned char buffer[9];
-  buffer[0] = PT_DODIE;
-  memcpy(buffer + 1, &deadman, 8);
-  for (size_t i = 0; i < players.size(); i++) {
-    if (players[i].is_ingame)
-      g_net_server->Send((unsigned char*)buffer, 9, IMMEDIATE_PRIORITY, RELIABLE, 13, players[i].id);
+  PlayerDeathInfoPacket packet;
+  packet.packet_type = PT_DODIE;
+  packet.player_id = deadman;
+
+  for (const auto& [id, existing_player] : players_) {
+    if (existing_player.is_ingame) {
+      SerializeAndSend(packet, IMMEDIATE_PRIORITY, RELIABLE, existing_player.id, 13);
+    }
   }
 }
 
 void GameServer::SendRespawnInfo(uint64_t luckyguy) {
-  unsigned char buffer[9];
-  buffer[0] = PT_RESPAWN;
-  memcpy(buffer + 1, &luckyguy, 8);
-  for (size_t i = 0; i < players.size(); i++) {
-    if (players[i].is_ingame)
-      g_net_server->Send((unsigned char*)buffer, 9, IMMEDIATE_PRIORITY, RELIABLE, 13, players[i].id);
-  }
-}
+  PlayerRespawnInfoPacket packet;
+  packet.packet_type = PT_RESPAWN;
+  packet.player_id = luckyguy;
 
-GameServer::sPlayer* GameServer::FindPlayer(const char* nickname) {
-  sPlayer* ret = NULL;
-  for (size_t i = 0; i < players.size(); i++) {
-    if (players[i].is_ingame) {
-      if (!memcmp(nickname, players[i].name.c_str(), players[i].name.length() + 1)) {
-        ret = &players[i];
-        break;
-      }
+  for (const auto& [id, existing_player] : players_) {
+    if (existing_player.is_ingame) {
+      SerializeAndSend(packet, IMMEDIATE_PRIORITY, RELIABLE, existing_player.id, 13);
     }
   }
-  return ret;
 }

@@ -44,7 +44,7 @@ struct CharacterDefinition {
 
 class CharacterDefinitionManager {
 public:
-  CharacterDefinitionManager() = default;
+  CharacterDefinitionManager();
   CharacterDefinitionManager(const CharacterDefinitionManager&) = delete;
   CharacterDefinitionManager(CharacterDefinitionManager&&) = delete;
   ~CharacterDefinitionManager() = default;
@@ -60,6 +60,8 @@ public:
 private:
   std::uint32_t id_counter_ = 0;
   std::unordered_map<std::uint32_t, CharacterDefinition> character_definitions_;
+
+  void CreateDefaultCharacterDefinitions();
 
   void ParseXML(const std::string& path);
   void ParseJSON(const std::string& path);

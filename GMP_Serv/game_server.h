@@ -39,6 +39,7 @@ SOFTWARE.
 
 #include "Script.h"
 #include "character_definition.h"
+#include "common_structs.h"
 #include "config.h"
 #include "znet_server.h"
 
@@ -71,11 +72,9 @@ public:
     unsigned char char_class, flags, head, skin, body, walkstyle, figth_pos, spellhand, headstate, has_admin,
         admin_passwd, moderator_passwd, is_ingame, passed_crc_test, mute;
     short health, mana;
-    float pos[3];
-    float nrot[3];
     // miejce na obrót głowy
     time_t tod;  // time of death
-    unsigned short left_hand, right_hand, armor, rangedeq, meleeeq, animation;
+    PlayerState state;
   };
 
 public:
@@ -89,14 +88,12 @@ public:
   bool Init();
   void SaveBanList(void);
   bool IsPublic(void);
-  void DoRespawns(void);
   void SendSpamMessage(void);
 
   std::optional<std::reference_wrapper<sPlayer>> GetPlayerById(std::uint64_t id);
 
 private:
   void DeleteFromPlayerList(Net::PlayerId guid);
-  sPlayer* FindPlayer(const char* nickname);
   void LoadBanList(void);
   void HandleCastSpell(Packet p, bool target);
   void HandleDropItem(Packet p);
@@ -125,13 +122,14 @@ private:
   int serverPort;
   unsigned short maxConnections;
   time_t spam_time;
-  std::unordered_map<std::uint64_t, sPlayer> players;
+  std::unordered_map<std::uint64_t, sPlayer> players_;
   bool allow_modification = false;
   std::string loop_msg;
   Config config_;
   std::unique_ptr<GothicClock> clock_;
   std::unique_ptr<HTTPServer> http_server_;
   std::future<void> public_list_http_thread_future_;
+  std::chrono::time_point<std::chrono::steady_clock> last_update_time_{};
 };
 
 inline GameServer* g_server = nullptr;

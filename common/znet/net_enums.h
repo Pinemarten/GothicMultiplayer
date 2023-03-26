@@ -71,12 +71,10 @@ enum PacketID
   PT_ALL_OTHERS,  // pakiety wysy�any tylko z serwera do klienta, informacje o wszystkich graj�cych wysy�ane jednorazowo
   PT_HP_DIFF,
   PT_MAP_ONLY,  // wysy�a tylko informacje o x,y graczy �eby mapka dzia�a�a
-  PT_CHECKSUM,  // pakiet sprawdzaj�cy czy crc32 serwera i klienta s� zgodne
-  PT_RCON,      // administrowanie
+  PT_COMMAND,      // administrowanie
   PT_WHISPER,
   PT_EXTENDED_4_SCRIPTS,  // jak ju� kiedy� wdro�ymy skrypty
   PT_SRVMSG,
-  PT_YOUR_NAME,
   PT_LEFT_GAME,
   PT_GAME_INFO,
   PT_MAP_NAME,
