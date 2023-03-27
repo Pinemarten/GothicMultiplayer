@@ -36,7 +36,7 @@ SOFTWARE.
 #include "CPlayer.h"
 #include "CHeroClass.h"
 #include <list>
-#include "CGmpClient.h"
+#include "game_client.h"
 #include "CIngame.h"
 #include "CInterpolatePos.h"
 #include "CLocalPlayer.h"
@@ -54,7 +54,7 @@ SOFTWARE.
 static int HeroInstance;
 
 // Externs
-extern CGmpClient* client;
+extern GameClient* client;
 extern CIngame* global_ingame;
 extern CLocalPlayer* LocalPlayer;
 extern zSTRING SELF;
@@ -62,7 +62,7 @@ extern CConfig* user_config;
 
 // ZSTRINGS
 zSTRING BODYMESHNAKED = "HUM_BODY_NAKED0";
-  // Rodzaje modelu g³owy
+  // Rodzaje modelu gï¿½owy
 zSTRING HUM_HEAD_FIGHTER = "HUM_HEAD_FIGHTER";
 zSTRING HUM_HEAD_BALD = "HUM_HEAD_BALD";
 zSTRING HUM_HEAD_FATBALD = "HUM_HEAD_FATBALD";

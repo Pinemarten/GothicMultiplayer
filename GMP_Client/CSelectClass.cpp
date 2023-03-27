@@ -34,7 +34,7 @@ extern float fWRatio;
 CSelectClass *selectmgr=NULL;
 extern CLocalPlayer* LocalPlayer;
 
-CSelectClass::CSelectClass(CLanguage *ptr, CGmpClient *cl){
+CSelectClass::CSelectClass(CLanguage *ptr, GameClient*cl){
 	// INITIALIZING LOCAL PLAYER HERE INSTEAD IN JOINGAME
 	if(!LocalPlayer){
 		new CLocalPlayer();
@@ -74,7 +74,7 @@ void CSelectClass::Loop(){
 		scr->Print(120+static_cast<zINT>(static_cast<float>(60*(*selectmgr->lang)[CLanguage::CLASS_NAME].Length())*fWRatio), 150, (*chc)[selectmgr->GetSelected()]->class_name);
 		scr->Print(120+static_cast<zINT>(static_cast<float>(60*(*selectmgr->lang)[CLanguage::CLASS_DESCRIPTION].Length())*fWRatio), 300, (*chc)[selectmgr->GetSelected()]->class_description);
 		scr->Print(120+static_cast<zINT>(static_cast<float>(60*(*selectmgr->lang)[CLanguage::TEAM_NAME].Length())*fWRatio), 450, (*chc)[selectmgr->GetSelected()]->team_name);
-		selectmgr->HandleInput();	//wyrzuci³em na koniec bo za szybko robi³ delete this;
+		selectmgr->HandleInput();	//wyrzuciï¿½em na koniec bo za szybko robiï¿½ delete this;
 	}
 }
 
@@ -140,7 +140,7 @@ void CSelectClass::HandleInput(){
 		input->ClearKeyBuffer();
 		oCNpc::GetHero()->ResetPos(oCNpc::GetHero()->GetPosition());
 		client->JoinGame(this->selected);
-		//dodaæ przejœcie do zarz¹dzania gameplayem
+		//dodaï¿½ przejï¿½cie do zarzï¿½dzania gameplayem
 		delete this;
 	}
 }

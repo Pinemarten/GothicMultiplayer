@@ -37,7 +37,7 @@ SOFTWARE.
 
 static Net::NetClient* g_netclient = nullptr;
 
-Network::Network(CGmpClient* client) {
+Network::Network(GameClient* client) {
   assert(g_netclient != nullptr);
   client_ = client;
   playerID = -1;
@@ -69,10 +69,9 @@ void Network::AddPacketHandlers() {
   packetHandlers[PT_WHISPER] = Game::OnWhisper;
   packetHandlers[PT_MSG] = Game::OnMessage;
   packetHandlers[PT_SRVMSG] = Game::OnServerMessage;
-  packetHandlers[PT_RCON] = Game::OnRcon;
+  packetHandlers[PT_COMMAND] = Game::OnRcon;
   packetHandlers[PT_ALL_OTHERS] = Game::OnAllOthers;
   packetHandlers[PT_JOIN_GAME] = Game::OnJoinGame;
-  packetHandlers[PT_YOUR_NAME] = Game::OnYourName;
   packetHandlers[PT_GAME_INFO] = Game::OnGameInfo;
   packetHandlers[PT_LEFT_GAME] = Game::OnLeftGame;
   packetHandlers[PT_VOICE] = Game::OnVoice;

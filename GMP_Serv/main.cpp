@@ -36,17 +36,6 @@ SOFTWARE.
 namespace {
 void SetupCrashHandler() {
   static std::stringstream ss;
-
-  auto &chillout = Debug::Chillout::getInstance();
-  chillout.init(L"gmp_server", L".");
-
-  chillout.setCrashCallback([&chillout]() {
-    SPDLOG_CRITICAL("Crash detected! Backtrace:");
-    chillout.backtrace();
-    SPDLOG_CRITICAL("{}", ss.str());
-    SPDLOG_CRITICAL("--- End of backtrace ---");
-  });
-  chillout.setBacktraceCallback([](const char *const stackEntry) { ss << stackEntry; });
 }
 }  // namespace
 
@@ -62,7 +51,6 @@ int main(int argc, char **argv) {
   while (1) {
     using namespace std::chrono_literals;
     serv.Run();
-    serv.DoRespawns();
     serv.SendSpamMessage();
     std::this_thread::sleep_for(1ms);
   }

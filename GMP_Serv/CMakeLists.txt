@@ -45,6 +45,7 @@ target_link_libraries(
           sol2
           cmake_git_version_tracking
           nlohmann_json::nlohmann_json
+          gsl::gsl-lite
   PUBLIC common zNetServerInterface)
 target_include_directories(
   ServerLib
